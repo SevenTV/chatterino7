@@ -125,7 +125,7 @@ void SeventvEmotes::loadEmotes()
 {
     qCDebug(chatterinoSeventv) << "Loading 7TV Emotes";
 
-    QJsonObject payload;
+    QJsonObject payload, variables;
 
     QString query = R"({
         search_emotes(query: "", globalState: "only", limit: 150, pageSize: 150) {
@@ -171,7 +171,6 @@ void SeventvEmotes::loadEmotes()
 
 void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,
                                 const QString &channelId,
-                                const QString &channelLogin,
                                 std::function<void(EmoteMap &&)> callback,
                                 bool manualRefresh)
 {
@@ -181,7 +180,7 @@ void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,
     QJsonObject payload, variables;
 
     QString query = R"(
-        query fetchUserEmotes($login: String!) {
+        query loadUserEmotes($login: String!) {
             user(id: $login) {
                 emotes {
                     id
@@ -200,7 +199,7 @@ void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,
             }
         })";
 
-    variables.insert("login", channelLogin)->toObject();
+    variables.insert("login", channelId);
 
     payload.insert("query", query.replace(whitespaceRegex, " "));
     payload.insert("variables", variables);
