@@ -21,6 +21,9 @@ namespace {
         "This channel has no 7TV channel emotes.");
     const QString emoteLinkFormat("https://7tv.app/emotes/%1");
 
+    // maximum pageSize that 7tv's API accepts
+    constexpr int maxPageSize = 150;
+
     Url getEmoteLink(const EmoteId &id, const QString &emoteScale)
 
     {
@@ -127,8 +130,9 @@ void SeventvEmotes::loadEmotes()
 
     QJsonObject payload, variables;
 
-    QString query = R"({
-        search_emotes(query: "", globalState: "only", limit: 150, pageSize: 150) {
+    QString query = R"(
+        query loadGlobalEmotes($query: String!, $globalState: String, $page: Int, $limit: Int, $pageSize: Int) {
+        search_emotes(query: $query, globalState: $globalState, page: $page, limit: $limit, pageSize: $pageSize) {
             id
             name
             provider
@@ -144,8 +148,14 @@ void SeventvEmotes::loadEmotes()
         }
     })";
 
+    variables.insert("query", QString());
+    variables.insert("globalState", "only");
+    variables.insert("page", 1);  // TODO(zneix): Add support for pagination
+    variables.insert("limit", maxPageSize);
+    variables.insert("pageSize", maxPageSize);
+
     payload.insert("query", query.replace(whitespaceRegex, " "));
-    payload.insert("variables", {});
+    payload.insert("variables", variables);
 
     NetworkRequest(apiUrlGQL, NetworkRequestType::Post)
         .timeout(30000)
