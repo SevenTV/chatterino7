@@ -178,30 +178,34 @@ void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,
     qCDebug(chatterinoSeventv)
         << "Reloading 7TV Channel Emotes" << channelId << manualRefresh;
 
-    QJsonObject payload;
+    QJsonObject payload, variables;
 
-    QString query = R"({
-        user(id: "%1") {
-            emotes {
-                id
-                name
-                provider
-                provider_id
-                visibility
-                mime
-                owner {
+    QString query = R"(
+        query fetchUserEmotes($login: String!) {
+            user(id: $login) {
+                emotes {
                     id
-                    display_name
-                    login
-                    twitch_id
+                    name
+                    provider
+                    provider_id
+                    visibility
+                    mime
+                    owner {
+                        id
+                        display_name
+                        login
+                        twitch_id
+                    }
                 }
             }
-        }
-    })";
+        })";
 
-    payload.insert("query",
-                   query.arg(channelLogin).replace(whitespaceRegex, " "));
-    payload.insert("variables", {});
+    variables.insert("login", channelLogin)->toObject();
+
+    payload.insert("query", query.replace(whitespaceRegex, " "));
+    payload.insert("variables", variables);
+
+    qDebug() << QJsonDocument(payload).toJson(QJsonDocument::Compact);
 
     NetworkRequest(apiUrlGQL, NetworkRequestType::Post)
         .timeout(20000)
