@@ -8,6 +8,7 @@
 #include "messages/ImageSet.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
+#include "providers/seventv/SeventvEvents.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -112,6 +113,8 @@ namespace {
 SeventvEmotes::SeventvEmotes()
     : global_(std::make_shared<EmoteMap>())
 {
+    // DEBUG: SeventvEvents
+    SeventvEvents::createRequest();
 }
 
 std::shared_ptr<const EmoteMap> SeventvEmotes::emotes() const
@@ -227,6 +230,8 @@ void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,
         .payload(QJsonDocument(payload).toJson(QJsonDocument::Compact))
         .onSuccess([callback = std::move(callback), channel, channelId,
                     manualRefresh](NetworkResult result) -> Outcome {
+            QString login = result.parseJson()
+                    .value("login").toString();
             QJsonObject parsedEmotes = result.parseJson()
                                            .value("data")
                                            .toObject()
@@ -243,6 +248,9 @@ void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,
             if (hasEmotes)
             {
                 callback(std::move(emoteMap));
+
+                // Connect to the EventAPI
+                SeventvEvents::addChannel(login);
             }
             if (auto shared = channel.lock(); manualRefresh)
             {
