@@ -166,6 +166,8 @@ set(SOURCE_FILES
         providers/seventv/SeventvBadges.hpp
         providers/seventv/SeventvEmotes.cpp
         providers/seventv/SeventvEmotes.hpp
+        providers/seventv/SeventvEvents.cpp
+        providers/seventv/SeventvEvents.hpp
 
         providers/bttv/BttvEmotes.cpp
         providers/bttv/BttvEmotes.hpp

@@ -18,6 +18,7 @@
 #include "providers/irc/Irc2.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
+#include "providers/seventv/SeventvEvents.hpp"
 #include "providers/twitch/PubsubClient.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "providers/twitch/TwitchMessageBuilder.hpp"
