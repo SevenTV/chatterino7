@@ -8,7 +8,7 @@ Contribution guidelines can be found [here](https://wiki.chatterino.com/Contribu
 
 ## Download
 
-Current releases are available at [https://chatterino.com](https://chatterino.com).
+Current releases are available at [https://7tv.app/](https://7tv.app/).
 Windows users can also install Chatterino [from Chocolatey](https://chocolatey.org/packages/chatterino7).
 
 ## Nightly build
