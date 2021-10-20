@@ -6,7 +6,7 @@ Note on Qt version compatibility: If you are installing Qt from a package manage
 
 _most likely works the same for other Debian-like distros_
 
-1. Install dependencies `sudo apt install qttools5-dev qtmultimedia5-dev libqt5svg5-dev libboost-dev libssl-dev libboost-system-dev libboost-filesystem-dev cmake g++`
+1. Install dependencies `sudo apt install qttools5-dev qtmultimedia5-dev qt5-image-formats-plugins libqt5svg5-dev libboost-dev libssl-dev libboost-system-dev libboost-filesystem-dev cmake g++`
 
 ### Through Qt Creator
 
@@ -34,7 +34,7 @@ _most likely works the same for other Debian-like distros_
 
 ### Manually
 
-1. `sudo pacman -S qt5-base qt5-multimedia qt5-svg qt5-tools gst-plugins-ugly gst-plugins-good boost rapidjson pkgconf openssl cmake`
+1. `sudo pacman -S qt5-base qt5-multimedia qt5-svg qt5-tools qt5-imageformats gst-plugins-ugly gst-plugins-good boost rapidjson pkgconf openssl cmake`
 1. go into project directory
 1. create build folder `mkdir build && cd build`
 
@@ -50,7 +50,7 @@ _most likely works the same for other Debian-like distros_
 
 _most likely works the same for other Red Hat-like distros. Substitue `dnf` with `yum`._
 
-1. `sudo dnf install qt5-qtbase-devel qt5-qtmultimedia-devel qt5-qtsvg-devel libsecret-devel openssl-devel boost-devel cmake`
+1. `sudo dnf install qt5-qtbase-devel qt5-qtmultimedia-devel qt5-qtsvg-devel qt5-qtimageformats libsecret-devel openssl-devel boost-devel cmake`
 1. go into project directory
 1. create build folder `mkdir build && cd build`
 
