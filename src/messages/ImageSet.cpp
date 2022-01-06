@@ -21,14 +21,15 @@ ImageSet::ImageSet(const ImagePtr &image1, const ImagePtr &image2,
 {
 }
 
-ImageSet::ImageSet(const Url &image1, const Url &image2, const Url &image3, const Url &image4)
+ImageSet::ImageSet(const Url &image1, const Url &image2, const Url &image3,
+                   const Url &image4)
     : imageX1_(Image::fromUrl(image1, 1))
     , imageX2_(image2.string.isEmpty() ? Image::getEmpty()
                                        : Image::fromUrl(image2, 0.5))
     , imageX3_(image3.string.isEmpty() ? Image::getEmpty()
                                        : Image::fromUrl(image3, 0.25))
     , imageX4_(image4.string.isEmpty() ? Image::getEmpty()
-                                       : Image::fromUrl(image4,0.125))
+                                       : Image::fromUrl(image4, 0.125))
 {
 }
 
@@ -133,8 +134,9 @@ const ImagePtr &ImageSet::getImage(float scale) const
 
 bool ImageSet::operator==(const ImageSet &other) const
 {
-    return std::tie(this->imageX1_, this->imageX2_, this->imageX3_, this->imageX4_) == 
-           std::tie(other.imageX1_, other.imageX2_, other.imageX3_, other.imageX4_);
+    return std::tie(this->imageX1_, this->imageX2_, this->imageX3_,
+                    this->imageX4_) == std::tie(other.imageX1_, other.imageX2_,
+                                                other.imageX3_, other.imageX4_);
 }
 
 bool ImageSet::operator!=(const ImageSet &other) const
