@@ -1469,12 +1469,12 @@ void ChannelView::mouseMoveEvent(QMouseEvent *event)
                 if (emoteElement)
                 {
                     tooltipPreviewImage.setImage(
-                        emoteElement->getEmote()->images.getImage(3.0));
+                        emoteElement->getEmote()->images.getImage(4.0));
                 }
                 else if (badgeElement)
                 {
                     tooltipPreviewImage.setImage(
-                        badgeElement->getEmote()->images.getImage(3.0));
+                        badgeElement->getEmote()->images.getImage(4.0));
                 }
             }
             else
