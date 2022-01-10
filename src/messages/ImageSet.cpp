@@ -92,6 +92,7 @@ const std::shared_ptr<Image> &getImagePriv(const ImageSet &set, float scale)
     {
         return set.getImage4();
     }
+
     if (!set.getImage3()->isEmpty() && quality >= 3)
     {
         return set.getImage3();
