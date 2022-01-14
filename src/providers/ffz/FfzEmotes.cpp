@@ -33,6 +33,7 @@ namespace {
     {
         auto url1x = getEmoteLink(urls, "1");
         auto url2x = getEmoteLink(urls, "2");
+        auto url3x = getEmoteLink(urls, "3");
         auto url4x = getEmoteLink(urls, "4");
 
         //, code, tooltip
@@ -41,7 +42,7 @@ namespace {
             ImageSet{Image::fromUrl(url1x, 1),
                      url2x.string.isEmpty() ? Image::getEmpty()
                                             : Image::fromUrl(url2x, 0.5),
-                     url4x.string.isEmpty() ? Image::getEmpty()
+                     url3x.string.isEmpty() ? Image::getEmpty()
                                             : Image::fromUrl(url4x, 0.286),
                      url4x.string.isEmpty() ? Image::getEmpty()
                                             : Image::fromUrl(url4x, 0.250)};
