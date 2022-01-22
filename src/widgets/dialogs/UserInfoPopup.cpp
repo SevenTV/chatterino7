@@ -863,8 +863,7 @@ void UserInfoPopup::loadAvatar(const HelixUser& user)
 
 void UserInfoPopup::requestAndLoadAvatar(const QString& URI, const HelixUser &user, const bool& animated)
 {
-    auto filename = getPaths()->cacheDirectory() + "/" +
-                        URI.right(URI.lastIndexOf('/')).replace('/', 'a');
+    auto filename = this->getFilename(URI);
     QFile cacheFile(filename);
     if (cacheFile.exists())
     {
@@ -884,7 +883,8 @@ void UserInfoPopup::requestAndLoadAvatar(const QString& URI, const HelixUser &us
     }
     else
     {
-        QNetworkRequest req(URI);
+        // First load the Twitch Avatar, then the SevenTV if the user has one.
+        QNetworkRequest req(user.profileImageUrl);
         static auto manager = new QNetworkAccessManager();
         auto *reply = manager->get(req);
 
@@ -892,19 +892,25 @@ void UserInfoPopup::requestAndLoadAvatar(const QString& URI, const HelixUser &us
             if (reply->error() == QNetworkReply::NoError)
             {
                 auto data = reply->readAll();
-                switch (animated) {
-                    case true: {
-                        this->saveCacheAvatar(data, filename);
-                        this->setSevenTVAvatar(filename);
-                        break;
-                    }
-                    case false: {
-                        QPixmap avatar;
-                        avatar.loadFromData(data);
-                        this->ui_.avatarButton->setPixmap(avatar);
-                        this->saveCacheAvatar(data, filename);
-                        break;
-                    }
+
+                auto twitchFilename = this->getFilename(user.profileImageUrl);
+
+                QPixmap avatar;
+                avatar.loadFromData(data);
+                this->ui_.avatarButton->setPixmap(avatar);
+                this->saveCacheAvatar(data, twitchFilename);
+
+                if (animated)
+                {
+                    NetworkRequest(URI)
+                            .timeout(20000)
+                            .onSuccess([=](NetworkResult outcome) -> Outcome {
+                                auto data = outcome.getData();
+                                this->saveCacheAvatar(data, filename);
+                                this->setSevenTVAvatar(filename);
+                                return Success;
+                            })
+                            .execute();
                 }
             }
             else
@@ -950,6 +956,13 @@ void UserInfoPopup::saveCacheAvatar(const QByteArray& avatar, const QString& fil
         qCWarning(chatterinoImage) << "Error writing to cache" << filename;
         this->ui_.avatarButton->setPixmap(QPixmap());
     }
+}
+
+QString UserInfoPopup::getFilename(const QString &url)
+{
+    auto filename = getPaths()->cacheDirectory() + "/" +
+                        url.right(url.lastIndexOf('/')).replace('/', 'a');
+    return filename;
 }
 
 //
