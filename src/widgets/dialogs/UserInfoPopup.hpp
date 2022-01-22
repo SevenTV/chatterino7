@@ -47,6 +47,7 @@ private:
     void requestAndLoadAvatar(const QString& URI, const HelixUser& user, const bool& animated);
     void setSevenTVAvatar(const QString& filename);
     void saveCacheAvatar(const QByteArray& avatar, const QString& filename);
+    QString getFilename(const QString& url);
 
     bool isMod_;
     bool isBroadcaster_;
