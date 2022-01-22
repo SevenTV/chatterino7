@@ -764,7 +764,7 @@ void UserInfoPopup::updateUserData()
         }
 
         this->userId_ = user.id;
-        this->avatarUrl_ = user.profileImageUrl;
+        this->avatarUrl_ = QString();
 
         // copyable button for login name of users with a localized username
         if (user.displayName.toLower() != user.login)
@@ -797,7 +797,7 @@ void UserInfoPopup::updateUserData()
         }
         else
         {
-            this->loadAvatar(user.profileImageUrl);
+            this->loadAvatar(user);
         }
 
         getHelix()->getUserFollowers(
@@ -894,27 +894,132 @@ void UserInfoPopup::updateUserData()
     this->ui_.ignoreHighlights->setEnabled(false);
 }
 
-void UserInfoPopup::loadAvatar(const QUrl &url)
+void UserInfoPopup::loadAvatar(const HelixUser& user)
 {
-    QNetworkRequest req(url);
-    static auto manager = new QNetworkAccessManager();
-    auto *reply = manager->get(req);
+    if (getSettings()->displaySevenTVAnimatedProfile)
+    {
+        NetworkRequest(SEVENTV_USER_API.arg(user.login))
+            .timeout(20000)
+            .header("Content-Type", "application/json")
+            .onSuccess([=](NetworkResult result) -> Outcome {
+                auto root = result.parseJson();
+                auto id = root.value(QStringLiteral("id")).toString();
+                auto profile_picture_id = root.value(QStringLiteral("profile_picture_id")).toString();
+                if (profile_picture_id.length() == 0)
+                {
+                    this->avatarUrl_ = user.profileImageUrl;
+                    this->requestAndLoadAvatar(user.profileImageUrl, user, false);
+                }
+                else
+                {
+                    auto URI = SEVENTV_CDR_PP.arg(id, profile_picture_id);
+                    this->avatarUrl_= URI;
+                    this->requestAndLoadAvatar(URI, user, true);
+                }
+                return Success;
+            })
+            .onError([=](auto result) {
+                this->avatarUrl_ = user.profileImageUrl;
+                this->requestAndLoadAvatar(user.profileImageUrl, user, false);
+            })
+            .execute();
+    }
+    else
+    {
+        this->avatarUrl_ = user.profileImageUrl;
+        this->requestAndLoadAvatar(user.profileImageUrl, user, false);
+    }
+}
 
-    QObject::connect(reply, &QNetworkReply::finished, this, [=] {
-        if (reply->error() == QNetworkReply::NoError)
-        {
-            const auto data = reply->readAll();
-
-            // might want to cache the avatar image
-            QPixmap avatar;
-            avatar.loadFromData(data);
-            this->ui_.avatarButton->setPixmap(avatar);
+void UserInfoPopup::requestAndLoadAvatar(const QString& URI, const HelixUser &user, const bool& animated)
+{
+    auto filename = getPaths()->cacheDirectory() + "/" +
+                        URI.right(URI.lastIndexOf('/')).replace('/', 'a');
+    QFile cacheFile(filename);
+    if (cacheFile.exists())
+    {
+        switch (animated) {
+            case true: {
+                this->setSevenTVAvatar(filename);
+                break;
+            }
+            case false: {
+                cacheFile.open(QIODevice::ReadOnly);
+                QPixmap avatar{};
+                avatar.loadFromData(cacheFile.readAll());
+                this->ui_.avatarButton->setPixmap(avatar);
+                break;
+            }
         }
-        else
+    }
+    else
+    {
+        QNetworkRequest req(URI);
+        static auto manager = new QNetworkAccessManager();
+        auto *reply = manager->get(req);
+
+        QObject::connect(reply, &QNetworkReply::finished, this, [=] {
+            if (reply->error() == QNetworkReply::NoError)
+            {
+                auto data = reply->readAll();
+                switch (animated) {
+                    case true: {
+                        this->saveCacheAvatar(data, filename);
+                        this->setSevenTVAvatar(filename);
+                        break;
+                    }
+                    case false: {
+                        QPixmap avatar;
+                        avatar.loadFromData(data);
+                        this->ui_.avatarButton->setPixmap(avatar);
+                        this->saveCacheAvatar(data, filename);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                this->ui_.avatarButton->setPixmap(QPixmap());
+            }
+        });
+    }
+}
+
+void UserInfoPopup::setSevenTVAvatar(const QString& filename)
+{
+    auto movie = new QMovie(filename);
+    if (!movie->isValid())
+    {
+        qCWarning(chatterinoImage) << "Error reading SevenTV Profile Picture, " << movie->lastErrorString();
+        // Could perhaps load the twitch profile picture on failure.
+        this->ui_.avatarButton->setPixmap(QPixmap());
+    }
+    else
+    {
+        QObject::connect(movie, &QMovie::frameChanged, this, [=] {
+            this->ui_.avatarButton->setPixmap(movie->currentPixmap());
+        });
+        movie->start();
+    }
+}
+
+void UserInfoPopup::saveCacheAvatar(const QByteArray& avatar, const QString& filename)
+{
+    QFile outfile(filename);
+    if (outfile.open(QIODevice::WriteOnly))
+    {
+        if(outfile.write(avatar) == -1)
         {
+            qCWarning(chatterinoImage) << "Error writing to cache" << filename;
             this->ui_.avatarButton->setPixmap(QPixmap());
         }
-    });
+
+    }
+    else
+    {
+        qCWarning(chatterinoImage) << "Error writing to cache" << filename;
+        this->ui_.avatarButton->setPixmap(QPixmap());
+    }
 }
 
 //
