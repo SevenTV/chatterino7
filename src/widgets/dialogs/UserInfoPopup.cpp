@@ -896,64 +896,22 @@ void UserInfoPopup::updateUserData()
 
 void UserInfoPopup::loadAvatar(const HelixUser& user)
 {
-    if (getSettings()->displaySevenTVAnimatedProfile)
-    {
-        NetworkRequest(SEVENTV_USER_API.arg(user.login))
-            .timeout(20000)
-            .header("Content-Type", "application/json")
-            .onSuccess([=](NetworkResult result) -> Outcome {
-                auto root = result.parseJson();
-                auto id = root.value(QStringLiteral("id")).toString();
-                auto profile_picture_id = root.value(QStringLiteral("profile_picture_id")).toString();
-                if (profile_picture_id.length() == 0)
-                {
-                    this->avatarUrl_ = user.profileImageUrl;
-                    this->requestAndLoadAvatar(user.profileImageUrl, user, false);
-                }
-                else
-                {
-                    auto URI = SEVENTV_CDR_PP.arg(id, profile_picture_id);
-                    this->avatarUrl_= URI;
-                    this->requestAndLoadAvatar(URI, user, true);
-                }
-                return Success;
-            })
-            .onError([=](auto result) {
-                this->avatarUrl_ = user.profileImageUrl;
-                this->requestAndLoadAvatar(user.profileImageUrl, user, false);
-            })
-            .execute();
-    }
-    else
-    {
-        this->avatarUrl_ = user.profileImageUrl;
-        this->requestAndLoadAvatar(user.profileImageUrl, user, false);
-    }
-}
+    this->avatarUrl_ = user.profileImageUrl;
+    auto filename = this->getFilename(user.profileImageUrl);
+    auto loaded = false;
+    auto sevenTVEnabled = getSettings()->displaySevenTVAnimatedProfile;
 
-void UserInfoPopup::requestAndLoadAvatar(const QString& URI, const HelixUser &user, const bool& animated)
-{
-    auto filename = this->getFilename(URI);
     QFile cacheFile(filename);
     if (cacheFile.exists())
     {
-        switch (animated) {
-            case true: {
-                this->setSevenTVAvatar(filename);
-                break;
-            }
-            case false: {
-                cacheFile.open(QIODevice::ReadOnly);
-                QPixmap avatar{};
-                avatar.loadFromData(cacheFile.readAll());
-                this->ui_.avatarButton->setPixmap(avatar);
-                break;
-            }
-        }
+        cacheFile.open(QIODevice::ReadOnly);
+        QPixmap avatar{};
+        avatar.loadFromData(cacheFile.readAll());
+        this->ui_.avatarButton->setPixmap(avatar);
+        loaded = true;
     }
-    else
+    if (!loaded)
     {
-        // First load the Twitch Avatar, then the SevenTV if the user has one.
         QNetworkRequest req(user.profileImageUrl);
         static auto manager = new QNetworkAccessManager();
         auto *reply = manager->get(req);
@@ -970,17 +928,9 @@ void UserInfoPopup::requestAndLoadAvatar(const QString& URI, const HelixUser &us
                 this->ui_.avatarButton->setPixmap(avatar);
                 this->saveCacheAvatar(data, twitchFilename);
 
-                if (animated)
+                if (sevenTVEnabled)
                 {
-                    NetworkRequest(URI)
-                            .timeout(20000)
-                            .onSuccess([=](NetworkResult outcome) -> Outcome {
-                                auto data = outcome.getData();
-                                this->saveCacheAvatar(data, filename);
-                                this->setSevenTVAvatar(filename);
-                                return Success;
-                            })
-                            .execute();
+                    this->fetchSevenTVAvatar(user);
                 }
             }
             else
@@ -989,6 +939,43 @@ void UserInfoPopup::requestAndLoadAvatar(const QString& URI, const HelixUser &us
             }
         });
     }
+    else if (sevenTVEnabled)
+    {
+        this->fetchSevenTVAvatar(user);
+    }
+}
+
+void UserInfoPopup::fetchSevenTVAvatar(const HelixUser& user)
+{
+    NetworkRequest(SEVENTV_USER_API.arg(user.login))
+        .timeout(20000)
+        .header("Content-Type", "application/json")
+        .onSuccess([=](NetworkResult result) -> Outcome {
+            auto root = result.parseJson();
+            auto id = root.value(QStringLiteral("id")).toString();
+            auto profile_picture_id = root.value(QStringLiteral("profile_picture_id")).toString();
+
+            if (profile_picture_id.length() > 0)
+            {
+                auto URI = SEVENTV_CDR_PP.arg(id, profile_picture_id);
+                this->avatarUrl_ = URI;
+
+                NetworkRequest(URI)
+                        .timeout(20000)
+                        .onSuccess([=](NetworkResult outcome) -> Outcome {
+                            auto data = outcome.getData();
+                            auto filename = this->getFilename(URI);
+
+                            this->saveCacheAvatar(data, filename);
+                            this->setSevenTVAvatar(filename);
+
+                            return Success;
+                        })
+                        .execute();
+            }
+            return Success;
+        })
+    .execute();
 }
 
 void UserInfoPopup::setSevenTVAvatar(const QString& filename)
