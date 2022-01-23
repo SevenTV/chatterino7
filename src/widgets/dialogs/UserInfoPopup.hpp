@@ -44,7 +44,7 @@ private:
     void updateLatestMessages();
 
     void loadAvatar(const HelixUser& user);
-    void requestAndLoadAvatar(const QString& URI, const HelixUser& user, const bool& animated);
+    void fetchSevenTVAvatar(const HelixUser& user);
     void setSevenTVAvatar(const QString& filename);
     void saveCacheAvatar(const QByteArray& avatar, const QString& filename);
     QString getFilename(const QString& url);
