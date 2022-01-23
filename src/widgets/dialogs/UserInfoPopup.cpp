@@ -964,7 +964,11 @@ void UserInfoPopup::fetchSevenTVAvatar(const HelixUser& user)
                         .timeout(20000)
                         .onSuccess([=](NetworkResult outcome) -> Outcome {
                             auto data = outcome.getData();
-                            auto filename = this->getFilename(URI);
+                            QCryptographicHash hash(QCryptographicHash::Algorithm::Sha1);
+                            auto SHA = QString(data.size()).toUtf8();
+                            hash.addData(SHA.data(), SHA.size() + 1);
+
+                            auto filename = this->getFilename(hash.result().toHex());
 
                             this->saveCacheAvatar(data, filename);
                             this->setSevenTVAvatar(filename);
@@ -972,6 +976,7 @@ void UserInfoPopup::fetchSevenTVAvatar(const HelixUser& user)
                             return Success;
                         })
                         .execute();
+
             }
             return Success;
         })
