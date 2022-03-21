@@ -410,7 +410,7 @@ void EmotePopup::filterTwitchEmotes(std::shared_ptr<Channel> searchChannel,
     }
 
     auto seventvGlobalEmotes = this->filterEmoteMap(
-        searchText, getApp()->twitch2->getSeventvEmotes().emotes());
+        searchText, getApp()->twitch->getSeventvEmotes().emotes());
     auto bttvGlobalEmotes = this->filterEmoteMap(
         searchText, getApp()->twitch->getBttvEmotes().emotes());
     auto ffzGlobalEmotes = this->filterEmoteMap(
