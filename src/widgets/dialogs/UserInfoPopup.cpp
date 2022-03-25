@@ -920,7 +920,6 @@ void UserInfoPopup::loadAvatar(const HelixUser &user)
             if (reply->error() == QNetworkReply::NoError)
             {
                 auto data = reply->readAll();
-
                 auto twitchFilename = this->getFilename(user.profileImageUrl);
 
                 QPixmap avatar;
