@@ -188,6 +188,8 @@ set(SOURCE_FILES
         providers/seventv/paints/RadialGradientPaint.cpp
         providers/seventv/paints/UrlPaint.hpp
         providers/seventv/paints/UrlPaint.cpp
+        providers/seventv/SeventvEventApiClient.cpp
+        providers/seventv/SeventvEventApiClient.hpp
 
         providers/bttv/BttvEmotes.cpp
         providers/bttv/BttvEmotes.hpp

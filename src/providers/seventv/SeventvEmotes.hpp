@@ -31,6 +31,11 @@ struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;
 class EmoteMap;
 
+struct SeventvAddOrUpdateEmoteResult {
+    EmotePtr emote;
+    bool isAdded;
+};
+
 class SeventvEmotes final
 {
     static constexpr const char *apiUrlGQL = "https://api.7tv.app/v2/gql";
@@ -41,6 +46,8 @@ public:
     std::shared_ptr<const EmoteMap> emotes() const;
     boost::optional<EmotePtr> emote(const EmoteName &name) const;
     void loadEmotes();
+    static SeventvAddOrUpdateEmoteResult addOrUpdateEmote(Atomic<std::shared_ptr<const EmoteMap>> &map, const QJsonValue& emoteJson);
+    static std::shared_ptr<const Emote> removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map, const QString& emoteId);
     static void loadChannel(std::weak_ptr<Channel> channel,
                             const QString &channelId,
                             std::function<void(EmoteMap &&)> callback,

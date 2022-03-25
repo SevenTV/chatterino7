@@ -151,6 +151,7 @@ void Application::initialize(Settings &settings, Paths &paths)
         this->initNm(paths);
     }
     this->initPubSub();
+    this->initEventApi();
 }
 
 int Application::run(QApplication &qtApp)
@@ -527,6 +528,30 @@ void Application::initPubSub()
     this->accounts->twitch.currentUserChanged.connect(RequestModerationActions);
 
     RequestModerationActions();
+}
+
+void Application::initEventApi() {
+    this->twitch->eventApi->signals_.emoteAddedOrUpdated.connect([&](auto &data) {
+        auto chan = this->twitch->getChannelOrEmpty(data.first);
+        postToThread([chan, data] {
+            if (auto channel =
+                    dynamic_cast<TwitchChannel *>(chan.get()))
+            {
+                channel->addOrUpdateSeventvEmote(data.second);
+            }
+        });
+    });
+    this->twitch->eventApi->signals_.emoteRemoved.connect([&](auto &data) {
+        auto chan = this->twitch->getChannelOrEmpty(data.first);
+        postToThread([chan, data] {
+            if (auto channel =
+                    dynamic_cast<TwitchChannel *>(chan.get()))
+            {
+                channel->removeSeventvEmote(data.second);
+            }
+        });
+    });
+    this->twitch->eventApi->start();
 }
 
 Application *getApp()

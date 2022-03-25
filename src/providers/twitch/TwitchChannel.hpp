@@ -108,6 +108,8 @@ public:
     std::shared_ptr<const EmoteMap> seventvEmotes() const;
     std::shared_ptr<const EmoteMap> bttvEmotes() const;
     std::shared_ptr<const EmoteMap> ffzEmotes() const;
+    void addOrUpdateSeventvEmote(const QJsonValue &emote);
+    void removeSeventvEmote(const QString &id);
 
     virtual void refresh7TVChannelEmotes(bool manualRefresh);
     virtual void refreshBTTVChannelEmotes(bool manualRefresh);
@@ -155,6 +157,7 @@ private:
     void refreshCheerEmotes();
     void loadRecentMessages();
     void fetchDisplayName();
+    void listenSeventv();
 
     void setLive(bool newLiveStatus);
     void setMod(bool value);

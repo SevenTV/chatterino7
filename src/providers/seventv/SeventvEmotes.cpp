@@ -13,6 +13,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QThread>
+#include <utility>
 
 namespace chatterino {
 namespace {
@@ -25,6 +26,9 @@ namespace {
     // maximum pageSize that 7tv's API accepts
     constexpr int maxPageSize = 150;
 
+    static std::unordered_map<EmoteId, std::weak_ptr<const Emote>> emoteCache;
+    static std::mutex emoteCacheMutex;
+
     Url getEmoteLink(const EmoteId &id, const QString &emoteScale)
 
     {
@@ -35,10 +39,8 @@ namespace {
 
     EmotePtr cachedOrMake(Emote &&emote, const EmoteId &id)
     {
-        static std::unordered_map<EmoteId, std::weak_ptr<const Emote>> cache;
-        static std::mutex mutex;
-
-        return cachedOrMakeEmotePtr(std::move(emote), cache, mutex, id);
+        return cachedOrMakeEmotePtr(std::move(emote), emoteCache,
+                                    emoteCacheMutex, id);
     }
 
     struct CreateEmoteResult {
@@ -47,7 +49,7 @@ namespace {
         Emote emote;
     };
 
-    CreateEmoteResult createEmote(QJsonValue jsonEmote, bool isGlobal)
+    CreateEmoteResult createEmote(const QJsonValue &jsonEmote, bool isGlobal)
     {
         auto id = EmoteId{jsonEmote.toObject().value("id").toString()};
         auto name = EmoteName{jsonEmote.toObject().value("name").toString()};
@@ -139,6 +141,13 @@ namespace {
 
         return emotes;
     }
+
+    void updateEmoteMapPtr(Atomic<std::shared_ptr<const EmoteMap>> &map,
+                           EmoteMap &&updatedMap)
+    {
+        map.set(std::make_shared<EmoteMap>(std::move(updatedMap)));
+    }
+
 }  // namespace
 
 SeventvEmotes::SeventvEmotes()
@@ -215,6 +224,34 @@ void SeventvEmotes::loadEmotes()
             return pair.first;
         })
         .execute();
+}
+
+SeventvAddOrUpdateEmoteResult SeventvEmotes::addOrUpdateEmote(
+    Atomic<std::shared_ptr<const EmoteMap>> &map, const QJsonValue &emoteJson)
+{
+    EmoteMap updatedMap = *map.get();
+    auto emote = createEmote(emoteJson, false);
+    auto it = updatedMap.find(emote.name);
+    bool isAdded = it == updatedMap.end();
+    auto emotePtr = cachedOrMake(std::move(emote.emote), emote.id);
+    updatedMap[emote.name] = emotePtr;
+    updateEmoteMapPtr(map, std::move(updatedMap));
+
+    return SeventvAddOrUpdateEmoteResult{emotePtr, isAdded};
+}
+
+std::shared_ptr<const Emote> SeventvEmotes::removeEmote(
+    Atomic<std::shared_ptr<const EmoteMap>> &map, const QString &emoteId)
+{
+    std::lock_guard<std::mutex> guard(emoteCacheMutex);
+    auto emote = emoteCache[EmoteId{emoteId}].lock();
+    if (emote)
+    {
+        EmoteMap updatedMap = *map.get();
+        updatedMap.erase(emote->name);
+        updateEmoteMapPtr(map, std::move(updatedMap));
+    }
+    return emote;
 }
 
 void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,

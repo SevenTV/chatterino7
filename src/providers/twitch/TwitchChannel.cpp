@@ -499,6 +499,7 @@ void TwitchChannel::setRoomId(const QString &id)
         *this->roomID_.access() = id;
         this->roomIdChanged.invoke();
         this->loadRecentMessages();
+        this->listenSeventv();
     }
 }
 
@@ -570,6 +571,39 @@ std::shared_ptr<const EmoteMap> TwitchChannel::bttvEmotes() const
 std::shared_ptr<const EmoteMap> TwitchChannel::ffzEmotes() const
 {
     return this->ffzEmotes_.get();
+}
+
+void TwitchChannel::addOrUpdateSeventvEmote(const QJsonValue &emote)
+{
+    auto result = SeventvEmotes::addOrUpdateEmote(this->seventvEmotes_, emote);
+    if (result.isAdded)
+    {
+        this->addMessage(makeSystemMessage(
+            QString("Added 7TV emote %1.").arg(result.emote->name.string)));
+    }
+    else
+    {
+        this->addMessage(makeSystemMessage(
+            QString("Updated 7TV emote %1.").arg(result.emote->name.string)));
+    }
+}
+
+void TwitchChannel::removeSeventvEmote(const QString &id)
+{
+    auto emote = SeventvEmotes::removeEmote(this->seventvEmotes_, id);
+    if (emote)
+    {
+        this->addMessage(makeSystemMessage(
+            QString("Removed 7TV emote %1.").arg(emote->name.string)));
+    }
+    else
+    {
+        this->addMessage(makeSystemMessage(
+            QString("Tried removing 7TV emote with id '%1' but it wasn't found "
+                    "in the cache. Refreshing emotes...")
+                .arg(id)));
+        this->refresh7TVChannelEmotes(true);  // true so we get a message
+    }
 }
 
 const QString &TwitchChannel::subscriptionUrl()
@@ -1244,6 +1278,11 @@ boost::optional<CheerEmote> TwitchChannel::cheerEmote(const QString &string)
         }
     }
     return boost::none;
+}
+
+void TwitchChannel::listenSeventv()
+{
+    getApp()->twitch->eventApi->joinChannel(this->getName());
 }
 
 }  // namespace chatterino
