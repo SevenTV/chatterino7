@@ -920,7 +920,6 @@ void UserInfoPopup::loadAvatar(const HelixUser &user)
             if (reply->error() == QNetworkReply::NoError)
             {
                 auto data = reply->readAll();
-
                 auto twitchFilename = this->getFilename(user.profileImageUrl);
 
                 QPixmap avatar;
@@ -945,7 +944,7 @@ void UserInfoPopup::loadAvatar(const HelixUser &user)
     }
 }
 
-void UserInfoPopup::fetchSevenTVAvatar(const HelixUser& user)
+void UserInfoPopup::fetchSevenTVAvatar(const HelixUser &user)
 {
     NetworkRequest(SEVENTV_USER_API.arg(user.login))
         .timeout(20000)
@@ -965,11 +964,13 @@ void UserInfoPopup::fetchSevenTVAvatar(const HelixUser& user)
                     .timeout(20000)
                     .onSuccess([=](NetworkResult outcome) -> Outcome {
                         auto data = outcome.getData();
-                        QCryptographicHash hash(QCryptographicHash::Algorithm::Sha1);
+                        QCryptographicHash hash(
+                            QCryptographicHash::Algorithm::Sha1);
                         auto SHA = QString(data.size()).toUtf8();
                         hash.addData(SHA.data(), SHA.size() + 1);
 
-                        auto filename = this->getFilename(hash.result().toHex());
+                        auto filename =
+                            this->getFilename(hash.result().toHex());
 
                         this->saveCacheAvatar(data, filename);
                         this->setSevenTVAvatar(filename);
@@ -977,7 +978,6 @@ void UserInfoPopup::fetchSevenTVAvatar(const HelixUser& user)
                         return Success;
                     })
                     .execute();
-
             }
             return Success;
         })
@@ -1002,8 +1002,8 @@ void UserInfoPopup::setSevenTVAvatar(const QString &filename)
     }
 }
 
-void UserInfoPopup::saveCacheAvatar(const QByteArray& avatar,
-                                    const QString& filename)
+void UserInfoPopup::saveCacheAvatar(const QByteArray &avatar,
+                                    const QString &filename)
 {
     QFile outfile(filename);
     if (outfile.open(QIODevice::WriteOnly))
