@@ -98,8 +98,8 @@ public:
         "/appearance/messages/usernameDisplayMode",
         UsernameDisplayMode::UsernameAndLocalizedName};
 
-    IntSetting tabDirection = {"/appearance/tabDirection",
-                               NotebookTabDirection::Horizontal};
+    EnumSetting<NotebookTabDirection> tabDirection = {
+        "/appearance/tabDirection", NotebookTabDirection::Horizontal};
 
     //    BoolSetting collapseLongMessages =
     //    {"/appearance/messages/collapseLongMessages", false};
@@ -192,6 +192,7 @@ public:
     BoolSetting enableEmoteImages = {"/emotes/enableEmoteImages", true};
     BoolSetting animateEmotes = {"/emotes/enableGifAnimations", true};
     FloatSetting emoteScale = {"/emotes/scale", 1.f};
+    BoolSetting showUnlistedEmotes = {"/emotes/showUnlistedEmotes", false};
 
     QStringSetting emojiSet = {"/emotes/emojiSet", "Twitter"};
 

@@ -6,6 +6,8 @@
 
 #include "Application.hpp"
 #include "common/Version.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
+#include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/NativeMessaging.hpp"
 #include "singletons/Paths.hpp"
@@ -144,30 +146,34 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         [](auto args) {
             return fuzzyToFloat(args.value, 1.f);
         });
-    layout.addDropdown<int>(
-        "Tab layout", {"Horizontal", "Vertical"}, s.tabDirection,
-        [](auto val) {
-            switch (val)
-            {
-                case NotebookTabDirection::Horizontal:
-                    return "Horizontal";
-                case NotebookTabDirection::Vertical:
-                    return "Vertical";
-            }
+    ComboBox *tabDirectionDropdown =
+        layout.addDropdown<std::underlying_type<NotebookTabDirection>::type>(
+            "Tab layout", {"Horizontal", "Vertical"}, s.tabDirection,
+            [](auto val) {
+                switch (val)
+                {
+                    case NotebookTabDirection::Horizontal:
+                        return "Horizontal";
+                    case NotebookTabDirection::Vertical:
+                        return "Vertical";
+                }
 
-            return "";
-        },
-        [](auto args) {
-            if (args.value == "Vertical")
-            {
-                return NotebookTabDirection::Vertical;
-            }
-            else
-            {
-                // default to horizontal
-                return NotebookTabDirection::Horizontal;
-            }
-        });
+                return "";
+            },
+            [](auto args) {
+                if (args.value == "Vertical")
+                {
+                    return NotebookTabDirection::Vertical;
+                }
+                else
+                {
+                    // default to horizontal
+                    return NotebookTabDirection::Horizontal;
+                }
+            },
+            false);
+    tabDirectionDropdown->setMinimumWidth(
+        tabDirectionDropdown->minimumSizeHint().width());
 
     layout.addCheckbox("Show tab close button", s.showTabCloseButton);
     layout.addCheckbox("Always on top", s.windowTopMost);
@@ -297,7 +303,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
     layout.addCheckbox("Enable emote auto-completion by typing :",
                        s.emoteCompletionWithColon);
     layout.addDropdown<float>(
-        "Size", {"0.5x", "0.75x", "Default", "1.25x", "1.5x", "2x"},
+        "Size", {"0.5x", "0.75x", "Default", "1.25x", "1.5x", "2x", "3x", "4x"},
         s.emoteScale,
         [](auto val) {
             if (val == 1)
@@ -311,6 +317,23 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     layout.addCheckbox("Remove spaces between emotes",
                        s.removeSpacesBetweenEmotes);
+    layout.addCheckbox("Show unlisted / unapproved emotes (7TV only)",
+                       s.showUnlistedEmotes);
+    s.showUnlistedEmotes.connect(
+        []() {
+            getApp()->twitch->forEachChannelAndSpecialChannels(
+                [](const auto &c) {
+                    if (c->isTwitchChannel())
+                    {
+                        auto channel = dynamic_cast<TwitchChannel *>(c.get());
+                        if (channel != nullptr)
+                        {
+                            channel->refresh7TVChannelEmotes(false);
+                        }
+                    }
+                });
+        },
+        false);
     layout.addDropdown<int>(
         "Show info on hover", {"Don't show", "Always show", "Hold shift"},
         s.emotesTooltipPreview,
