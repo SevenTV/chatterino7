@@ -43,11 +43,11 @@ private:
     void updateUserData();
     void updateLatestMessages();
 
-    void loadAvatar(const HelixUser& user);
-    void fetchSevenTVAvatar(const HelixUser& user);
-    void setSevenTVAvatar(const QString& filename);
-    void saveCacheAvatar(const QByteArray& avatar, const QString& filename);
-    QString getFilename(const QString& url);
+    void loadAvatar(const HelixUser &user);
+    void fetchSevenTVAvatar(const HelixUser &user);
+    void setSevenTVAvatar(const QString &filename);
+    void saveCacheAvatar(const QByteArray &avatar, const QString &filename);
+    QString getFilename(const QString &url);
 
     bool isMod_;
     bool isBroadcaster_;
