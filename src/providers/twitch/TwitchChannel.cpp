@@ -573,36 +573,48 @@ std::shared_ptr<const EmoteMap> TwitchChannel::ffzEmotes() const
     return this->ffzEmotes_.get();
 }
 
-void TwitchChannel::addOrUpdateSeventvEmote(const QJsonValue &emote)
+void TwitchChannel::addSeventvEmote(const AddSeventvEmoteAction &action)
 {
-    auto result = SeventvEmotes::addOrUpdateEmote(this->seventvEmotes_, emote);
-    if (result.isAdded)
+    auto result =
+        SeventvEmotes::addEmote(this->seventvEmotes_, action.emoteJson);
+    this->addMessage(
+        makeSystemMessage(QString("%1 added 7TV emote %2.")
+                              .arg(action.actor, result->name.string)));
+}
+
+void TwitchChannel::updateSeventvEmote(const UpdateSeventvEmoteAction &action)
+{
+    auto result = SeventvEmotes::updateEmote(
+        this->seventvEmotes_, action.emoteBaseName, action.emoteJson);
+    if (result)
     {
         this->addMessage(makeSystemMessage(
-            QString("Added 7TV emote %1.").arg(result.emote->name.string)));
+            QString("%1 updated 7TV emote %2.")
+                .arg(action.actor, result.value()->name.string)));
     }
     else
     {
         this->addMessage(makeSystemMessage(
-            QString("Updated 7TV emote %1.").arg(result.emote->name.string)));
+            QString("%1 updated 7TV emote %2 but it's not added.")
+                .arg(action.actor, action.emoteJson["name"].toString())));
     }
 }
 
-void TwitchChannel::removeSeventvEmote(const QString &id)
+void TwitchChannel::removeSeventvEmote(const RemoveSeventvEmoteAction &action)
 {
-    auto emote = SeventvEmotes::removeEmote(this->seventvEmotes_, id);
-    if (emote)
+    bool removed =
+        SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName);
+    if (removed)
     {
-        this->addMessage(makeSystemMessage(
-            QString("Removed 7TV emote %1.").arg(emote->name.string)));
+        this->addMessage(
+            makeSystemMessage(QString("%1 removed 7TV emote %2.")
+                                  .arg(action.actor, action.emoteName)));
     }
     else
     {
         this->addMessage(makeSystemMessage(
-            QString("Tried removing 7TV emote with id '%1' but it wasn't found "
-                    "in the cache. Refreshing emotes...")
-                .arg(id)));
-        this->refresh7TVChannelEmotes(true);  // true so we get a message
+            QString("%1 removed 7TV emote %2 but it wasn't added.")
+                .arg(action.actor, action.emoteName)));
     }
 }
 

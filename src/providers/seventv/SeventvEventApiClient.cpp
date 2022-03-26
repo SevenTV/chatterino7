@@ -234,17 +234,21 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
         return;
     }
     QJsonObject update = updateDoc.object();
-    if (!update.contains("action") || !update.contains("channel"))
+    if (!update.contains("action") || !update["action"].isString() ||
+        !update.contains("channel") || !update["channel"].isString() ||
+        !update.contains("actor") || !update["actor"].isString() ||
+        !update.contains("name") || !update["name"].isString())
     {
         return;  // todo print
     }
 
     if (update.value("action").toString() == "REMOVE")
     {
-        std::pair<QString, QString> pair =
-            std::make_pair(update.value("channel").toString(),
-                           update.value("emote_id").toString());
-        this->signals_.emoteRemoved.invoke(pair);
+        this->signals_.emoteRemoved.invoke(RemoveSeventvEmoteAction{
+            update["channel"].toString(),
+            update["actor"].toString(),
+            update["name"].toString(),
+        });
     }
     else
     {
@@ -252,11 +256,27 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
         {
             return;  // todo print
         }
+
         QJsonObject emote = update.value("emote").toObject();
         emote.insert("id", update.value("emote_id"));
-        std::pair<QString, QJsonValue> pair =
-            std::make_pair(update.value("channel").toString(), emote);
-        this->signals_.emoteAddedOrUpdated.invoke(pair);
+
+        if (update["action"].toString() == "UPDATE")
+        {
+            QString emoteBaseName = emote["name"].toString();
+            // set the correct alias/name
+            emote["name"] = update["name"];
+            this->signals_.emoteUpdated.invoke(UpdateSeventvEmoteAction{
+                update["channel"].toString(), update["actor"].toString(),
+                emoteBaseName, emote});
+        }
+        else
+        {
+            // set the correct alias/name
+            emote["name"] = update["name"];
+            this->signals_.emoteAdded.invoke(
+                AddSeventvEmoteAction{update["channel"].toString(),
+                                      update["actor"].toString(), emote});
+        }
     }
 }
 

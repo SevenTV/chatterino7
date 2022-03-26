@@ -64,6 +64,24 @@ namespace eventapi {
     };
 }  // namespace eventapi
 
+struct UpdateSeventvEmoteAction {
+    QString channelName;
+    QString actor;
+    QString emoteBaseName;
+    QJsonObject emoteJson;
+};
+
+struct AddSeventvEmoteAction {
+    QString channelName;
+    QString actor;
+    QJsonObject emoteJson;
+};
+struct RemoveSeventvEmoteAction {
+    QString channelName;
+    QString actor;
+    QString emoteName;
+};
+
 class SeventvEventApi
 {
     using WsMessagePtr =
@@ -98,8 +116,9 @@ public:
     pajlada::Signals::NoArgSignal connected;
 
     struct {
-        Signal<std::pair<QString, QJsonValue> &> emoteAddedOrUpdated;
-        Signal<std::pair<QString, QString> &> emoteRemoved;
+        Signal<AddSeventvEmoteAction> emoteAdded;
+        Signal<UpdateSeventvEmoteAction> emoteUpdated;
+        Signal<RemoveSeventvEmoteAction> emoteRemoved;
     } signals_;
 
     void joinChannel(const QString &channelName);

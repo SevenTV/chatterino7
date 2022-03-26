@@ -51,6 +51,10 @@ class SeventvEmotes;
 class FfzEmotes;
 class BttvEmotes;
 
+struct AddSeventvEmoteAction;
+struct UpdateSeventvEmoteAction;
+struct RemoveSeventvEmoteAction;
+
 class TwitchIrcServer;
 
 class TwitchChannel : public Channel, public ChannelChatters
@@ -108,8 +112,10 @@ public:
     std::shared_ptr<const EmoteMap> seventvEmotes() const;
     std::shared_ptr<const EmoteMap> bttvEmotes() const;
     std::shared_ptr<const EmoteMap> ffzEmotes() const;
-    void addOrUpdateSeventvEmote(const QJsonValue &emote);
-    void removeSeventvEmote(const QString &id);
+
+    void addSeventvEmote(const AddSeventvEmoteAction &action);
+    void updateSeventvEmote(const UpdateSeventvEmoteAction &action);
+    void removeSeventvEmote(const RemoveSeventvEmoteAction &action);
 
     virtual void refresh7TVChannelEmotes(bool manualRefresh);
     virtual void refreshBTTVChannelEmotes(bool manualRefresh);

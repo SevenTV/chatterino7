@@ -530,27 +530,37 @@ void Application::initPubSub()
     RequestModerationActions();
 }
 
-void Application::initEventApi() {
-    this->twitch->eventApi->signals_.emoteAddedOrUpdated.connect([&](auto &data) {
-        auto chan = this->twitch->getChannelOrEmpty(data.first);
+void Application::initEventApi()
+{
+    this->twitch->eventApi->signals_.emoteAdded.connect([&](const auto &data) {
+        auto chan = this->twitch->getChannelOrEmpty(data.channelName);
         postToThread([chan, data] {
-            if (auto channel =
-                    dynamic_cast<TwitchChannel *>(chan.get()))
+            if (auto channel = dynamic_cast<TwitchChannel *>(chan.get()))
             {
-                channel->addOrUpdateSeventvEmote(data.second);
+                channel->addSeventvEmote(data);
             }
         });
     });
-    this->twitch->eventApi->signals_.emoteRemoved.connect([&](auto &data) {
-        auto chan = this->twitch->getChannelOrEmpty(data.first);
-        postToThread([chan, data] {
-            if (auto channel =
-                    dynamic_cast<TwitchChannel *>(chan.get()))
-            {
-                channel->removeSeventvEmote(data.second);
-            }
+    this->twitch->eventApi->signals_.emoteUpdated.connect(
+        [&](const auto &data) {
+            auto chan = this->twitch->getChannelOrEmpty(data.channelName);
+            postToThread([chan, data] {
+                if (auto channel = dynamic_cast<TwitchChannel *>(chan.get()))
+                {
+                    channel->updateSeventvEmote(data);
+                }
+            });
         });
-    });
+    this->twitch->eventApi->signals_.emoteRemoved.connect(
+        [&](const auto &data) {
+            auto chan = this->twitch->getChannelOrEmpty(data.channelName);
+            postToThread([chan, data] {
+                if (auto channel = dynamic_cast<TwitchChannel *>(chan.get()))
+                {
+                    channel->removeSeventvEmote(data);
+                }
+            });
+        });
     this->twitch->eventApi->start();
 }
 
