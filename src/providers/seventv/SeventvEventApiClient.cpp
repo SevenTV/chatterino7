@@ -186,11 +186,11 @@ void SeventvEventApi::partChannel(const QString &channelName)
     }
 }
 
-void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
+void SeventvEventApi::onMessage(websocketpp::connection_hdl _hdl,
                                 WsMessagePtr wsMsg)
 {
     const auto &rawPayload = QByteArray::fromStdString(wsMsg->get_payload());
-    QJsonParseError error;
+    auto error = QJsonParseError{};
     QJsonDocument msg(QJsonDocument::fromJson(rawPayload, &error));
 
     if (error.error != QJsonParseError::NoError)
@@ -209,7 +209,7 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
         return;
     }
     QJsonObject obj = msg.object();
-    if (!obj.contains("action") || !obj.value("action").isString())
+    if (!obj.contains("action") || !obj["action"].isString())
     {
         qCDebug(chatterinoSeventvEventApi)
             << QString("Error parsing message form EventApi, got payload "
@@ -217,11 +217,12 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
                    .arg(QString::fromUtf8(rawPayload));
         return;
     }
-    QString action = obj.value("action").toString();
-    if (action != "update" || !obj.contains("payload") ||
+    if (obj["action"].toString() != "update" || !obj.contains("payload") ||
         !obj.value("payload").isString())
     {
-        return;  // todo
+        // ignore this payload
+        // it might be a ping or an error
+        return;
     }
     QJsonDocument updateDoc(QJsonDocument::fromJson(
         obj.value("payload").toString().toUtf8(), &error));
@@ -237,12 +238,18 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
     if (!update.contains("action") || !update["action"].isString() ||
         !update.contains("channel") || !update["channel"].isString() ||
         !update.contains("actor") || !update["actor"].isString() ||
-        !update.contains("name") || !update["name"].isString())
+        !update.contains("name") || !update["name"].isString() ||
+        !update.contains("emote_id") || !update["emote_id"].isString())
     {
-        return;  // todo print
+        qCDebug(chatterinoSeventvEventApi)
+            << QString("Error parsing update form EventApi, got invalid or "
+                       "missing keys: '%1'")
+                   .arg(obj.value("payload").toString());
+        return;
     }
+    QString action = update["action"].toString();
 
-    if (update.value("action").toString() == "REMOVE")
+    if (action == "REMOVE")
     {
         this->signals_.emoteRemoved.invoke(RemoveSeventvEmoteAction{
             update["channel"].toString(),
@@ -254,13 +261,30 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
     {
         if (!update.contains("emote") || !update.value("emote").isObject())
         {
-            return;  // todo print
+            qCDebug(chatterinoSeventvEventApi)
+                << QString("Error parsing update form EventApi, no emote or "
+                           "invalid type: '%1'")
+                       .arg(obj.value("payload").toString());
+            return;
         }
-
         QJsonObject emote = update.value("emote").toObject();
         emote.insert("id", update.value("emote_id"));
 
-        if (update["action"].toString() == "UPDATE")
+        // keep in sync with createEmote()
+        if (!emote.contains("name") || !emote["name"].isString() ||
+            !emote.contains("owner") || !emote["owner"].isObject() ||
+            !emote.contains("visibility") || !emote["visibility"].isDouble() ||
+            !emote["owner"].toObject().contains("display_name") ||
+            !emote["owner"].toObject()["display_name"].isString())
+        {
+            qCDebug(chatterinoSeventvEventApi)
+                << QString("Error parsing update form EventApi, invalid emote: "
+                           "'%1'")
+                       .arg(obj.value("payload").toString());
+            return;
+        }
+
+        if (action == "UPDATE")
         {
             QString emoteBaseName = emote["name"].toString();
             // set the correct alias/name
