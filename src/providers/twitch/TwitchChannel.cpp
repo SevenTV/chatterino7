@@ -185,6 +185,10 @@ TwitchChannel::TwitchChannel(const QString &name)
         this->refreshBTTVChannelEmotes(false);
     });
 
+    this->destroyed.connect([this]() {
+        getApp()->twitch->eventApi->partChannel(this->getName());
+    });
+
     // timers
     QObject::connect(&this->chattersListTimer_, &QTimer::timeout, [=] {
         this->refreshChatters();
@@ -204,6 +208,7 @@ void TwitchChannel::initialize()
     this->fetchDisplayName();
     this->refreshChatters();
     this->refreshBadges();
+    this->listenSeventv();
 }
 
 bool TwitchChannel::isEmpty() const
@@ -499,7 +504,6 @@ void TwitchChannel::setRoomId(const QString &id)
         *this->roomID_.access() = id;
         this->roomIdChanged.invoke();
         this->loadRecentMessages();
-        this->listenSeventv();
     }
 }
 
