@@ -78,14 +78,10 @@ namespace eventapi {
 
     bool EventApiClient::isJoinedChannel(const QString &channel)
     {
-        for (const auto &listener : this->channels)
-        {
-            if (listener.channel == channel)
-            {
-                return true;
-            }
-        }
-        return false;
+        return std::any_of(this->channels.begin(), this->channels.end(),
+                           [channel](const Listener &listener) {
+                               return listener.channel == channel;
+                           });
     }
     bool EventApiClient::send(const char *payload)
     {
