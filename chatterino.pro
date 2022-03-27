@@ -220,6 +220,7 @@ SOURCES += \
     src/providers/seventv/SeventvEmotes.cpp \
     src/providers/seventv/SeventvPaints.cpp \
     src/providers/seventv/SeventvWebSocket.cpp \
+    src/providers/seventv/SeventvEventApiClient.cpp \
     src/providers/twitch/api/Helix.cpp \
     src/providers/twitch/ChannelPointReward.cpp \
     src/providers/twitch/IrcMessageHandler.cpp \
@@ -486,6 +487,7 @@ HEADERS += \
     src/providers/seventv/SeventvEmotes.hpp \
     src/providers/seventv/SeventvPaints.hpp \
     src/providers/seventv/SeventvWebSocket.hpp \
+    src/providers/seventv/SeventvEventApiClient.hpp \
     src/providers/twitch/api/Helix.hpp \
     src/providers/twitch/ChannelPointReward.hpp \
     src/providers/twitch/ChatterinoWebSocketppLogger.hpp \
