@@ -1,11 +1,10 @@
 #include "SeventvEventApiClient.hpp"
 
 #include "singletons/Settings.hpp"
-#include "util/DebugCount.hpp"
 #include "util/Helpers.hpp"
 #include "util/RapidjsonHelpers.hpp"
 
-#include <rapidjson/error/en.h>
+#include <QJsonParseError>
 
 #include <exception>
 #include <iostream>
