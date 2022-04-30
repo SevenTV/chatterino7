@@ -270,10 +270,8 @@ union ColorUnion {
         return QColor{r, g, b, a};
     }
 
-    [[nodiscard]] constexpr inline static ColorUnion fromRGBA(decltype(r) r,
-                                                              decltype(g) g,
-                                                              decltype(b) b,
-                                                              decltype(a) a = 0)
+    [[nodiscard]] constexpr inline static ColorUnion fromRGBA(
+        decltype(r) r, decltype(g) g, decltype(b) b, decltype(a) a = 255)
     {
         return {
             .a = a,
