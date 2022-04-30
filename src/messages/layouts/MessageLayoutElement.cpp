@@ -407,6 +407,23 @@ std::unordered_map<std::string, SevenTVGradient> demoGradients{
     },
 
     {
+        "Egg Hunt",
+        {
+            .function = "linear-gradient",
+            .color = std::nullopt,
+            .stops =
+                {
+                    {0.0f, {-172425217}},
+                    {0.36f, {-1442841601}},
+                    {0.71f, {-2130935809}},
+                    {0.98f, {-83902721}},
+                },
+            .repeat = false,
+            .angle = 90.0f,
+        },
+    },
+
+    {
         "Bubblegum",
         {
             .function = "linear-gradient",
@@ -426,6 +443,24 @@ std::unordered_map<std::string, SevenTVGradient> demoGradients{
             .angle = 65.0f,
         },
     },
+
+    {
+        "Anniversary",
+        {
+            .function = "linear-gradient",
+            .color = {{276859903}},
+            .stops =
+                {
+                    {0.0f, {16774655}},
+                    {0.25f, {-1426326529}},
+                    {0.5f, {1289014527}},
+                    {0.75f, {77314815}},
+                    {0.99f, {276859903}},
+                },
+            .repeat = false,
+            .angle = 90.0f,
+        },
+    },
 };
 
 void TextLayoutElement::paint(QPainter &painter)
@@ -436,9 +471,14 @@ void TextLayoutElement::paint(QPainter &painter)
 
     painter.setFont(app->fonts->getFont(this->style_, this->scale_));
 
+    // Grab a 'unique' gradient for demonstration
     auto gradientIterator{demoGradients.begin()};
-    std::advance(gradientIterator, 0);
+    std::advance(gradientIterator,
+                 (this->getText().length() > 0)
+                     ? (this->getText().toStdString()[0] % demoGradients.size())
+                     : 0);
     auto const &gradient{(*gradientIterator).second};
+
     auto userColor{ColorUnion::fromQColor(color_)};
     if (this->getLink().type == chatterino::Link::UserInfo)
         painter.setPen(gradient.asPen(userColor));
