@@ -1007,8 +1007,7 @@ void UserInfoPopup::fetchSevenTVAvatar(const HelixUser &user)
 
                         this->saveCacheAvatar(data, filename);
 
-                        bool hasFocus = (QApplication::focusWidget() == nullptr);
-                        if (hasFocus)
+                        if (this->ui_.avatarButton != nullptr)
                         {
                             this->avatarUrl_ = URI;
                             this->setSevenTVAvatar(filename);
