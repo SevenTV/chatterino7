@@ -585,9 +585,7 @@ void TwitchChannel::addSeventvEmote(const EventApiEmoteUpdate &action)
     }
     auto result =
         SeventvEmotes::addEmote(this->seventvEmotes_, action.emote->json);
-    this->addMessage(
-        makeSystemMessage(QString("%1 added 7TV emote %2.")
-                              .arg(action.actor, result->name.string)));
+    this->addMessage(makeSeventvEmoteAddedMessage(action.actor, result));
 }
 
 void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
@@ -598,36 +596,17 @@ void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
     }
     auto result = SeventvEmotes::updateEmote(
         this->seventvEmotes_, action.emote->baseName, action.emote->json);
-    if (result)
-    {
-        this->addMessage(makeSystemMessage(
-            QString("%1 updated 7TV emote %2.")
-                .arg(action.actor, result.value()->name.string)));
-    }
-    else
-    {
-        this->addMessage(makeSystemMessage(
-            QString("%1 updated 7TV emote %2 but it's not added.")
-                .arg(action.actor, action.emote->json["name"].toString())));
-    }
+    this->addMessage(makeSeventvEmoteUpdatedMessage(
+        action.actor, result.has_value(), action.emote->baseName,
+        action.emote->json["name"].toString()));
 }
 
 void TwitchChannel::removeSeventvEmote(const EventApiEmoteUpdate &action)
 {
     bool removed =
         SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName);
-    if (removed)
-    {
-        this->addMessage(
-            makeSystemMessage(QString("%1 removed 7TV emote %2.")
-                                  .arg(action.actor, action.emoteName)));
-    }
-    else
-    {
-        this->addMessage(makeSystemMessage(
-            QString("%1 removed 7TV emote %2 but it wasn't added.")
-                .arg(action.actor, action.emoteName)));
-    }
+    this->addMessage(makeSeventvEmoteRemovedMessage(action.actor,
+                                                    action.emoteName, removed));
 }
 
 const QString &TwitchChannel::subscriptionUrl()

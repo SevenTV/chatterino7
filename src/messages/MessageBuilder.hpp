@@ -3,6 +3,7 @@
 #include "messages/MessageElement.hpp"
 
 #include <QRegularExpression>
+#include <boost/optional.hpp>
 #include <ctime>
 #include <utility>
 
@@ -27,6 +28,14 @@ MessagePtr makeSystemMessage(const QString &text, const QTime &time);
 std::pair<MessagePtr, MessagePtr> makeAutomodMessage(
     const AutomodAction &action);
 MessagePtr makeAutomodInfoMessage(const AutomodInfoAction &action);
+MessagePtr makeSeventvEmoteAddedMessage(const QString &actor,
+                                        const EmotePtr &emote);
+MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor, bool isAdded,
+                                          const QString &baseName,
+                                          const QString &updatedName);
+MessagePtr makeSeventvEmoteRemovedMessage(const QString &actor,
+                                          const QString &emoteName,
+                                          bool wasAdded);
 
 struct MessageParseArgs {
     bool disablePingSounds = false;

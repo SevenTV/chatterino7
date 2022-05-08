@@ -172,6 +172,76 @@ std::pair<MessagePtr, MessagePtr> makeAutomodMessage(
     return std::make_pair(message1, message2);
 }
 
+namespace {
+    MessageBuilder makeSeventvEmoteChangedBase(const QString &actor)
+    {
+        auto builder = MessageBuilder();
+        builder.emplace<TimestampElement>();
+        builder->flags.set(MessageFlag::System);
+        builder
+            .emplace<TextElement>(actor, MessageElementFlag::Username,
+                                  MessageColor::System)
+            ->setLink({Link::UserInfo, actor});
+
+        return builder;
+    }
+}  // namespace
+
+MessagePtr makeSeventvEmoteAddedMessage(const QString &actor,
+                                        const EmotePtr &emote)
+{
+    auto builder = makeSeventvEmoteChangedBase(actor);
+    builder.emplace<TextElement>(
+        QString("added 7TV emote %1.").arg(emote->name.string),
+        MessageElementFlag::Text, MessageColor::System);
+
+    return builder.release();
+}
+MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor, bool isAdded,
+                                          const QString &baseName,
+                                          const QString &updatedName)
+{
+    auto builder = makeSeventvEmoteChangedBase(actor);
+    if (baseName != updatedName)
+    {
+        builder.emplace<TextElement>(
+            QString(isAdded ? "updated 7TV emote %1 (%2)."
+                            : "updated 7TV emote %1 (%2), but it's not added.")
+                .arg(updatedName, baseName),
+            MessageElementFlag::Text, MessageColor::System);
+    }
+    else
+    {
+        builder.emplace<TextElement>(
+            QString(isAdded ? "updated 7TV emote %1."
+                            : "updated 7TV emote %1, but it's not added.")
+                .arg(updatedName),
+            MessageElementFlag::Text, MessageColor::System);
+    }
+
+    return builder.release();
+}
+MessagePtr makeSeventvEmoteRemovedMessage(const QString &actor,
+                                          const QString &emoteName,
+                                          bool wasAdded)
+{
+    auto builder = makeSeventvEmoteChangedBase(actor);
+    if (wasAdded)
+    {
+        builder.emplace<TextElement>(
+            QString("removed 7TV emote %1.").arg(emoteName),
+            MessageElementFlag::Text, MessageColor::System);
+    }
+    else
+    {
+        builder.emplace<TextElement>(
+            QString("removed 7TV emote %1 but it wasn't added.").arg(emoteName),
+            MessageElementFlag::Text, MessageColor::System);
+    }
+
+    return builder.release();
+}
+
 MessageBuilder::MessageBuilder()
     : message_(std::make_shared<Message>())
 {
