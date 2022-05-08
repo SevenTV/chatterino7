@@ -36,7 +36,8 @@ TwitchIrcServer::TwitchIrcServer()
     this->initializeIrc();
 
     this->pubsub = new PubSub(TWITCH_PUBSUB_URL);
-    this->eventApi = new SeventvEventApi;
+    this->eventApi =
+        new SeventvEventApi("wss://events.7tv.app/v1/channel-emotes");
 
     // getSettings()->twitchSeperateWriteConnection.connect([this](auto, auto) {
     // this->connect(); },

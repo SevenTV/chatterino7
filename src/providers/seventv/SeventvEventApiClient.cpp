@@ -1,380 +1,161 @@
 #include "SeventvEventApiClient.hpp"
 
+#include "common/QLogging.hpp"
+#include "providers/twitch/PubsubHelpers.hpp"
 #include "singletons/Settings.hpp"
+#include "util/DebugCount.hpp"
 #include "util/Helpers.hpp"
 #include "util/RapidjsonHelpers.hpp"
 
-#include <QJsonParseError>
-
 #include <exception>
-#include <iostream>
 #include <thread>
-#include <utility>
-#include "common/QLogging.hpp"
-
-#define SEVENTV_EVENTAPI_URL "wss://events.7tv.app/v1/channel-emotes"
-
-using websocketpp::lib::bind;
-using websocketpp::lib::placeholders::_1;
-using websocketpp::lib::placeholders::_2;
 
 namespace chatterino {
-namespace eventapi {
-    EventApiClient::EventApiClient(WsClient &_websocketClient, WsHandle _handle)
-        : websocketClient_(_websocketClient)
-        , handle_(_handle)
-    {
-    }
-    void EventApiClient::start()
-    {
-        assert(!this->started_);
-        this->started_ = true;
-    }
-    void EventApiClient::stop()
-    {
-        assert(this->started_);
-        this->started_ = false;
-    }
-
-    bool EventApiClient::join(const QString &channel)
-    {
-        if (this->channels.size() >= MAX_EVENTAPI_CHANNELS)
-        {
-            return false;
-        }
-        this->channels.emplace_back(Listener{channel, false});
-        rapidjson::Document doc(rapidjson::kObjectType);
-        rj::set(doc, "action", "join");
-        rj::set(doc, "payload", channel, doc.GetAllocator());
-
-        this->send(rj::stringify(doc).toUtf8());
-
-        return true;
-    }
-    void EventApiClient::part(const QString &channel)
-    {
-        bool found = false;
-        for (auto it = this->channels.begin(); it != this->channels.end(); it++)
-        {
-            if (it->channel == channel)
-            {
-                this->channels.erase(it);
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-        {
-            return;
-        }
-
-        rapidjson::Document doc(rapidjson::kObjectType);
-        rj::set(doc, "action", "part");
-        rj::set(doc, "payload", channel, doc.GetAllocator());
-
-        this->send(rj::stringify(doc).toUtf8());
-    }
-
-    bool EventApiClient::isJoinedChannel(const QString &channel)
-    {
-        return std::any_of(this->channels.begin(), this->channels.end(),
-                           [channel](const Listener &listener) {
-                               return listener.channel == channel;
-                           });
-    }
-    bool EventApiClient::send(const char *payload)
-    {
-        WsErrorCode ec;
-        this->websocketClient_.send(this->handle_, payload,
-                                    websocketpp::frame::opcode::text, ec);
-
-        if (ec)
-        {
-            qCDebug(chatterinoSeventvEventApi)
-                << "Error sending message" << payload << ":"
-                << ec.message().c_str();
-            // same todo as in pubsub client
-            return false;
-        }
-
-        return true;
-    }
-}  // namespace eventapi
-SeventvEventApi::SeventvEventApi()
+SeventvEventApiClient::SeventvEventApiClient(
+    eventapi::WebsocketClient &_websocketClient,
+    eventapi::WebsocketHandle _handle)
+    : websocketClient_(_websocketClient)
+    , handle_(_handle)
 {
-    qCDebug(chatterinoSeventvEventApi) << "started 7TV event api";
-
-    this->websocketClient.set_access_channels(websocketpp::log::alevel::all);
-    this->websocketClient.clear_access_channels(
-        websocketpp::log::alevel::frame_header |
-        websocketpp::log::alevel::frame_payload);
-    this->websocketClient.init_asio();
-    this->websocketClient.set_tls_init_handler(
-        bind(&SeventvEventApi::onTLSInit, this, ::_1));
-    this->websocketClient.set_message_handler(
-        bind(&SeventvEventApi::onMessage, this, ::_1, ::_2));
-    this->websocketClient.set_open_handler(
-        bind(&SeventvEventApi::onConnectionOpen, this, ::_1));
-    this->websocketClient.set_close_handler(
-        bind(&SeventvEventApi::onConnectionClose, this, ::_1));
-    this->addClient();
 }
-void SeventvEventApi::addClient()
+void SeventvEventApiClient::start()
 {
-    if (this->addingClient)
-    {
-        return;
-    }
-    this->addingClient = true;
+    assert(!this->started_);
+    this->started_ = true;
+    this->lastPing_ = std::chrono::steady_clock::now();
+    this->checkPing();
+}
+void SeventvEventApiClient::stop()
+{
+    assert(this->started_);
+    this->started_ = false;
+}
 
-    websocketpp::lib::error_code ec;
-    auto con = this->websocketClient.get_connection(SEVENTV_EVENTAPI_URL, ec);
+void SeventvEventApiClient::close(const std::string &reason,
+                                  websocketpp::close::status::value code)
+{
+    eventapi::WebsocketErrorCode ec;
 
+    auto conn = this->websocketClient_.get_con_from_hdl(this->handle_, ec);
     if (ec)
     {
         qCDebug(chatterinoSeventvEventApi)
-            << "Unable to establish connection:" << ec.message().c_str();
+            << "Error getting con:" << ec.message().c_str();
         return;
     }
 
-    this->websocketClient.connect(con);
-}
-void SeventvEventApi::start()
-{
-    this->mainThread.reset(
-        new std::thread(std::bind(&SeventvEventApi::runThread, this)));
-}
-void SeventvEventApi::joinChannel(const QString &channelName)
-{
-    if (this->tryJoinChannel(channelName))
+    conn->close(code, reason, ec);
+    if (ec)
     {
+        qCDebug(chatterinoSeventvEventApi)
+            << "Error closing:" << ec.message().c_str();
         return;
     }
-
-    this->addClient();
-
-    this->pendingChannels.emplace_back(std::make_unique<QString>(channelName));
 }
-bool SeventvEventApi::tryJoinChannel(const QString &channelName)
+
+bool SeventvEventApiClient::join(const QString &channel)
 {
-    for (const auto &p : this->clients)
+    if (this->channels.size() >= SeventvEventApiClient::MAX_LISTENS)
     {
-        const auto &client = p.second;
-        if (client->join(channelName))
-        {
-            return true;
-        }
+        return false;
     }
+    this->channels.emplace_back(Listener{channel});
+    rapidjson::Document doc(rapidjson::kObjectType);
+    rj::set(doc, "action", "join");
+    rj::set(doc, "payload", channel, doc.GetAllocator());
 
-    return false;
+    qCDebug(chatterinoSeventvEventApi) << "Joining " << channel;
+    DebugCount::increase("EventApi channels");
+
+    this->send(rj::stringify(doc).toUtf8());
+
+    return true;
 }
-void SeventvEventApi::partChannel(const QString &channelName)
+void SeventvEventApiClient::part(const QString &channel)
 {
-    for (const auto &p : this->clients)
+    bool found = false;
+    for (auto it = this->channels.begin(); it != this->channels.end(); it++)
     {
-        const auto &client = p.second;
-        if (client->isJoinedChannel(channelName))
+        if (it->channel == channel)
         {
-            client->part(channelName);
+            this->channels.erase(it);
+            found = true;
             break;
         }
     }
+    if (!found)
+    {
+        return;
+    }
+
+    rapidjson::Document doc(rapidjson::kObjectType);
+    rj::set(doc, "action", "part");
+    rj::set(doc, "payload", channel, doc.GetAllocator());
+
+    qCDebug(chatterinoSeventvEventApi) << "Part " << channel;
+    DebugCount::increase("EventApi channels");
+
+    this->send(rj::stringify(doc).toUtf8());
 }
 
-void SeventvEventApi::onMessage(websocketpp::connection_hdl _hdl,
-                                WsMessagePtr wsMsg)
+void SeventvEventApiClient::handlePing()
 {
-    const auto &rawPayload = QByteArray::fromStdString(wsMsg->get_payload());
-    auto error = QJsonParseError{};
-    QJsonDocument msg(QJsonDocument::fromJson(rawPayload, &error));
-
-    if (error.error != QJsonParseError::NoError)
-    {
-        qCDebug(chatterinoSeventvEventApi)
-            << QString("Error parsing message from EventApi: %1")
-                   .arg(error.errorString());
-        return;
-    }
-    if (!msg.isObject())
-    {
-        qCDebug(chatterinoSeventvEventApi)
-            << QString("Error parsing message form EventApi, Root object isn't "
-                       "an object: '%1'")
-                   .arg(QString::fromUtf8(rawPayload));
-        return;
-    }
-    QJsonObject obj = msg.object();
-    if (!obj.contains("action") || !obj["action"].isString())
-    {
-        qCDebug(chatterinoSeventvEventApi)
-            << QString("Error parsing message form EventApi, got payload "
-                       "without or invalid action: '%1'")
-                   .arg(QString::fromUtf8(rawPayload));
-        return;
-    }
-    if (obj["action"].toString() != "update" || !obj.contains("payload") ||
-        !obj.value("payload").isString())
-    {
-        // ignore this payload
-        // it might be a ping or an error
-        return;
-    }
-    QJsonDocument updateDoc(QJsonDocument::fromJson(
-        obj.value("payload").toString().toUtf8(), &error));
-    if (!updateDoc.isObject())
-    {
-        qCDebug(chatterinoSeventvEventApi)
-            << QString("Error parsing update form EventApi, update isn't "
-                       "an object: '%1'")
-                   .arg(obj.value("payload").toString());
-        return;
-    }
-    QJsonObject update = updateDoc.object();
-    if (!update.contains("action") || !update["action"].isString() ||
-        !update.contains("channel") || !update["channel"].isString() ||
-        !update.contains("actor") || !update["actor"].isString() ||
-        !update.contains("name") || !update["name"].isString() ||
-        !update.contains("emote_id") || !update["emote_id"].isString())
-    {
-        qCDebug(chatterinoSeventvEventApi)
-            << QString("Error parsing update form EventApi, got invalid or "
-                       "missing keys: '%1'")
-                   .arg(obj.value("payload").toString());
-        return;
-    }
-    QString action = update["action"].toString();
-
-    if (action == "REMOVE")
-    {
-        this->signals_.emoteRemoved.invoke(RemoveSeventvEmoteAction{
-            update["channel"].toString(),
-            update["actor"].toString(),
-            update["name"].toString(),
-        });
-    }
-    else
-    {
-        if (!update.contains("emote") || !update.value("emote").isObject())
-        {
-            qCDebug(chatterinoSeventvEventApi)
-                << QString("Error parsing update form EventApi, no emote or "
-                           "invalid type: '%1'")
-                       .arg(obj.value("payload").toString());
-            return;
-        }
-        QJsonObject emote = update.value("emote").toObject();
-        emote.insert("id", update.value("emote_id"));
-
-        // keep in sync with createEmote()
-        if (!emote.contains("name") || !emote["name"].isString() ||
-            !emote.contains("owner") || !emote["owner"].isObject() ||
-            !emote.contains("visibility") || !emote["visibility"].isDouble() ||
-            !emote["owner"].toObject().contains("display_name") ||
-            !emote["owner"].toObject()["display_name"].isString())
-        {
-            qCDebug(chatterinoSeventvEventApi)
-                << QString("Error parsing update form EventApi, invalid emote: "
-                           "'%1'")
-                       .arg(obj.value("payload").toString());
-            return;
-        }
-
-        if (action == "UPDATE")
-        {
-            QString emoteBaseName = emote["name"].toString();
-            // set the correct alias/name
-            emote["name"] = update["name"];
-            this->signals_.emoteUpdated.invoke(UpdateSeventvEmoteAction{
-                update["channel"].toString(), update["actor"].toString(),
-                emoteBaseName, emote});
-        }
-        else
-        {
-            // set the correct alias/name
-            emote["name"] = update["name"];
-            this->signals_.emoteAdded.invoke(
-                AddSeventvEmoteAction{update["channel"].toString(),
-                                      update["actor"].toString(), emote});
-        }
-    }
+    this->lastPing_ = std::chrono::steady_clock::now();
 }
 
-void SeventvEventApi::onConnectionOpen(websocketpp::connection_hdl hdl)
+bool SeventvEventApiClient::isJoinedChannel(const QString &channel)
 {
-    this->addingClient = false;
-    auto client =
-        std::make_shared<eventapi::EventApiClient>(this->websocketClient, hdl);
-    client->start();
-    this->clients.emplace(hdl, client);
-    this->connected.invoke();
-
-    for (auto it = this->pendingChannels.begin();
-         it != this->pendingChannels.end();)
-    {
-        const auto &channel = *it;
-        if (client->join(*channel))
-        {
-            it = this->pendingChannels.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
-    if (!this->pendingChannels.empty())
-    {
-        this->addClient();
-    }
+    return std::any_of(this->channels.begin(), this->channels.end(),
+                       [channel](const Listener &listener) {
+                           return listener.channel == channel;
+                       });
 }
 
-void SeventvEventApi::onConnectionClose(websocketpp::connection_hdl hdl)
+std::vector<Listener> SeventvEventApiClient::getListeners() const
 {
-    auto clientIt = this->clients.find(hdl);
-
-    assert(clientIt != this->clients.end());
-
-    auto &client = clientIt->second;
-
-    client->stop();
-
-    this->clients.erase(clientIt);
-
-    this->connected.invoke();
-    for (auto it = client->channels.begin(); it != client->channels.end();
-         it = client->channels.erase(it))
-    {
-        const auto &listener = *it;
-        this->pendingChannels.push_back(
-            std::make_unique<QString>(listener.channel));
-    }
-    this->addClient();
+    return this->channels;
 }
 
-SeventvEventApi::WsContextPtr SeventvEventApi::onTLSInit(
-    websocketpp::connection_hdl hdl)
+void SeventvEventApiClient::checkPing()
 {
-    WsContextPtr ctx(
-        new boost::asio::ssl::context(boost::asio::ssl::context::tlsv12));
-
-    try
-    {
-        ctx->set_options(boost::asio::ssl::context::default_workarounds |
-                         boost::asio::ssl::context::no_sslv2 |
-                         boost::asio::ssl::context::single_dh_use);
-    }
-    catch (const std::exception &e)
+    assert(this->started_);
+    if ((std::chrono::steady_clock::now() - this->lastPing_.load()) >
+        SeventvEventApiClient::MAX_PING_SECONDS)
     {
         qCDebug(chatterinoSeventvEventApi)
-            << "Exception caught in OnTLSInit:" << e.what();
+            << "Didn't receive a ping in time, disconnecting!";
+        this->close("Didn't receive a ping in time");
+
+        return;
     }
 
-    return ctx;
+    auto self = this->shared_from_this();
+
+    runAfter(this->websocketClient_.get_io_service(),
+             SeventvEventApiClient::MAX_PING_SECONDS, [self](auto timer) {
+                 if (!self->started_)
+                 {
+                     return;
+                 }
+
+                 self->checkPing();
+             });
 }
 
-void SeventvEventApi::runThread()
+bool SeventvEventApiClient::send(const char *payload)
 {
-    qCDebug(chatterinoSeventvEventApi) << "Start event api manager thread";
-    this->websocketClient.run();
-    qCDebug(chatterinoSeventvEventApi) << "Done with event api manager thread";
+    eventapi::WebsocketErrorCode ec;
+    this->websocketClient_.send(this->handle_, payload,
+                                websocketpp::frame::opcode::text, ec);
+
+    if (ec)
+    {
+        qCDebug(chatterinoSeventvEventApi) << "Error sending message" << payload
+                                           << ":" << ec.message().c_str();
+        // same todo as in pubsub client
+        return false;
+    }
+
+    return true;
 }
 }  // namespace chatterino

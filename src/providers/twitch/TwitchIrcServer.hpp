@@ -8,7 +8,7 @@
 #include "providers/ffz/FfzEmotes.hpp"
 #include "providers/irc/AbstractIrcServer.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
-#include "providers/seventv/SeventvEventApiClient.hpp"
+#include "providers/seventv/SeventvEventApiManager.hpp"
 
 #include <chrono>
 #include <memory>

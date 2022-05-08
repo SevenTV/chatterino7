@@ -577,19 +577,27 @@ std::shared_ptr<const EmoteMap> TwitchChannel::ffzEmotes() const
     return this->ffzEmotes_.get();
 }
 
-void TwitchChannel::addSeventvEmote(const AddSeventvEmoteAction &action)
+void TwitchChannel::addSeventvEmote(const EventApiEmoteUpdate &action)
 {
+    if (!action.emote)
+    {
+        return;  // this shouldn't happen
+    }
     auto result =
-        SeventvEmotes::addEmote(this->seventvEmotes_, action.emoteJson);
+        SeventvEmotes::addEmote(this->seventvEmotes_, action.emote->json);
     this->addMessage(
         makeSystemMessage(QString("%1 added 7TV emote %2.")
                               .arg(action.actor, result->name.string)));
 }
 
-void TwitchChannel::updateSeventvEmote(const UpdateSeventvEmoteAction &action)
+void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
 {
+    if (!action.emote)
+    {
+        return;  // this shouldn't happen
+    }
     auto result = SeventvEmotes::updateEmote(
-        this->seventvEmotes_, action.emoteBaseName, action.emoteJson);
+        this->seventvEmotes_, action.emote->baseName, action.emote->json);
     if (result)
     {
         this->addMessage(makeSystemMessage(
@@ -600,11 +608,11 @@ void TwitchChannel::updateSeventvEmote(const UpdateSeventvEmoteAction &action)
     {
         this->addMessage(makeSystemMessage(
             QString("%1 updated 7TV emote %2 but it's not added.")
-                .arg(action.actor, action.emoteJson["name"].toString())));
+                .arg(action.actor, action.emote->json["name"].toString())));
     }
 }
 
-void TwitchChannel::removeSeventvEmote(const RemoveSeventvEmoteAction &action)
+void TwitchChannel::removeSeventvEmote(const EventApiEmoteUpdate &action)
 {
     bool removed =
         SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName);
