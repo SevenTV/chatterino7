@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace chatterino {
-struct Listener {
+struct EventApiListener {
     QString channel;
 };
 
@@ -40,7 +40,7 @@ public:
 
     bool isJoinedChannel(const QString &channel);
 
-    std::vector<Listener> getListeners() const;
+    std::vector<EventApiListener> getListeners() const;
 
 private:
     void checkPing();
@@ -48,7 +48,7 @@ private:
 
     eventapi::WebsocketClient &websocketClient_;
     eventapi::WebsocketHandle handle_;
-    std::vector<Listener> channels;
+    std::vector<EventApiListener> channels;
 
     std::atomic<std::chrono::time_point<std::chrono::steady_clock>> lastPing_{};
     std::atomic<bool> started_{false};

@@ -59,7 +59,7 @@ bool SeventvEventApiClient::join(const QString &channel)
     {
         return false;
     }
-    this->channels.emplace_back(Listener{channel});
+    this->channels.emplace_back(EventApiListener{channel});
     rapidjson::Document doc(rapidjson::kObjectType);
     rj::set(doc, "action", "join");
     rj::set(doc, "payload", channel, doc.GetAllocator());
@@ -106,12 +106,12 @@ void SeventvEventApiClient::handlePing()
 bool SeventvEventApiClient::isJoinedChannel(const QString &channel)
 {
     return std::any_of(this->channels.begin(), this->channels.end(),
-                       [channel](const Listener &listener) {
+                       [channel](const EventApiListener &listener) {
                            return listener.channel == channel;
                        });
 }
 
-std::vector<Listener> SeventvEventApiClient::getListeners() const
+std::vector<EventApiListener> SeventvEventApiClient::getListeners() const
 {
     return this->channels;
 }
