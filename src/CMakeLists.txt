@@ -194,7 +194,6 @@ set(SOURCE_FILES
         providers/seventv/SeventvEventApiManager.hpp
         providers/seventv/SeventvEventApiMessages.hpp
         providers/seventv/SeventvEventApiWebsocket.hpp
-        providers/seventv/SeventvEventApiWebSocketppLogger.hpp
 
         providers/seventv/eventapimessages/Base.cpp
         providers/seventv/eventapimessages/Base.hpp

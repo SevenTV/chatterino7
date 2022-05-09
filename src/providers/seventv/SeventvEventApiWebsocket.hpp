@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SeventvEventApiWebSocketppLogger.hpp"
+#include "providers/twitch/ChatterinoWebSocketppLogger.hpp"
 
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_client.hpp>
@@ -10,10 +10,10 @@
 namespace chatterino {
 
 struct eventapiconfig : public websocketpp::config::asio_tls_client {
-    typedef websocketpp::log::seventveventapiwebsocketpplogger<
+    typedef websocketpp::log::chatterinowebsocketpplogger<
         concurrency_type, websocketpp::log::elevel>
         elog_type;
-    typedef websocketpp::log::seventveventapiwebsocketpplogger<
+    typedef websocketpp::log::chatterinowebsocketpplogger<
         concurrency_type, websocketpp::log::alevel>
         alog_type;
 

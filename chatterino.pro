@@ -495,7 +495,6 @@ HEADERS += \
     src/providers/seventv/SeventvEventApiManager.hpp \
     src/providers/seventv/SeventvEventApiMessages.hpp \
     src/providers/seventv/SeventvEventApiWebsocket.hpp \
-    src/providers/seventv/SeventvEventApiWebSocketppLogger.hpp \
     src/providers/seventv/eventapimessages/Base.hpp \
     src/providers/seventv/eventapimessages/EventApiEmoteUpdate.hpp \
     src/providers/seventv/eventapimessages/EventApiEmoteData.hpp \

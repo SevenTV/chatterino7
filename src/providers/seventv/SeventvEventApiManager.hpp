@@ -2,7 +2,6 @@
 
 #include "SeventvEventApiClient.hpp"
 #include "SeventvEventApiMessages.hpp"
-#include "SeventvEventApiWebSocketppLogger.hpp"
 #include "SeventvEventApiWebsocket.hpp"
 #include "util/ExponentialBackoff.hpp"
 
