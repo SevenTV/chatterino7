@@ -24,6 +24,7 @@
 using namespace std::chrono_literals;
 
 #define TWITCH_PUBSUB_URL "wss://pubsub-edge.twitch.tv"
+#define SEVENTV_EVENTAPI_URL "wss://events.7tv.app/v1/channel-emotes"
 
 namespace chatterino {
 
@@ -36,8 +37,7 @@ TwitchIrcServer::TwitchIrcServer()
     this->initializeIrc();
 
     this->pubsub = new PubSub(TWITCH_PUBSUB_URL);
-    this->eventApi =
-        new SeventvEventApi("wss://events.7tv.app/v1/channel-emotes");
+    this->eventApi = new SeventvEventApi(SEVENTV_EVENTAPI_URL);
 
     // getSettings()->twitchSeperateWriteConnection.connect([this](auto, auto) {
     // this->connect(); },
