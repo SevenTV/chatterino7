@@ -9,19 +9,11 @@ EventApiEmoteUpdate::EventApiEmoteUpdate(QJsonObject _json)
     , emoteName(this->json.value("name").toString())
     , actionString(this->json.value("action").toString())
 {
-    // TODO: magic_enum magic
-    this->action = EventApiEmoteUpdate::Action::INVALID;
-    if (this->actionString == "ADD")
+    auto action =
+        magic_enum::enum_cast<Action>(this->actionString.toStdString());
+    if (action.has_value())
     {
-        this->action = EventApiEmoteUpdate::Action::Add;
-    }
-    else if (this->actionString == "REMOVE")
-    {
-        this->action = EventApiEmoteUpdate::Action::Remove;
-    }
-    else if (this->actionString == "UPDATE")
-    {
-        this->action = EventApiEmoteUpdate::Action::Update;
+        this->action = action.value();
     }
 
     auto emoteData = this->json.value("emote");

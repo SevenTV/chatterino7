@@ -5,6 +5,7 @@
 #include <QString>
 
 #include <boost/optional.hpp>
+#include <magic_enum.hpp>
 
 namespace chatterino {
 struct EventApiMessage {
@@ -61,3 +62,27 @@ static boost::optional<EventApiMessage> parseEventApiBaseMessage(
 }
 
 }  // namespace chatterino
+
+template <>
+constexpr magic_enum::customize::customize_t
+    magic_enum::customize::enum_name<chatterino::EventApiMessage::Action>(
+        chatterino::EventApiMessage::Action value) noexcept
+{
+    switch (value)
+    {
+        case chatterino::EventApiMessage::Action::Ping:
+            return "ping";
+
+        case chatterino::EventApiMessage::Action::Success:
+            return "success";
+
+        case chatterino::EventApiMessage::Action::Update:
+            return "update";
+
+        case chatterino::EventApiMessage::Action::Error:
+            return "error";
+
+        default:
+            return default_tag;
+    }
+}

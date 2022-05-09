@@ -4,6 +4,7 @@
 #include <QString>
 
 #include <boost/optional.hpp>
+#include <magic_enum.hpp>
 
 #include "EventApiEmoteData.hpp"
 
@@ -32,3 +33,24 @@ struct EventApiEmoteUpdate {
     EventApiEmoteUpdate(QJsonObject _json);
 };
 }  // namespace chatterino
+
+template <>
+constexpr magic_enum::customize::customize_t
+    magic_enum::customize::enum_name<chatterino::EventApiEmoteUpdate::Action>(
+        chatterino::EventApiEmoteUpdate::Action value) noexcept
+{
+    switch (value)
+    {
+        case chatterino::EventApiEmoteUpdate::Action::Add:
+            return "ADD";
+
+        case chatterino::EventApiEmoteUpdate::Action::Remove:
+            return "REMOVE";
+
+        case chatterino::EventApiEmoteUpdate::Action::Update:
+            return "UPDATE";
+
+        default:
+            return default_tag;
+    }
+}
