@@ -195,8 +195,8 @@ set(SOURCE_FILES
         providers/seventv/SeventvEventApiMessages.hpp
         providers/seventv/SeventvEventApiWebsocket.hpp
 
-        providers/seventv/eventapimessages/Base.cpp
-        providers/seventv/eventapimessages/Base.hpp
+        providers/seventv/eventapimessages/EventApiMessage.cpp
+        providers/seventv/eventapimessages/EventApiMessage.hpp
         providers/seventv/eventapimessages/EventApiEmoteUpdate.cpp
         providers/seventv/eventapimessages/EventApiEmoteUpdate.hpp
         providers/seventv/eventapimessages/EventApiEmoteData.cpp
