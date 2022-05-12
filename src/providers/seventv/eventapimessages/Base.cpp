@@ -1,4 +1,4 @@
-#include "Base.hpp"
+#include "providers/seventv/eventapimessages/Base.hpp"
 
 namespace chatterino {
 EventApiMessage::EventApiMessage(QJsonObject _json)

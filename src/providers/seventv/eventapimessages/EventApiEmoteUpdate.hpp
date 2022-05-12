@@ -6,7 +6,7 @@
 #include <boost/optional.hpp>
 #include <magic_enum.hpp>
 
-#include "EventApiEmoteData.hpp"
+#include "providers/seventv/eventapimessages/EventApiEmoteData.hpp"
 
 namespace chatterino {
 struct EventApiEmoteUpdate {

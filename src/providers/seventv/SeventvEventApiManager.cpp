@@ -1,15 +1,13 @@
-#include "SeventvEventApiManager.hpp"
+#include "providers/seventv/SeventvEventApiManager.hpp"
 
-#include "SeventvEventApiMessages.hpp"
 #include "common/QLogging.hpp"
-#include "providers/twitch/PubsubHelpers.hpp"
+#include "providers/seventv/SeventvEventApiMessages.hpp"
+#include "providers/twitch/PubSubHelpers.hpp"
 #include "util/DebugCount.hpp"
 #include "util/Helpers.hpp"
-#include "util/RapidjsonHelpers.hpp"
 
 #include <algorithm>
 #include <exception>
-#include <iostream>
 #include <thread>
 
 using websocketpp::lib::bind;

@@ -2,8 +2,8 @@
 
 #include <QString>
 #include <pajlada/signals/signal.hpp>
-#include "SeventvEventApiMessages.hpp"
-#include "SeventvEventApiWebsocket.hpp"
+#include "providers/seventv/SeventvEventApiMessages.hpp"
+#include "providers/seventv/SeventvEventApiWebsocket.hpp"
 
 #include <atomic>
 #include <vector>

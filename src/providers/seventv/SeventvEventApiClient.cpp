@@ -1,7 +1,7 @@
-#include "SeventvEventApiClient.hpp"
+#include "providers/seventv/SeventvEventApiClient.hpp"
 
 #include "common/QLogging.hpp"
-#include "providers/twitch/PubsubHelpers.hpp"
+#include "providers/twitch/PubSubHelpers.hpp"
 #include "singletons/Settings.hpp"
 #include "util/DebugCount.hpp"
 #include "util/Helpers.hpp"

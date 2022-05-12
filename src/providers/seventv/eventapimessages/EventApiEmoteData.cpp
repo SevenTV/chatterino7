@@ -1,4 +1,4 @@
-#include "EventApiEmoteData.hpp"
+#include "providers/seventv/eventapimessages/EventApiEmoteData.hpp"
 
 namespace chatterino {
 EventApiEmoteData::EventApiEmoteData(QJsonObject _json, QString _baseName)

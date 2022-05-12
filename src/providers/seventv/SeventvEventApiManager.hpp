@@ -1,8 +1,8 @@
 #pragma once
 
-#include "SeventvEventApiClient.hpp"
-#include "SeventvEventApiMessages.hpp"
-#include "SeventvEventApiWebsocket.hpp"
+#include "providers/seventv/SeventvEventApiClient.hpp"
+#include "providers/seventv/SeventvEventApiMessages.hpp"
+#include "providers/seventv/SeventvEventApiWebsocket.hpp"
 #include "util/ExponentialBackoff.hpp"
 
 #include <QJsonObject>

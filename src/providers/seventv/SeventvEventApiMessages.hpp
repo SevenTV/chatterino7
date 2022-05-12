@@ -1,5 +1,5 @@
 #pragma once
 
-#include "eventapimessages/Base.hpp"
-#include "eventapimessages/EventApiEmoteData.hpp"
-#include "eventapimessages/EventApiEmoteUpdate.hpp"
+#include "providers/seventv/eventapimessages/Base.hpp"
+#include "providers/seventv/eventapimessages/EventApiEmoteData.hpp"
+#include "providers/seventv/eventapimessages/EventApiEmoteUpdate.hpp"
