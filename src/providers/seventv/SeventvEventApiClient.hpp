@@ -50,7 +50,7 @@ private:
     eventapi::WebsocketHandle handle_;
     std::vector<EventApiListener> channels;
 
-    std::atomic<std::chrono::time_point<std::chrono::steady_clock>> lastPing_{};
+    std::atomic<std::chrono::time_point<std::chrono::steady_clock>> lastPing_;
     std::atomic<bool> started_{false};
 };
 }  // namespace chatterino

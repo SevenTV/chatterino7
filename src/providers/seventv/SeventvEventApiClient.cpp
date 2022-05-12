@@ -16,6 +16,7 @@ SeventvEventApiClient::SeventvEventApiClient(
     eventapi::WebsocketHandle _handle)
     : websocketClient_(_websocketClient)
     , handle_(_handle)
+    , lastPing_(std::chrono::steady_clock::now())
 {
 }
 void SeventvEventApiClient::start()
