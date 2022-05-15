@@ -4,6 +4,16 @@
 
 namespace chatterino {
 
+LinearGradientPaint::LinearGradientPaint(const QString name, const std::optional<QColor> color, const std::vector<std::pair<float, QColor>> stops, bool repeat, float angle)
+    : Paint()
+    , name(name)
+    , color(color)
+    , stops(stops)
+    , repeat(repeat)
+    , angle(angle)
+{
+}
+
 QBrush LinearGradientPaint::asBrush(QColor userColor)
 {
     const auto pi = boost::math::constants::pi<double>();
