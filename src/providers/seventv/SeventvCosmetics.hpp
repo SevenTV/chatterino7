@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/Singleton.hpp"
+#include "providers/seventv/paints/Paint.hpp"
 
 namespace chatterino {
 
@@ -15,11 +16,19 @@ public:
     std::optional<EmotePtr> getBadge(const QString &userId);
 private:
     void loadSeventvCosmetics();
+    void loadSeventvBadges(QJsonArray badges);
+    void loadSeventvPaints(QJsonArray paints);
+
+    QStringList parsePaintUsers(QJsonArray users);
+    std::optional<QColor> parsePaintColor(QJsonValue color);
+    std::vector<std::pair<float, QColor>> parsePaintStops(QJsonArray stops);
 
     QColor decimalColorToQColor(const uint32_t color);
 
     std::map<QString, int> badgeMap;
     std::vector<EmotePtr> emotes;
+
+    std::map<QString, Paint> paints;
 };
 
 }  // namespace chatterino
