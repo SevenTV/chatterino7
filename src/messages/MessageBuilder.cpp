@@ -193,6 +193,7 @@ namespace {
                                           MessageElementFlag::SeventvEmote);
         }
         auto finalText = QString("%1 %2").arg(actor, text);
+        builder.message().loginName = actor;
         builder.message().messageText = finalText;
         builder.message().searchText = finalText;
         return builder;
