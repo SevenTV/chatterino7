@@ -6,7 +6,7 @@ namespace chatterino {
 
 class UrlPaint : public Paint {
 public:
-    QBrush asBrush();
+    QBrush asBrush(QColor userColor);
 };
 
 }

@@ -2,9 +2,9 @@
 
 namespace chatterino {
 
-QBrush RadialGradientPaint::asBrush()
+QBrush RadialGradientPaint::asBrush(QColor userColor)
 {
-    // TODO: implement radial gradient
+    return QBrush(userColor);
 }
 
 }

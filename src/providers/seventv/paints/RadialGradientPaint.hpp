@@ -6,7 +6,7 @@ namespace chatterino {
 
 class RadialGradientPaint : public Paint {
 public:
-    QBrush asBrush();
+    QBrush asBrush(QColor serColor);
 };
 
 }

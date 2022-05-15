@@ -2,9 +2,9 @@
 
 namespace chatterino {
 
-QBrush UrlPaint::asBrush()
+QBrush UrlPaint::asBrush(QColor userColor)
 {
-    // TODO: implement linear gradient
+    return QBrush(userColor);
 }
 
 }
