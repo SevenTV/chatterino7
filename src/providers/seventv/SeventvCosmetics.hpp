@@ -28,7 +28,7 @@ private:
     std::map<QString, int> badgeMap;
     std::vector<EmotePtr> emotes;
 
-    std::map<QString, Paint> paints;
+    std::map<QString, Paint *> paints;
 };
 
 }  // namespace chatterino

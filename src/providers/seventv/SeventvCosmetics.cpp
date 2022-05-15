@@ -107,7 +107,7 @@ void SeventvCosmetics::loadSeventvPaints(QJsonArray paints)
 
         for (const auto &userId : userIds)
         {
-            this->paints[userId] = *paint;
+            this->paints[userId] = paint;
         }
     }
 }
