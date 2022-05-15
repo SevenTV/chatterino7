@@ -173,7 +173,9 @@ std::pair<MessagePtr, MessagePtr> makeAutomodMessage(
 }
 
 namespace {
-    MessageBuilder makeSeventvEmoteChangedBase(const QString &actor)
+    MessageBuilder makeSeventvEmoteChanged(
+        const QString &actor, const QString &text,
+        const boost::optional<EmotePtr> &emote)
     {
         auto builder = MessageBuilder();
         builder.emplace<TimestampElement>();
@@ -182,64 +184,63 @@ namespace {
             .emplace<TextElement>(actor, MessageElementFlag::Username,
                                   MessageColor::System)
             ->setLink({Link::UserInfo, actor});
+        builder.emplace<TextElement>(text, MessageElementFlag::Text,
+                                     MessageColor::System);
 
+        if (emote.has_value())
+        {
+            builder.emplace<EmoteElement>(*emote,
+                                          MessageElementFlag::SeventvEmote);
+        }
         return builder;
     }
 }  // namespace
 
 MessagePtr makeSeventvEmoteAddedMessage(const QString &actor,
-                                        const EmotePtr &emote)
+                                        const QString &emoteName,
+                                        const boost::optional<EmotePtr> &emote)
 {
-    auto builder = makeSeventvEmoteChangedBase(actor);
-    builder.emplace<TextElement>(
-        QString("added 7TV emote %1.").arg(emote->name.string),
-        MessageElementFlag::Text, MessageColor::System);
-
-    return builder.release();
+    return makeSeventvEmoteChanged(
+               actor,
+               QString(emote.has_value() ? "added 7TV emote %1."
+                                         : "added 7TV emote %1, but you "
+                                           "disabled unlisted emotes.")
+                   .arg(emoteName),
+               emote)
+        .release();
 }
 MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor, bool isAdded,
                                           const QString &baseName,
                                           const QString &updatedName)
 {
-    auto builder = makeSeventvEmoteChangedBase(actor);
-    if (baseName != updatedName)
+    bool renamed = baseName != updatedName;
+    QString message;
+    if (renamed)
     {
-        builder.emplace<TextElement>(
+        message =
             QString(isAdded ? "updated 7TV emote %1 (%2)."
                             : "updated 7TV emote %1 (%2), but it's not added.")
-                .arg(updatedName, baseName),
-            MessageElementFlag::Text, MessageColor::System);
+                .arg(updatedName, baseName);
     }
     else
     {
-        builder.emplace<TextElement>(
-            QString(isAdded ? "updated 7TV emote %1."
-                            : "updated 7TV emote %1, but it's not added.")
-                .arg(updatedName),
-            MessageElementFlag::Text, MessageColor::System);
+        message = QString(isAdded ? "updated 7TV emote %1."
+                                  : "updated 7TV emote %1, but it's not added.")
+                      .arg(updatedName);
     }
-
-    return builder.release();
+    return makeSeventvEmoteChanged(actor, message, boost::none).release();
 }
 MessagePtr makeSeventvEmoteRemovedMessage(const QString &actor,
                                           const QString &emoteName,
                                           bool wasAdded)
 {
-    auto builder = makeSeventvEmoteChangedBase(actor);
-    if (wasAdded)
-    {
-        builder.emplace<TextElement>(
-            QString("removed 7TV emote %1.").arg(emoteName),
-            MessageElementFlag::Text, MessageColor::System);
-    }
-    else
-    {
-        builder.emplace<TextElement>(
-            QString("removed 7TV emote %1 but it wasn't added.").arg(emoteName),
-            MessageElementFlag::Text, MessageColor::System);
-    }
-
-    return builder.release();
+    return makeSeventvEmoteChanged(
+               actor,
+               QString(wasAdded ? "removed 7TV emote %1."
+                                : "removed 7TV emote %1, but it wasn't added.")
+                   .arg(emoteName),
+               boost::none)
+        .release();
 }
 
 MessageBuilder::MessageBuilder()

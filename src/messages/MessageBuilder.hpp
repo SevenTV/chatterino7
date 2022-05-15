@@ -29,7 +29,8 @@ std::pair<MessagePtr, MessagePtr> makeAutomodMessage(
     const AutomodAction &action);
 MessagePtr makeAutomodInfoMessage(const AutomodInfoAction &action);
 MessagePtr makeSeventvEmoteAddedMessage(const QString &actor,
-                                        const EmotePtr &emote);
+                                        const QString &emoteName,
+                                        const boost::optional<EmotePtr> &emote);
 MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor, bool isAdded,
                                           const QString &baseName,
                                           const QString &updatedName);

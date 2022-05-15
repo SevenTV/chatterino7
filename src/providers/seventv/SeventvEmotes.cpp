@@ -115,6 +115,15 @@ namespace {
         return {Success, std::move(emotes)};
     }
 
+    bool checkEmoteVisibility(const QJsonObject &emoteJson)
+    {
+        int64_t visibility = emoteJson.value("visibility").toInt();
+        auto visibilityFlags =
+            SeventvEmoteVisibilityFlags(SeventvEmoteVisibilityFlag(visibility));
+        return !visibilityFlags.has(SeventvEmoteVisibilityFlag::Unlisted) ||
+               getSettings()->showUnlistedEmotes;
+    }
+
     EmoteMap parseChannelEmotes(const QJsonObject &root,
                                 const QString &channelName)
     {
@@ -125,12 +134,7 @@ namespace {
         {
             auto jsonEmote = jsonEmote_.toObject();
 
-            // Check our visibility of this emote, don't display if unlisted
-            int64_t visibility = jsonEmote.value("visibility").toInt();
-            auto visibilityFlags = SeventvEmoteVisibilityFlags(
-                SeventvEmoteVisibilityFlag(visibility));
-            if (!getSettings()->showUnlistedEmotes &&
-                visibilityFlags.has(SeventvEmoteVisibilityFlag::Unlisted))
+            if (!checkEmoteVisibility(jsonEmote))
             {
                 continue;
             }
@@ -270,9 +274,15 @@ void SeventvEmotes::loadEmotes()
         .execute();
 }
 
-EmotePtr SeventvEmotes::addEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
-                                 const QJsonValue &emoteJson)
+boost::optional<EmotePtr> SeventvEmotes::addEmote(
+    Atomic<std::shared_ptr<const EmoteMap>> &map, const QJsonValue &emoteJson)
 {
+    // Check for visibility first, so we don't copy the map.
+    if (!checkEmoteVisibility(emoteJson.toObject()))
+    {
+        return boost::none;
+    }
+
     EmoteMap updatedMap = *map.get();
     auto emote = createEmote(emoteJson, false);
     auto emotePtr = cachedOrMake(std::move(emote.emote), emote.id);

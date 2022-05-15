@@ -585,7 +585,8 @@ void TwitchChannel::addSeventvEmote(const EventApiEmoteUpdate &action)
     }
     auto result =
         SeventvEmotes::addEmote(this->seventvEmotes_, action.emote->json);
-    this->addMessage(makeSeventvEmoteAddedMessage(action.actor, result));
+    this->addMessage(makeSeventvEmoteAddedMessage(
+        action.actor, action.emote->json["name"].toString(), result));
 }
 
 void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
