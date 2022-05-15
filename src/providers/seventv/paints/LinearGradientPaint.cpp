@@ -14,7 +14,7 @@ LinearGradientPaint::LinearGradientPaint(const QString name, const std::optional
 {
 }
 
-QBrush LinearGradientPaint::asBrush(QColor userColor)
+QBrush LinearGradientPaint::asBrush(QColor userColor) const
 {
     const auto pi = boost::math::constants::pi<double>();
 
