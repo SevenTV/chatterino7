@@ -250,120 +250,6 @@ int TextLayoutElement::getSelectionIndexCount() const
     return this->getText().length() + (this->trailingSpace ? 1 : 0);
 }
 
-template <typename T, typename M = float>
-constexpr inline static T lerp(T a, T b, M t)
-{
-    return a + (b - a) * t;
-}
-
-std::unordered_map<std::string, SevenTVGradient> demoGradients{
-    {
-        "Sunrise",
-        {
-            .function = "linear-gradient",
-            .color = {{-1441816321}},
-            .stops =
-                {
-                    {0.0f, {-5610241}},
-                    {0.5f, {-1608944641}},
-                    {1.0f, {1175096575}},
-                },
-            .repeat = false,
-            .angle = 90.0f,
-        },
-    },
-
-    {
-        "Metallic",
-        {
-            .function = "linear-gradient",
-            .color = std::nullopt,
-            .stops =
-                {
-                    {0.01f, {2105376127}},
-                    {0.15f, {-421075301}},
-                    {0.3f, {-1330597761}},
-                },
-            .repeat = true,
-            .angle = 45.0f,
-        },
-    },
-
-    {
-        "Warm Winds",
-        {
-            .function = "linear-gradient",
-            .color = {{-16734977}},
-            .stops =
-                {
-                    {0.0f, {690960127}},
-                    {0.3f, {1322108159}},
-                    {0.5f, {-134219777}},
-                    {0.7f, {-9737217}},
-                    {0.99f, {-1675777}},
-                },
-            .repeat = false,
-            .angle = 90.0f,
-        },
-    },
-
-    {
-        "Egg Hunt",
-        {
-            .function = "linear-gradient",
-            .color = std::nullopt,
-            .stops =
-                {
-                    {0.0f, {-172425217}},
-                    {0.36f, {-1442841601}},
-                    {0.71f, {-2130935809}},
-                    {0.98f, {-83902721}},
-                },
-            .repeat = false,
-            .angle = 90.0f,
-        },
-    },
-
-    {
-        "Bubblegum",
-        {
-            .function = "linear-gradient",
-            .color = std::nullopt,
-            .stops =
-                {
-                    {0.01f, {64}},
-                    {0.25f, {1347440704}},
-                    {0.25f, {-2105376192}},
-                    {0.35f, {-926365632}},
-                    {0.35f, {-13323265}},
-                    {0.75f, {-13323265}},
-                    {0.75f, {1450243583}},
-                    {0.99f, {1450243583}},
-                },
-            .repeat = false,
-            .angle = 65.0f,
-        },
-    },
-
-    {
-        "Anniversary",
-        {
-            .function = "linear-gradient",
-            .color = {{276859903}},
-            .stops =
-                {
-                    {0.0f, {16774655}},
-                    {0.25f, {-1426326529}},
-                    {0.5f, {1289014527}},
-                    {0.75f, {77314815}},
-                    {0.99f, {276859903}},
-                },
-            .repeat = false,
-            .angle = 90.0f,
-        },
-    },
-};
-
 void TextLayoutElement::paint(QPainter &painter)
 {
     auto app = getApp();
@@ -371,18 +257,6 @@ void TextLayoutElement::paint(QPainter &painter)
     painter.setPen(this->color_);
 
     painter.setFont(app->fonts->getFont(this->style_, this->scale_));
-
-    // Grab a 'unique' gradient for demonstration
-    auto gradientIterator{demoGradients.begin()};
-    std::advance(gradientIterator,
-                 (this->getText().length() > 0)
-                     ? (this->getText().toStdString()[0] % demoGradients.size())
-                     : 0);
-    auto const &gradient{(*gradientIterator).second};
-
-    auto userColor{ColorUnion::fromQColor(color_)};
-    if (this->getLink().type == chatterino::Link::UserInfo)
-        painter.setPen(gradient.asPen(userColor));
 
     painter.drawText(
         QRectF(this->getRect().x(), this->getRect().y(), 10000, 10000),
