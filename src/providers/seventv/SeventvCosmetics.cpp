@@ -145,8 +145,6 @@ std::vector<std::pair<float, QColor>> SeventvCosmetics::parsePaintStops(QJsonArr
     return parsedStops;
 }
 
-}  // namespace chatterino
-
 QColor SeventvCosmetics::decimalColorToQColor(uint32_t color)
 {
     auto red = (color >> 24) & 0xFF;
