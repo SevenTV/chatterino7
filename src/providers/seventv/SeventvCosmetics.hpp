@@ -14,6 +14,7 @@ public:
     virtual void initialize(Settings &settings, Paths &paths) override;
 
     std::optional<EmotePtr> getBadge(const QString &userId);
+
 private:
     void loadSeventvCosmetics();
     void loadSeventvBadges(QJsonArray badges);
@@ -32,4 +33,3 @@ private:
 };
 
 }  // namespace chatterino
-

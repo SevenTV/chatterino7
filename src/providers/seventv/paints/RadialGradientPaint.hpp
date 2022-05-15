@@ -4,9 +4,10 @@
 
 namespace chatterino {
 
-class RadialGradientPaint : public Paint {
+class RadialGradientPaint : public Paint
+{
 public:
     QBrush asBrush(QColor serColor) const override;
 };
 
-}
+}  // namespace chatterino

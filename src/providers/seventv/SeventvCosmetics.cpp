@@ -14,7 +14,6 @@ void SeventvCosmetics::initialize(Settings &settings, Paths &paths)
     this->loadSeventvCosmetics();
 }
 
-
 std::optional<EmotePtr> SeventvCosmetics::getBadge(const QString &userId)
 {
     auto it = badgeMap.find(userId);
@@ -57,15 +56,13 @@ void SeventvCosmetics::loadSeventvBadges(QJsonArray badges)
     {
         auto badge = jsonBadge_.toObject();
         auto urls = badge.value("urls").toArray();
-        auto emote =
-            Emote{EmoteName{},
-                ImageSet{Url{urls.at(0).toArray().at(1).toString()},
-                    Url{urls.at(1).toArray().at(1).toString()},
-                    Url{urls.at(2).toArray().at(1).toString()}},
-                Tooltip{badge.value("tooltip").toString()}, Url{}};
+        auto emote = Emote{EmoteName{},
+                           ImageSet{Url{urls.at(0).toArray().at(1).toString()},
+                                    Url{urls.at(1).toArray().at(1).toString()},
+                                    Url{urls.at(2).toArray().at(1).toString()}},
+                           Tooltip{badge.value("tooltip").toString()}, Url{}};
 
-        emotes.push_back(
-                std::make_shared<const Emote>(std::move(emote)));
+        emotes.push_back(std::make_shared<const Emote>(std::move(emote)));
 
         for (const auto &user : badge.value("users").toArray())
         {
@@ -79,29 +76,35 @@ void SeventvCosmetics::loadSeventvPaints(QJsonArray paints)
 {
     for (const auto &jsonPaint : paints)
     {
-        Paint * paint;
+        Paint *paint;
         auto paintObject = jsonPaint.toObject();
 
         QString name = paintObject.value("name").toString();
-        QStringList userIds = parsePaintUsers(paintObject.value("users").toArray());
+        QStringList userIds =
+            parsePaintUsers(paintObject.value("users").toArray());
 
         auto color = parsePaintColor(paintObject.value("color"));
         bool repeat = paintObject.value("repeat").toBool();
         float angle = paintObject.value("angle").toDouble();
 
-        std::vector<std::pair<float, QColor>> stops = parsePaintStops(paintObject.value("stops").toArray());
+        std::vector<std::pair<float, QColor>> stops =
+            parsePaintStops(paintObject.value("stops").toArray());
 
         QString function = paintObject.value("function").toString();
-        if (function == "linear-gradient") {
+        if (function == "linear-gradient")
+        {
             paint = new LinearGradientPaint(name, color, stops, repeat, angle);
         }
-        else if (function == "radial-gradient") {
+        else if (function == "radial-gradient")
+        {
             QString shape = paintObject.value("shape").toString();
         }
-        else if (function == "url") {
+        else if (function == "url")
+        {
             QString url = paintObject.value("image_url").toString();
         }
-        else {
+        else
+        {
             continue;
         }
 
@@ -126,20 +129,23 @@ QStringList SeventvCosmetics::parsePaintUsers(QJsonArray users)
 
 std::optional<QColor> SeventvCosmetics::parsePaintColor(QJsonValue color)
 {
-    if (color.isNull()) return std::nullopt;
+    if (color.isNull())
+        return std::nullopt;
 
     return decimalColorToQColor(color.toInt());
 }
 
-std::vector<std::pair<float, QColor>> SeventvCosmetics::parsePaintStops(QJsonArray stops)
+std::vector<std::pair<float, QColor>> SeventvCosmetics::parsePaintStops(
+    QJsonArray stops)
 {
     std::vector<std::pair<float, QColor>> parsedStops;
 
     for (const auto &stop : stops)
     {
         auto stopObject = stop.toObject();
-        parsedStops.push_back(std::make_pair(stopObject.value("at").toDouble(),
-                                             decimalColorToQColor(stopObject.value("color").toInt())));
+        parsedStops.push_back(std::make_pair(
+            stopObject.value("at").toDouble(),
+            decimalColorToQColor(stopObject.value("color").toInt())));
     }
 
     return parsedStops;
@@ -156,4 +162,3 @@ QColor SeventvCosmetics::decimalColorToQColor(uint32_t color)
 }
 
 }  // namespace chatterino
-

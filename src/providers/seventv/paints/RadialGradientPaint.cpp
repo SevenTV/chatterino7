@@ -7,4 +7,4 @@ QBrush RadialGradientPaint::asBrush(QColor userColor) const
     return QBrush(userColor);
 }
 
-}
+}  // namespace chatterino

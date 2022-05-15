@@ -4,9 +4,10 @@
 
 namespace chatterino {
 
-class UrlPaint : public Paint {
+class UrlPaint : public Paint
+{
 public:
     QBrush asBrush(QColor userColor) const override;
 };
 
-}
+}  // namespace chatterino
