@@ -256,50 +256,6 @@ constexpr inline static T lerp(T a, T b, M t)
     return a + (b - a) * t;
 }
 
-struct SevenTVGradient {
-    std::string function{"linear-gradient"};
-    std::optional<ColorUnion> color{{0}};
-    std::vector<std::pair<float, ColorUnion>> stops{};
-    bool repeat{false};
-    float angle{0.0f};
-
-    [[nodiscard]] inline QPen asPen(ColorUnion const &userColor,
-                                    bool overlay = false) const
-    {
-        if (function != "linear-gradient")
-            throw std::runtime_error(
-                "Only linear-gradient is supported for now.");
-
-        constexpr float pi = 3.141592653589793238462643383279502884f;
-        float cosRotation{std::cos(angle * pi / 180.0f)};
-        float sinRotation{std::sin(angle * pi / 180.0f)};
-
-        auto scale{repeat ? 0.25f : 1.0f};
-        QLinearGradient gradient{
-            QPointF{std::clamp(sinRotation, -1.0f, 0.0f) * -1.0f,
-                    std::clamp(cosRotation, -1.0f, 0.0f) * -1.0f} *
-                scale,
-            QPointF{std::clamp(sinRotation, 0.0f, 1.0f),
-                    std::clamp(cosRotation, 0.0f, 1.0f)} *
-                scale,
-        };
-
-        gradient.setCoordinateMode(QGradient::ObjectMode);
-        gradient.setSpread(repeat ? QGradient::Spread::RepeatSpread
-                                  : QGradient::Spread::PadSpread);
-
-        auto baseColor{color.value_or(userColor)};
-        for (auto const &[t, c] : stops)
-            gradient.setColorAt(t, overlay ? c : baseColor.mix(c));
-
-        QBrush brush{gradient};
-
-        QPen pen{};
-        pen.setBrush(brush);
-        return pen;
-    }
-};
-
 std::unordered_map<std::string, SevenTVGradient> demoGradients{
     {
         "Sunrise",
