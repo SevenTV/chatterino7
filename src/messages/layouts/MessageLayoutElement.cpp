@@ -1,5 +1,4 @@
 #include "messages/layouts/MessageLayoutElement.hpp"
-#include <qcolor.h>
 
 #include "Application.hpp"
 #include "messages/Emote.hpp"
@@ -11,11 +10,6 @@
 
 #include <QDebug>
 #include <QPainter>
-
-#include <algorithm>
-#include <iterator>
-#include <optional>
-#include <unordered_map>
 
 namespace chatterino {
 
