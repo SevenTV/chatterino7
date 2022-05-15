@@ -4,14 +4,8 @@
 #include "common/Outcome.hpp"
 #include "messages/Emote.hpp"
 
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QJsonValue>
-#include <QThread>
 #include <QUrl>
 #include <QUrlQuery>
-
-#include <map>
 
 namespace chatterino {
 void SeventvCosmetics::initialize(Settings &settings, Paths &paths)
@@ -19,23 +13,20 @@ void SeventvCosmetics::initialize(Settings &settings, Paths &paths)
     this->loadSeventvCosmetics();
 }
 
-SeventvCosmetics::SeventvCosmetics()
-{
-}
 
-boost::optional<EmotePtr> SeventvCosmetics::getBadge(const UserId &id)
+std::optional<EmotePtr> SeventvCosmetics::getBadge(const QString &userId)
 {
-    auto it = badgeMap.find(id.string);
+    auto it = badgeMap.find(userId);
     if (it != badgeMap.end())
     {
         return emotes[it->second];
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void SeventvCosmetics::loadSeventvCosmetics()
 {
-    static QUrl url("https://api.7tv.app/v2/badges");
+    static QUrl url("https://api.7tv.app/v2/cosmetics");
 
     static QUrlQuery urlQuery;
     // valid user_identifier values: "object_id", "twitch_id", "login"
@@ -46,9 +37,10 @@ void SeventvCosmetics::loadSeventvCosmetics()
     NetworkRequest(url)
         .onSuccess([this](NetworkResult result) -> Outcome {
             auto root = result.parseJson();
+            auto jsonBadges = root.value("badges").toArray();
 
             int index = 0;
-            for (const auto &jsonBadge_ : root.value("badges").toArray())
+            for (const auto &jsonBadge_ : jsonBadges)
             {
                 auto badge = jsonBadge_.toObject();
                 auto urls = badge.value("urls").toArray();
@@ -75,3 +67,4 @@ void SeventvCosmetics::loadSeventvCosmetics()
 }
 
 }  // namespace chatterino
+
