@@ -1,4 +1,4 @@
-#include "SeventvBadges.hpp"
+#include "SeventvCosmetics.hpp"
 
 #include "common/NetworkRequest.hpp"
 #include "common/Outcome.hpp"
@@ -14,16 +14,16 @@
 #include <map>
 
 namespace chatterino {
-void SeventvBadges::initialize(Settings &settings, Paths &paths)
+void SeventvCosmetics::initialize(Settings &settings, Paths &paths)
 {
-    this->loadSeventvBadges();
+    this->loadSeventvCosmetics();
 }
 
-SeventvBadges::SeventvBadges()
+SeventvCosmetics::SeventvCosmetics()
 {
 }
 
-boost::optional<EmotePtr> SeventvBadges::getBadge(const UserId &id)
+boost::optional<EmotePtr> SeventvCosmetics::getBadge(const UserId &id)
 {
     auto it = badgeMap.find(id.string);
     if (it != badgeMap.end())
@@ -33,7 +33,7 @@ boost::optional<EmotePtr> SeventvBadges::getBadge(const UserId &id)
     return boost::none;
 }
 
-void SeventvBadges::loadSeventvBadges()
+void SeventvCosmetics::loadSeventvCosmetics()
 {
     static QUrl url("https://api.7tv.app/v2/badges");
 

@@ -13,16 +13,16 @@ namespace chatterino {
 struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;
 
-class SeventvBadges : public Singleton
+class SeventvCosmetics : public Singleton
 {
 public:
     virtual void initialize(Settings &settings, Paths &paths) override;
-    SeventvBadges();
+    SeventvCosmetics();
 
     boost::optional<EmotePtr> getBadge(const UserId &id);
 
 private:
-    void loadSeventvBadges();
+    void loadSeventvCosmetics();
     std::map<QString, int> badgeMap;
     std::vector<EmotePtr> emotes;
 };

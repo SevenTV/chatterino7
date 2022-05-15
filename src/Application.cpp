@@ -18,7 +18,7 @@
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
 #include "providers/irc/Irc2.hpp"
-#include "providers/seventv/SeventvBadges.hpp"
+#include "providers/seventv/SeventvCosmetics.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
@@ -73,7 +73,7 @@ Application::Application(Settings &_settings, Paths &_paths)
     , highlights(&this->emplace<HighlightController>())
     , twitch(&this->emplace<TwitchIrcServer>())
     , chatterinoBadges(&this->emplace<ChatterinoBadges>())
-    , seventvBadges(&this->emplace<SeventvBadges>())
+    , seventvCosmetics(&this->emplace<SeventvCosmetics>())
     , ffzBadges(&this->emplace<FfzBadges>())
     , logging(&this->emplace<Logging>())
 {
