@@ -256,61 +256,6 @@ constexpr inline static T lerp(T a, T b, M t)
     return a + (b - a) * t;
 }
 
-union ColorUnion {
-    std::int32_t c;
-    struct {
-        std::uint8_t a;
-        std::uint8_t b;
-        std::uint8_t g;
-        std::uint8_t r;
-    };
-
-    [[nodiscard]] operator QColor() const
-    {
-        return QColor{r, g, b, a};
-    }
-
-    [[nodiscard]] constexpr inline static ColorUnion fromRGBA(
-        decltype(r) r, decltype(g) g, decltype(b) b, decltype(a) a = 255)
-    {
-        return {
-            .a = a,
-            .b = b,
-            .g = g,
-            .r = r,
-        };
-    }
-
-    [[nodiscard]] inline static ColorUnion fromQColor(QColor const &qcolor)
-    {
-        return {
-            .a = static_cast<decltype(a)>(qcolor.alpha()),
-            .b = static_cast<decltype(b)>(qcolor.blue()),
-            .g = static_cast<decltype(g)>(qcolor.green()),
-            .r = static_cast<decltype(r)>(qcolor.red()),
-        };
-    }
-
-    template <typename T = float>
-    [[nodiscard]] constexpr inline ColorUnion mix(ColorUnion const &other,
-                                                  T t) const
-    {
-        return {
-            // .a = lerp(a, other.a, t),
-            .a = 255,
-            .b = lerp(b, other.b, t),
-            .g = lerp(g, other.g, t),
-            .r = lerp(r, other.r, t),
-        };
-    }
-
-    [[nodiscard]] constexpr inline ColorUnion mix(ColorUnion const &other) const
-    {
-        const float t{static_cast<float>(other.a) / 255.0f};
-        return mix(other, t);
-    }
-};
-
 struct SevenTVGradient {
     std::string function{"linear-gradient"};
     std::optional<ColorUnion> color{{0}};

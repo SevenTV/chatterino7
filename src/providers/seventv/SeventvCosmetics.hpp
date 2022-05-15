@@ -16,6 +16,8 @@ public:
 private:
     void loadSeventvCosmetics();
 
+    QColor decimalColorToQColor(const uint32_t color);
+
     std::map<QString, int> badgeMap;
     std::vector<EmotePtr> emotes;
 };

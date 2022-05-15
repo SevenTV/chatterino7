@@ -66,5 +66,15 @@ void SeventvCosmetics::loadSeventvCosmetics()
         .execute();
 }
 
+QColor SeventvCosmetics::decimalColorToQColor(uint32_t color)
+{
+    auto red = (color >> 24) & 0xFF;
+    auto green = (color >> 16) & 0xFF;
+    auto blue = (color >> 8) & 0xFF;
+    auto alpha = color & 0xFF;
+
+    return QColor(red, green, blue, alpha);
+}
+
 }  // namespace chatterino
 
