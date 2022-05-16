@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QBrush>
+
 namespace chatterino {
 
 class Paint

@@ -3,6 +3,11 @@
 #include "common/Singleton.hpp"
 #include "providers/seventv/paints/Paint.hpp"
 
+#include <optional>
+
+#include <QJsonArray>
+#include <QString>
+
 namespace chatterino {
 
 struct Emote;
