@@ -211,12 +211,13 @@ SOURCES += \
     src/providers/irc/IrcServer.cpp \
     src/providers/IvrApi.cpp \
     src/providers/LinkResolver.cpp \
-    src/providers/seventv/SeventvCosmetics.cpp \
-    src/providers/seventv/SeventvEmotes.cpp \
-    src/providers/seventv/SeventvWebSocket.cpp \
     src/providers/seventv/paints/LinearGradientPaint.cpp \
     src/providers/seventv/paints/RadialGradientPaint.cpp \
     src/providers/seventv/paints/UrlPaint.cpp \
+    src/providers/seventv/SeventvBadges.cpp \
+    src/providers/seventv/SeventvEmotes.cpp \
+    src/providers/seventv/SeventvPaints.cpp \
+    src/providers/seventv/SeventvWebSocket.cpp \
     src/providers/twitch/api/Helix.cpp \
     src/providers/twitch/ChannelPointReward.cpp \
     src/providers/twitch/IrcMessageHandler.cpp \
@@ -474,13 +475,14 @@ HEADERS += \
     src/providers/irc/IrcServer.hpp \
     src/providers/IvrApi.hpp \
     src/providers/LinkResolver.hpp \
-    src/providers/seventv/SeventvCosmetics.hpp \
-    src/providers/seventv/SeventvEmotes.hpp \
-    src/providers/seventv/SeventvWebSocket.hpp \
-    src/providers/seventv/paints/Paint.hpp \
     src/providers/seventv/paints/LinearGradientPaint.hpp \
+    src/providers/seventv/paints/Paint.hpp \
     src/providers/seventv/paints/RadialGradientPaint.hpp \
     src/providers/seventv/paints/UrlPaint.hpp \
+    src/providers/seventv/SeventvBadges.hpp \
+    src/providers/seventv/SeventvEmotes.hpp \
+    src/providers/seventv/SeventvPaints.hpp \
+    src/providers/seventv/SeventvWebSocket.hpp \
     src/providers/twitch/api/Helix.hpp \
     src/providers/twitch/ChannelPointReward.hpp \
     src/providers/twitch/ChatterinoWebSocketppLogger.hpp \

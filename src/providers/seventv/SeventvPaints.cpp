@@ -1,45 +1,43 @@
-#include "SeventvCosmetics.hpp"
+#include "SeventvPaints.hpp"
 
 #include "common/NetworkRequest.hpp"
 #include "common/Outcome.hpp"
-#include "messages/Emote.hpp"
 #include "providers/seventv/paints/LinearGradientPaint.hpp"
+#include "providers/seventv/paints/RadialGradientPaint.hpp"
+#include "providers/seventv/paints/UrlPaint.hpp"
 
 #include <QUrl>
 #include <QUrlQuery>
 
 namespace chatterino {
-void SeventvCosmetics::initialize(Settings &settings, Paths &paths)
+void SeventvPaints::initialize(Settings &settings, Paths &paths)
 {
     this->loadSeventvCosmetics();
 }
 
-std::optional<EmotePtr> SeventvCosmetics::getBadge(const QString &userId)
+std::optional<Paint *> SeventvPaints::getPaint(const QString &userName)
 {
-    auto it = badgeMap.find(userId);
-    if (it != badgeMap.end())
+    auto it = paints.find(userName);
+    if (it != paints.end())
     {
-        return emotes[it->second];
+        return it->second;
     }
     return std::nullopt;
 }
 
-void SeventvCosmetics::loadSeventvCosmetics()
+void SeventvPaints::loadSeventvCosmetics()
 {
     static QUrl url("https://api.7tv.app/v2/cosmetics");
 
     static QUrlQuery urlQuery;
     // valid user_identifier values: "object_id", "twitch_id", "login"
-    urlQuery.addQueryItem("user_identifier", "twitch_id");
+    urlQuery.addQueryItem("user_identifier", "login");
 
     url.setQuery(urlQuery);
 
     NetworkRequest(url)
         .onSuccess([this](NetworkResult result) -> Outcome {
             auto root = result.parseJson();
-
-            auto jsonBadges = root.value("badges").toArray();
-            loadSeventvBadges(jsonBadges);
 
             auto jsonPaints = root.value("paints").toArray();
             loadSeventvPaints(jsonPaints);
@@ -49,30 +47,7 @@ void SeventvCosmetics::loadSeventvCosmetics()
         .execute();
 }
 
-void SeventvCosmetics::loadSeventvBadges(QJsonArray badges)
-{
-    int index = 0;
-    for (const auto &jsonBadge_ : badges)
-    {
-        auto badge = jsonBadge_.toObject();
-        auto urls = badge.value("urls").toArray();
-        auto emote = Emote{EmoteName{},
-                           ImageSet{Url{urls.at(0).toArray().at(1).toString()},
-                                    Url{urls.at(1).toArray().at(1).toString()},
-                                    Url{urls.at(2).toArray().at(1).toString()}},
-                           Tooltip{badge.value("tooltip").toString()}, Url{}};
-
-        emotes.push_back(std::make_shared<const Emote>(std::move(emote)));
-
-        for (const auto &user : badge.value("users").toArray())
-        {
-            badgeMap[user.toString()] = index;
-        }
-        ++index;
-    }
-}
-
-void SeventvCosmetics::loadSeventvPaints(QJsonArray paints)
+void SeventvPaints::loadSeventvPaints(QJsonArray paints)
 {
     for (const auto &jsonPaint : paints)
     {
@@ -80,7 +55,7 @@ void SeventvCosmetics::loadSeventvPaints(QJsonArray paints)
         auto paintObject = jsonPaint.toObject();
 
         QString name = paintObject.value("name").toString();
-        QStringList userIds =
+        QStringList userNames =
             parsePaintUsers(paintObject.value("users").toArray());
 
         auto color = parsePaintColor(paintObject.value("color"));
@@ -98,24 +73,28 @@ void SeventvCosmetics::loadSeventvPaints(QJsonArray paints)
         else if (function == "radial-gradient")
         {
             QString shape = paintObject.value("shape").toString();
+
+            paint = new RadialGradientPaint();
         }
         else if (function == "url")
         {
             QString url = paintObject.value("image_url").toString();
+
+            paint = new UrlPaint();
         }
         else
         {
             continue;
         }
 
-        for (const auto &userId : userIds)
+        for (const auto &userName : userNames)
         {
-            this->paints[userId] = paint;
+            this->paints[userName] = paint;
         }
     }
 }
 
-QStringList SeventvCosmetics::parsePaintUsers(QJsonArray users)
+QStringList SeventvPaints::parsePaintUsers(QJsonArray users)
 {
     QStringList userIds;
 
@@ -127,7 +106,7 @@ QStringList SeventvCosmetics::parsePaintUsers(QJsonArray users)
     return userIds;
 }
 
-std::optional<QColor> SeventvCosmetics::parsePaintColor(QJsonValue color)
+std::optional<QColor> SeventvPaints::parsePaintColor(QJsonValue color)
 {
     if (color.isNull())
         return std::nullopt;
@@ -135,7 +114,7 @@ std::optional<QColor> SeventvCosmetics::parsePaintColor(QJsonValue color)
     return decimalColorToQColor(color.toInt());
 }
 
-std::vector<std::pair<float, QColor>> SeventvCosmetics::parsePaintStops(
+std::vector<std::pair<float, QColor>> SeventvPaints::parsePaintStops(
     QJsonArray stops)
 {
     std::vector<std::pair<float, QColor>> parsedStops;
@@ -151,7 +130,7 @@ std::vector<std::pair<float, QColor>> SeventvCosmetics::parsePaintStops(
     return parsedStops;
 }
 
-QColor SeventvCosmetics::decimalColorToQColor(uint32_t color)
+QColor SeventvPaints::decimalColorToQColor(uint32_t color)
 {
     auto red = (color >> 24) & 0xFF;
     auto green = (color >> 16) & 0xFF;

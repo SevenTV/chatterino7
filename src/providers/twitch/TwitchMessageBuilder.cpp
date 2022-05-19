@@ -7,7 +7,7 @@
 #include "messages/Message.hpp"
 #include "providers/chatterino/ChatterinoBadges.hpp"
 #include "providers/ffz/FfzBadges.hpp"
-#include "providers/seventv/SeventvCosmetics.hpp"
+#include "providers/seventv/SeventvBadges.hpp"
 #include "providers/twitch/TwitchBadges.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
@@ -1126,7 +1126,7 @@ void TwitchMessageBuilder::appendChatterinoBadges()
 
 void TwitchMessageBuilder::appendSeventvBadges()
 {
-    if (auto badge = getApp()->seventvCosmetics->getBadge({this->userId_}))
+    if (auto badge = getApp()->seventvBadges->getBadge({this->userId_}))
     {
         this->emplace<BadgeElement>(*badge, MessageElementFlag::BadgeSeventv);
     }

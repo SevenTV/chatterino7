@@ -172,8 +172,10 @@ set(SOURCE_FILES
         providers/LinkResolver.cpp
         providers/LinkResolver.hpp
 
-        providers/seventv/SeventvCosmetics.cpp
-        providers/seventv/SeventvCosmetics.hpp
+        providers/seventv/SeventvBadges.cpp
+        providers/seventv/SeventvBadges.hpp
+        providers/seventv/SeventvPaints.cpp
+        providers/seventv/SeventvPaints.hpp
         providers/seventv/SeventvEmotes.cpp
         providers/seventv/SeventvEmotes.hpp
         providers/seventv/paints/Paint.hpp
