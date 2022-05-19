@@ -13,6 +13,7 @@ public:
                         bool repeat, float angle);
 
     QBrush asBrush(QColor userColor) const override;
+    bool animated() const override;
 
 private:
     QString name;

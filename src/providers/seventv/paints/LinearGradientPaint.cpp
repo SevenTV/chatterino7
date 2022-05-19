@@ -16,6 +16,11 @@ LinearGradientPaint::LinearGradientPaint(
 {
 }
 
+bool LinearGradientPaint::animated() const
+{
+    return false;
+}
+
 QBrush LinearGradientPaint::asBrush(QColor userColor) const
 {
     const auto pi = boost::math::constants::pi<double>();

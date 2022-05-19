@@ -7,4 +7,9 @@ QBrush UrlPaint::asBrush(QColor userColor) const
     return QBrush(userColor);
 }
 
+bool UrlPaint::animated() const
+{
+    return true;
+}
+
 }  // namespace chatterino
