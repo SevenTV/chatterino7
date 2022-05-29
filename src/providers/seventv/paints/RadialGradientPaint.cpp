@@ -26,7 +26,9 @@ QBrush RadialGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
     for (const auto &[position, color] : this->stops)
     {
-        gradient.setColorAt(position, color);
+        auto combinedColor = this->overlayColors(userColor, color);
+
+        gradient.setColorAt(position, combinedColor);
     }
 
     return QBrush(gradient);
