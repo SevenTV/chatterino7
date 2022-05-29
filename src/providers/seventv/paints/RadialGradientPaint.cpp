@@ -22,13 +22,15 @@ QBrush RadialGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
     QRadialGradient gradient(x, y, radius);
 
-    gradient.setSpread(QGradient::PadSpread);
+    auto spread = repeat ? QGradient::RepeatSpread : QGradient::PadSpread;
+    gradient.setSpread(spread);
 
     for (const auto &[position, color] : this->stops)
     {
         auto combinedColor = this->overlayColors(userColor, color);
+        float offsetPosition = this->repeat ? offsetRepeatingStopPosition(position, this->stops) : position;
 
-        gradient.setColorAt(position, combinedColor);
+        gradient.setColorAt(offsetPosition, combinedColor);
     }
 
     return QBrush(gradient);
