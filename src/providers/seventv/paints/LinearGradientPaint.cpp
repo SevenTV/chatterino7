@@ -1,7 +1,5 @@
 #include "LinearGradientPaint.hpp"
 
-#include <boost/math/constants/constants.hpp>
-
 namespace chatterino {
 
 LinearGradientPaint::LinearGradientPaint(
@@ -23,29 +21,49 @@ bool LinearGradientPaint::animated() const
 
 QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 {
-    const auto pi = boost::math::constants::pi<double>();
+    QPointF startPoint = drawingRect.bottomLeft();
+    QPointF endPoint = drawingRect.topRight();
+    if (angle > 90)
+    {
+        startPoint = drawingRect.topLeft();
+        endPoint = drawingRect.bottomRight();
+    }
+    if (angle > 180)
+    {
+        startPoint = drawingRect.topRight();
+        endPoint = drawingRect.bottomLeft();
+    }
+    if (angle > 270)
+    {
+        startPoint = drawingRect.bottomRight();
+        endPoint = drawingRect.topLeft();
+    }
 
-    float cosRotation = std::cos(this->angle * pi / 180.0);
-    float sinRotation = std::sin(this->angle * pi / 180.0);
+    QLineF gradientAxis;
+    gradientAxis.setP1(drawingRect.center());
+    gradientAxis.setAngle(90.0f - angle);
 
-    auto scale = repeat ? 0.25 : 1.0;
+    QLineF colorStartAxis;
+    colorStartAxis.setP1(startPoint);
+    colorStartAxis.setAngle(-angle);
 
-    float startX = std::clamp(sinRotation, -1.0f, 0.0f) * -0.1f;
-    float startY = std::clamp(cosRotation, -1.0f, 0.0f) * -0.1f;
-    QPointF startPoint = QPointF(startX, startY) * scale;
+    QLineF colorStopAxis;
+    colorStopAxis.setP1(endPoint);
+    colorStopAxis.setAngle(-angle);
 
-    float endX = std::clamp(sinRotation, 0.0f, 1.0f);
-    float endY = std::clamp(cosRotation, 0.0f, 1.0f);
-    QPointF endPoint = QPointF(startX, startY) * scale;
 
-    QLinearGradient gradient(startPoint, endPoint);
+    QPointF gradientStart;
+    QPointF gradientEnd;
+    gradientAxis.intersects(colorStartAxis, &gradientStart);
+    gradientAxis.intersects(colorStopAxis, &gradientEnd);
 
-    gradient.setCoordinateMode(QGradient::ObjectMode);
+    QLinearGradient gradient(gradientStart, gradientEnd);
 
+    // FIX: repeating gradients need different start/end points as well
     auto spread = repeat ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
-    auto baseColor = color.value_or(userColor);
+    // TODO: merge with username colors if transparent
     for (auto const &[position, color] : this->stops)
     {
         gradient.setColorAt(position, color);
