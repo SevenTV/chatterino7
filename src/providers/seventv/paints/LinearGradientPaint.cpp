@@ -72,15 +72,29 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     // TODO: merge with username colors if transparent
     for (auto const &[position, color] : this->stops)
     {
+        auto combinedColor = this->overlayColors(userColor, color);
+
         gradient.setColorAt(
             this->translateRepeatingStop(position, this->stops.front().first,
                                          this->stops.back().first),
-            color);
+            combinedColor);
     }
 
     QBrush brush(gradient);
 
     return brush;
+}
+
+QColor LinearGradientPaint::overlayColors(QColor background,
+                                          QColor foreground) const
+{
+    auto alpha = foreground.alphaF();
+
+    auto r = (1 - alpha) * background.red() + alpha * foreground.red();
+    auto g = (1 - alpha) * background.green() + alpha * foreground.green();
+    auto b = (1 - alpha) * background.blue() + alpha * foreground.blue();
+
+    return QColor(r, g, b);
 }
 
 float LinearGradientPaint::translateRepeatingStop(float stop,
