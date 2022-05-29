@@ -2,7 +2,7 @@
 
 namespace chatterino {
 
-QBrush UrlPaint::asBrush(QColor userColor) const
+QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
 {
     return QBrush(userColor);
 }

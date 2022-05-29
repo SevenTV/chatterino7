@@ -7,7 +7,7 @@ namespace chatterino {
 class RadialGradientPaint : public Paint
 {
 public:
-    QBrush asBrush(QColor serColor) const override;
+    QBrush asBrush(QColor userColor, QRectF drawingRect) const override;
     bool animated() const override;
 };
 

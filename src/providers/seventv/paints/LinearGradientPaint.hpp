@@ -12,7 +12,7 @@ public:
                         const std::vector<std::pair<float, QColor>> stops,
                         bool repeat, float angle);
 
-    QBrush asBrush(QColor userColor) const override;
+    QBrush asBrush(QColor userColor, QRectF drawingRect) const override;
     bool animated() const override;
 
 private:
