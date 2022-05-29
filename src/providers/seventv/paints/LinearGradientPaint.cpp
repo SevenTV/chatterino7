@@ -69,7 +69,6 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     auto spread = repeat ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
-    // TODO: merge with username colors if transparent
     for (auto const &[position, color] : this->stops)
     {
         auto combinedColor = this->overlayColors(userColor, color);
