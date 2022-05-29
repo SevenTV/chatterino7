@@ -4,6 +4,7 @@
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 #include "messages/MessageElement.hpp"
+#include "providers/seventv/SeventvPaints.hpp"
 #include "providers/twitch/TwitchEmotes.hpp"
 #include "singletons/Theme.hpp"
 #include "util/DebugCount.hpp"
@@ -249,6 +250,18 @@ void TextLayoutElement::paint(QPainter &painter)
     auto app = getApp();
 
     painter.setPen(this->color_);
+
+    if (this->getLink().type == chatterino::Link::UserInfo)
+    {
+        auto seventvPaint = app->seventvPaints->getPaint(this->getLink().value.toLower());
+
+        if (seventvPaint.has_value())
+        {
+            QPen pen;
+            pen.setBrush(seventvPaint.value()->asBrush(this->color_, this->getRect()));
+            painter.setPen(pen);
+        }
+    }
 
     painter.setFont(app->fonts->getFont(this->style_, this->scale_));
 
