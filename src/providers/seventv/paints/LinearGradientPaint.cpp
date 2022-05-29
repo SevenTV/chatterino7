@@ -51,7 +51,6 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     colorStopAxis.setP1(endPoint);
     colorStopAxis.setAngle(-angle);
 
-
     QPointF gradientStart;
     QPointF gradientEnd;
     gradientAxis.intersects(colorStartAxis, &gradientStart);

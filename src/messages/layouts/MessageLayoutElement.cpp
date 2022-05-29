@@ -253,12 +253,14 @@ void TextLayoutElement::paint(QPainter &painter)
 
     if (this->getLink().type == chatterino::Link::UserInfo)
     {
-        auto seventvPaint = app->seventvPaints->getPaint(this->getLink().value.toLower());
+        auto seventvPaint =
+            app->seventvPaints->getPaint(this->getLink().value.toLower());
 
         if (seventvPaint.has_value())
         {
             QPen pen;
-            pen.setBrush(seventvPaint.value()->asBrush(this->color_, this->getRect()));
+            pen.setBrush(
+                seventvPaint.value()->asBrush(this->color_, this->getRect()));
             painter.setPen(pen);
         }
     }
