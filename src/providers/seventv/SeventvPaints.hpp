@@ -23,7 +23,7 @@ private:
 
     QStringList parsePaintUsers(QJsonArray users);
     std::optional<QColor> parsePaintColor(QJsonValue color);
-    std::vector<std::pair<float, QColor>> parsePaintStops(QJsonArray stops);
+    QGradientStops parsePaintStops(QJsonArray stops);
 
     QColor decimalColorToQColor(const uint32_t color);
 

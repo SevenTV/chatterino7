@@ -62,8 +62,7 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
         bool repeat = paintObject.value("repeat").toBool();
         float angle = paintObject.value("angle").toDouble();
 
-        std::vector<std::pair<float, QColor>> stops =
-            parsePaintStops(paintObject.value("stops").toArray());
+        QGradientStops stops = parsePaintStops(paintObject.value("stops").toArray());
 
         QString function = paintObject.value("function").toString();
         if (function == "linear-gradient")
@@ -114,15 +113,15 @@ std::optional<QColor> SeventvPaints::parsePaintColor(QJsonValue color)
     return decimalColorToQColor(color.toInt());
 }
 
-std::vector<std::pair<float, QColor>> SeventvPaints::parsePaintStops(
+QGradientStops SeventvPaints::parsePaintStops(
     QJsonArray stops)
 {
-    std::vector<std::pair<float, QColor>> parsedStops;
+    QGradientStops parsedStops;
 
     for (const auto &stop : stops)
     {
         auto stopObject = stop.toObject();
-        parsedStops.push_back(std::make_pair(
+        parsedStops.append(QGradientStop(
             stopObject.value("at").toDouble(),
             decimalColorToQColor(stopObject.value("color").toInt())));
     }
