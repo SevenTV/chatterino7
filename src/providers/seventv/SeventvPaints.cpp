@@ -74,7 +74,7 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
         {
             QString shape = paintObject.value("shape").toString();
 
-            paint = new RadialGradientPaint();
+            paint = new RadialGradientPaint(name, stops, repeat);
         }
         else if (function == "url")
         {
