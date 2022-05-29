@@ -62,7 +62,8 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
         bool repeat = paintObject.value("repeat").toBool();
         float angle = paintObject.value("angle").toDouble();
 
-        QGradientStops stops = parsePaintStops(paintObject.value("stops").toArray());
+        QGradientStops stops =
+            parsePaintStops(paintObject.value("stops").toArray());
 
         QString function = paintObject.value("function").toString();
         if (function == "linear-gradient")
@@ -113,17 +114,30 @@ std::optional<QColor> SeventvPaints::parsePaintColor(QJsonValue color)
     return decimalColorToQColor(color.toInt());
 }
 
-QGradientStops SeventvPaints::parsePaintStops(
-    QJsonArray stops)
+QGradientStops SeventvPaints::parsePaintStops(QJsonArray stops)
 {
     QGradientStops parsedStops;
+    double lastStop = -1;
 
     for (const auto &stop : stops)
     {
         auto stopObject = stop.toObject();
-        parsedStops.append(QGradientStop(
-            stopObject.value("at").toDouble(),
-            decimalColorToQColor(stopObject.value("color").toInt())));
+
+        auto decimalColor = stopObject.value("color").toInt();
+        auto position = stopObject.value("at").toDouble();
+
+        // HACK: qt does not support hard edges in gradients like css does
+        // Setting a different color at the same position twice just overwrites
+        // the previous color. So we have to shift the second point slightly
+        // ahead, simulating an actual hard edge
+        if (position == lastStop)
+        {
+            position += 0.0000001;
+        }
+
+        lastStop = position;
+        parsedStops.append(
+            QGradientStop(position, decimalColorToQColor(decimalColor)));
     }
 
     return parsedStops;
