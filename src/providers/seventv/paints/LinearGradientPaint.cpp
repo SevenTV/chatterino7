@@ -2,9 +2,10 @@
 
 namespace chatterino {
 
-LinearGradientPaint::LinearGradientPaint(
-    const QString name, const std::optional<QColor> color,
-    const QGradientStops stops, bool repeat, float angle)
+LinearGradientPaint::LinearGradientPaint(const QString name,
+                                         const std::optional<QColor> color,
+                                         const QGradientStops stops,
+                                         bool repeat, float angle)
     : Paint()
     , name(name)
     , color(color)
@@ -56,21 +57,45 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     gradientAxis.intersects(colorStartAxis, &gradientStart);
     gradientAxis.intersects(colorStopAxis, &gradientEnd);
 
+    if (this->repeat)
+    {
+        QLineF gradientLine(gradientStart, gradientEnd);
+        gradientStart = gradientLine.pointAt(this->stops.front().first);
+        gradientEnd = gradientLine.pointAt(this->stops.back().first);
+    }
+
     QLinearGradient gradient(gradientStart, gradientEnd);
 
-    // FIX: repeating gradients need different start/end points as well
     auto spread = repeat ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
     // TODO: merge with username colors if transparent
     for (auto const &[position, color] : this->stops)
     {
-        gradient.setColorAt(position, color);
+        gradient.setColorAt(
+            this->translateRepeatingStop(position, this->stops.front().first,
+                                         this->stops.back().first),
+            color);
     }
 
     QBrush brush(gradient);
 
     return brush;
+}
+
+float LinearGradientPaint::translateRepeatingStop(float stop,
+                                                  float gradientStart,
+                                                  float gradientEnd) const
+{
+    if (this->repeat)
+    {
+        float gradientLength = gradientEnd - gradientStart;
+        return (stop - gradientStart) / gradientLength;
+    }
+    else
+    {
+        return stop;
+    }
 }
 
 }  // namespace chatterino
