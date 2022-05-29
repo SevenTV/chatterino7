@@ -15,10 +15,6 @@ public:
     bool animated() const override;
 
 private:
-    QColor overlayColors(QColor background, QColor foreground) const;
-    float translateRepeatingStop(float stop, float gradientStart,
-                                 float gradientEnd) const;
-
     QString name;
     std::optional<QColor> color;
     QGradientStops stops;

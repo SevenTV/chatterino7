@@ -72,43 +72,13 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     for (auto const &[position, color] : this->stops)
     {
         auto combinedColor = this->overlayColors(userColor, color);
-
-        gradient.setColorAt(
-            this->translateRepeatingStop(position, this->stops.front().first,
-                                         this->stops.back().first),
-            combinedColor);
+        float offsetPosition = this->repeat ? this->offsetRepeatingStopPosition(position, this->stops) : position;
+        gradient.setColorAt(offsetPosition, combinedColor);
     }
 
     QBrush brush(gradient);
 
     return brush;
-}
-
-QColor LinearGradientPaint::overlayColors(QColor background,
-                                          QColor foreground) const
-{
-    auto alpha = foreground.alphaF();
-
-    auto r = (1 - alpha) * background.red() + alpha * foreground.red();
-    auto g = (1 - alpha) * background.green() + alpha * foreground.green();
-    auto b = (1 - alpha) * background.blue() + alpha * foreground.blue();
-
-    return QColor(r, g, b);
-}
-
-float LinearGradientPaint::translateRepeatingStop(float stop,
-                                                  float gradientStart,
-                                                  float gradientEnd) const
-{
-    if (this->repeat)
-    {
-        float gradientLength = gradientEnd - gradientStart;
-        return (stop - gradientStart) / gradientLength;
-    }
-    else
-    {
-        return stop;
-    }
 }
 
 }  // namespace chatterino
