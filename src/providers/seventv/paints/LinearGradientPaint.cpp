@@ -72,7 +72,9 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     for (auto const &[position, color] : this->stops)
     {
         auto combinedColor = this->overlayColors(userColor, color);
-        float offsetPosition = this->repeat ? this->offsetRepeatingStopPosition(position, this->stops) : position;
+        float offsetPosition = this->repeat ? this->offsetRepeatingStopPosition(
+                                                  position, this->stops)
+                                            : position;
         gradient.setColorAt(offsetPosition, combinedColor);
     }
 

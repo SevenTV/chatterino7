@@ -4,8 +4,9 @@
 namespace chatterino {
 
 RadialGradientPaint::RadialGradientPaint(const QString name,
-                                         const QGradientStops stops, const bool repeat)
-                                         :Paint()
+                                         const QGradientStops stops,
+                                         const bool repeat)
+    : Paint()
     , name(name)
     , stops(stops)
     , repeat(repeat)
@@ -28,7 +29,9 @@ QBrush RadialGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     for (const auto &[position, color] : this->stops)
     {
         auto combinedColor = this->overlayColors(userColor, color);
-        float offsetPosition = this->repeat ? offsetRepeatingStopPosition(position, this->stops) : position;
+        float offsetPosition =
+            this->repeat ? offsetRepeatingStopPosition(position, this->stops)
+                         : position;
 
         gradient.setColorAt(offsetPosition, combinedColor);
     }

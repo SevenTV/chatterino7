@@ -11,8 +11,10 @@ public:
     virtual bool animated() const = 0;
 
     virtual ~Paint(){};
+
 protected:
-    QColor overlayColors(QColor background, QColor foreground) const {
+    QColor overlayColors(QColor background, QColor foreground) const
+    {
         auto alpha = foreground.alphaF();
 
         auto r = (1 - alpha) * background.red() + alpha * foreground.red();
@@ -22,7 +24,9 @@ protected:
         return QColor(r, g, b);
     }
 
-    float offsetRepeatingStopPosition(float position, QGradientStops stops) const {
+    float offsetRepeatingStopPosition(float position,
+                                      QGradientStops stops) const
+    {
         float gradientStart = stops.first().first;
         float gradientEnd = stops.last().first;
         float gradientLength = gradientEnd - gradientStart;
