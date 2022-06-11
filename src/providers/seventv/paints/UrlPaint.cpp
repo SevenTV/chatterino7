@@ -2,10 +2,11 @@
 
 namespace chatterino {
 
-UrlPaint::UrlPaint(const QString name, const ImagePtr image)
+UrlPaint::UrlPaint(const QString name, const ImagePtr image, const std::vector<PaintDropShadow> dropShadows)
     : Paint()
     , name(name)
     , image(image)
+    , dropShadows(dropShadows)
 {
 }
 
@@ -26,6 +27,11 @@ QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
     // }
 
     return QBrush(userColor);
+}
+
+std::vector<PaintDropShadow> UrlPaint::getDropShadows() const
+{
+    return dropShadows;
 }
 
 }  // namespace chatterino

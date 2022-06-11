@@ -2,6 +2,7 @@
 
 #include "common/Singleton.hpp"
 #include "providers/seventv/paints/Paint.hpp"
+#include "providers/seventv/paints/PaintDropShadow.hpp"
 
 #include <optional>
 
@@ -24,6 +25,7 @@ private:
     QStringList parsePaintUsers(QJsonArray users);
     std::optional<QColor> parsePaintColor(QJsonValue color);
     QGradientStops parsePaintStops(QJsonArray stops);
+    std::vector<PaintDropShadow> parseDropShadows(QJsonArray dropShadows);
 
     QColor decimalColorToQColor(const uint32_t color);
 

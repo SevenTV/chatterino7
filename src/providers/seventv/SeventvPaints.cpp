@@ -4,11 +4,13 @@
 #include "common/Outcome.hpp"
 #include "messages/Image.hpp"
 #include "providers/seventv/paints/LinearGradientPaint.hpp"
+#include "providers/seventv/paints/PaintDropShadow.hpp"
 #include "providers/seventv/paints/RadialGradientPaint.hpp"
 #include "providers/seventv/paints/UrlPaint.hpp"
 
 #include <QUrl>
 #include <QUrlQuery>
+#include <vector>
 
 namespace chatterino {
 void SeventvPaints::initialize(Settings &settings, Paths &paths)
@@ -66,16 +68,18 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
         QGradientStops stops =
             parsePaintStops(paintObject.value("stops").toArray());
 
+        auto shadows = parseDropShadows(paintObject.value("drop_shadows").toArray());
+
         QString function = paintObject.value("function").toString();
         if (function == "linear-gradient")
         {
-            paint = new LinearGradientPaint(name, color, stops, repeat, angle);
+            paint = new LinearGradientPaint(name, color, stops, repeat, angle, shadows);
         }
         else if (function == "radial-gradient")
         {
             QString shape = paintObject.value("shape").toString();
 
-            paint = new RadialGradientPaint(name, stops, repeat);
+            paint = new RadialGradientPaint(name, stops, repeat, shadows);
         }
         else if (function == "url")
         {
@@ -85,7 +89,7 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
                 continue;
             }
 
-            paint = new UrlPaint(name, image);
+            paint = new UrlPaint(name, image, shadows);
         }
         else
         {
@@ -146,6 +150,26 @@ QGradientStops SeventvPaints::parsePaintStops(QJsonArray stops)
     }
 
     return parsedStops;
+}
+
+std::vector<PaintDropShadow> SeventvPaints::parseDropShadows(QJsonArray dropShadows)
+{
+    std::vector<PaintDropShadow> parsedDropShadows;
+
+    for (const auto &shadow : dropShadows)
+    {
+        auto shadowObject = shadow.toObject();
+
+        auto xOffset = shadowObject.value("x_offset").toDouble();
+        auto yOffset = shadowObject.value("y_offset").toDouble();
+        auto radius = shadowObject.value("radius").toDouble();
+        auto decimalColor = shadowObject.value("color").toInt();
+
+        parsedDropShadows.push_back(
+                PaintDropShadow(xOffset, yOffset, radius, decimalColorToQColor(decimalColor)));
+    }
+
+    return parsedDropShadows;
 }
 
 QColor SeventvPaints::decimalColorToQColor(uint32_t color)

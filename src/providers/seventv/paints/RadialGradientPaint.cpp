@@ -5,11 +5,12 @@ namespace chatterino {
 
 RadialGradientPaint::RadialGradientPaint(const QString name,
                                          const QGradientStops stops,
-                                         const bool repeat)
+                                         const bool repeat, std::vector<PaintDropShadow> dropShadows)
     : Paint()
     , name(name)
     , stops(stops)
     , repeat(repeat)
+    , dropShadows(dropShadows)
 {
 }
 
@@ -42,6 +43,11 @@ QBrush RadialGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 bool RadialGradientPaint::animated() const
 {
     return false;
+}
+
+std::vector<PaintDropShadow> RadialGradientPaint::getDropShadows() const
+{
+    return dropShadows;
 }
 
 }  // namespace chatterino

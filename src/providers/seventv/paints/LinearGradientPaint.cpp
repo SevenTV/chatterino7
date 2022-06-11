@@ -5,13 +5,14 @@ namespace chatterino {
 LinearGradientPaint::LinearGradientPaint(const QString name,
                                          const std::optional<QColor> color,
                                          const QGradientStops stops,
-                                         bool repeat, float angle)
+                                         bool repeat, float angle, std::vector<PaintDropShadow> dropShadows)
     : Paint()
     , name(name)
     , color(color)
     , stops(stops)
     , repeat(repeat)
     , angle(angle)
+    , dropShadows(dropShadows)
 {
 }
 
@@ -81,6 +82,11 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     QBrush brush(gradient);
 
     return brush;
+}
+
+std::vector<PaintDropShadow> LinearGradientPaint::getDropShadows() const
+{
+    return dropShadows;
 }
 
 }  // namespace chatterino
