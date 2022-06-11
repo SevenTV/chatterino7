@@ -2,6 +2,7 @@
 
 #include "common/NetworkRequest.hpp"
 #include "common/Outcome.hpp"
+#include "messages/Image.hpp"
 #include "providers/seventv/paints/LinearGradientPaint.hpp"
 #include "providers/seventv/paints/RadialGradientPaint.hpp"
 #include "providers/seventv/paints/UrlPaint.hpp"
@@ -79,8 +80,12 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
         else if (function == "url")
         {
             QString url = paintObject.value("image_url").toString();
+            ImagePtr image = Image::fromUrl({url}, 1);
+            if (image == nullptr) {
+                continue;
+            }
 
-            paint = new UrlPaint();
+            paint = new UrlPaint(name, image);
         }
         else
         {

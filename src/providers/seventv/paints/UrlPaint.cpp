@@ -2,14 +2,30 @@
 
 namespace chatterino {
 
-QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
+UrlPaint::UrlPaint(const QString name, const ImagePtr image)
+    : Paint()
+    , name(name)
+    , image(image)
 {
-    return QBrush(userColor);
 }
 
 bool UrlPaint::animated() const
 {
-    return true;
+    return image->animated();
+}
+
+QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
+{
+    // FIX: displaying animated text will need more work inside of chatterinos rendering
+    // if (auto pixmap = this->image->pixmapOrLoad())
+    // {
+    //     return QBrush(pixmap->scaled(drawingRect.size().toSize(),
+    //                                  Qt::IgnoreAspectRatio,
+    //                                  Qt::SmoothTransformation));
+    //     return QBrush(*pixmap);
+    // }
+
+    return QBrush(userColor);
 }
 
 }  // namespace chatterino
