@@ -5,12 +5,17 @@
 #include "messages/Image.hpp"
 #include "messages/MessageElement.hpp"
 #include "providers/seventv/SeventvPaints.hpp"
+#include "providers/seventv/paints/PaintDropShadow.hpp"
 #include "providers/twitch/TwitchEmotes.hpp"
 #include "singletons/Theme.hpp"
 #include "util/DebugCount.hpp"
 
 #include <QDebug>
+#include <QGraphicsDropShadowEffect>
+#include <QGraphicsPixmapItem>
+#include <QLabel>
 #include <QPainter>
+#include <QPixmap>
 
 namespace chatterino {
 
@@ -249,8 +254,16 @@ void TextLayoutElement::paint(QPainter &painter)
 {
     auto app = getApp();
 
-    painter.setPen(this->color_);
+    // HACK: draw text to a pixmap first to apply drop shadows
+    QPixmap pixmap(this->getRect().size());
+    pixmap.fill(Qt::transparent);
 
+    QPainter textPainter(&pixmap);
+    textPainter.setRenderHint(QPainter::SmoothPixmapTransform);
+
+    QPen pen(this->color_);
+
+    std::vector<PaintDropShadow> paintDropShadows;
     if (this->getLink().type == chatterino::Link::UserInfo)
     {
         auto seventvPaint =
@@ -258,18 +271,30 @@ void TextLayoutElement::paint(QPainter &painter)
 
         if (seventvPaint.has_value())
         {
-            QPen pen;
-            pen.setBrush(
-                seventvPaint.value()->asBrush(this->color_, this->getRect()));
-            painter.setPen(pen);
+            QPen paintPen;
+            paintPen.setBrush(
+                seventvPaint.value()->asBrush(this->color_, pixmap.rect()));
+            pen = paintPen;
+
+            paintDropShadows = seventvPaint.value()->getDropShadows();
         }
     }
 
-    painter.setFont(app->fonts->getFont(this->style_, this->scale_));
+    textPainter.setPen(pen);
+    textPainter.setFont(app->fonts->getFont(this->style_, this->scale_));
+    textPainter.drawText(QRectF(0, 0, 10000, 10000), this->getText(), QTextOption(Qt::AlignLeft | Qt::AlignTop));
+    textPainter.end();
 
-    painter.drawText(
-        QRectF(this->getRect().x(), this->getRect().y(), 10000, 10000),
-        this->getText(), QTextOption(Qt::AlignLeft | Qt::AlignTop));
+    for (const auto &shadow : paintDropShadows)
+    {
+        QLabel* label = new QLabel();
+        label->setPixmap(pixmap);
+        label->setGraphicsEffect(shadow.getGraphicsEffect());
+
+        pixmap = label->grab();
+    }
+
+    painter.drawPixmap(QRect(this->getRect().x(), this->getRect().y(), pixmap.width(), pixmap.height()), pixmap);
 }
 
 void TextLayoutElement::paintAnimated(QPainter &, int)
