@@ -7,7 +7,7 @@ PaintDropShadow::PaintDropShadow(const float xOffset, const float yOffset, const
 {
 }
 
-QGraphicsDropShadowEffect PaintDropShadow::getGraphicsEffect() const
+QGraphicsDropShadowEffect * PaintDropShadow::getGraphicsEffect() const
 {
     auto effect = new QGraphicsDropShadowEffect();
 
