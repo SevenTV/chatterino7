@@ -255,6 +255,8 @@ void TextLayoutElement::paint(QPainter &painter)
 {
     auto app = getApp();
 
+    if(this->getRect().size().isEmpty()) return;
+
     // HACK: draw text to a pixmap first to apply drop shadows
     QPixmap pixmap(this->getRect().size());
     pixmap.fill(Qt::transparent);
