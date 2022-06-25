@@ -1,6 +1,7 @@
 #include "messages/layouts/MessageLayoutElement.hpp"
 
 #include "Application.hpp"
+#include "BaseSettings.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 #include "messages/MessageElement.hpp"
@@ -269,7 +270,8 @@ void TextLayoutElement::paint(QPainter &painter)
         auto seventvPaint =
             app->seventvPaints->getPaint(this->getLink().value.toLower());
 
-        if (seventvPaint.has_value())
+        bool renderPaints = seventvPaint.has_value() && getSettings()->displaySevenTVPaints;
+        if (renderPaints)
         {
             QPen paintPen;
             paintPen.setBrush(
