@@ -3,9 +3,9 @@
 
 namespace chatterino {
 
-RadialGradientPaint::RadialGradientPaint(const QString name,
-                                         const QGradientStops stops,
-                                         const bool repeat, std::vector<PaintDropShadow> dropShadows)
+RadialGradientPaint::RadialGradientPaint(
+    const QString name, const QGradientStops stops, const bool repeat,
+    std::vector<PaintDropShadow> dropShadows)
     : Paint()
     , name(name)
     , stops(stops)

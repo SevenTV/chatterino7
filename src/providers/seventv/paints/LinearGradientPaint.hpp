@@ -9,7 +9,8 @@ class LinearGradientPaint : public Paint
 {
 public:
     LinearGradientPaint(const QString name, const std::optional<QColor> color,
-                        const QGradientStops stops, bool repeat, float angle, std::vector<PaintDropShadow>);
+                        const QGradientStops stops, bool repeat, float angle,
+                        std::vector<PaintDropShadow>);
 
     QBrush asBrush(QColor userColor, QRectF drawingRect) const override;
     std::vector<PaintDropShadow> getDropShadows() const override;

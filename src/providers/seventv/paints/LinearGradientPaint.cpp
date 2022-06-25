@@ -2,10 +2,10 @@
 
 namespace chatterino {
 
-LinearGradientPaint::LinearGradientPaint(const QString name,
-                                         const std::optional<QColor> color,
-                                         const QGradientStops stops,
-                                         bool repeat, float angle, std::vector<PaintDropShadow> dropShadows)
+LinearGradientPaint::LinearGradientPaint(
+    const QString name, const std::optional<QColor> color,
+    const QGradientStops stops, bool repeat, float angle,
+    std::vector<PaintDropShadow> dropShadows)
     : Paint()
     , name(name)
     , color(color)

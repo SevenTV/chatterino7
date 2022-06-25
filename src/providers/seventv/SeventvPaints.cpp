@@ -68,12 +68,14 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
         QGradientStops stops =
             parsePaintStops(paintObject.value("stops").toArray());
 
-        auto shadows = parseDropShadows(paintObject.value("drop_shadows").toArray());
+        auto shadows =
+            parseDropShadows(paintObject.value("drop_shadows").toArray());
 
         QString function = paintObject.value("function").toString();
         if (function == "linear-gradient")
         {
-            paint = new LinearGradientPaint(name, color, stops, repeat, angle, shadows);
+            paint = new LinearGradientPaint(name, color, stops, repeat, angle,
+                                            shadows);
         }
         else if (function == "radial-gradient")
         {
@@ -85,7 +87,8 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
         {
             QString url = paintObject.value("image_url").toString();
             ImagePtr image = Image::fromUrl({url}, 1);
-            if (image == nullptr) {
+            if (image == nullptr)
+            {
                 continue;
             }
 
@@ -152,7 +155,8 @@ QGradientStops SeventvPaints::parsePaintStops(QJsonArray stops)
     return parsedStops;
 }
 
-std::vector<PaintDropShadow> SeventvPaints::parseDropShadows(QJsonArray dropShadows)
+std::vector<PaintDropShadow> SeventvPaints::parseDropShadows(
+    QJsonArray dropShadows)
 {
     std::vector<PaintDropShadow> parsedDropShadows;
 
@@ -165,8 +169,8 @@ std::vector<PaintDropShadow> SeventvPaints::parseDropShadows(QJsonArray dropShad
         auto radius = shadowObject.value("radius").toDouble();
         auto decimalColor = shadowObject.value("color").toInt();
 
-        parsedDropShadows.push_back(
-                PaintDropShadow(xOffset, yOffset, radius, decimalColorToQColor(decimalColor)));
+        parsedDropShadows.push_back(PaintDropShadow(
+            xOffset, yOffset, radius, decimalColorToQColor(decimalColor)));
     }
 
     return parsedDropShadows;

@@ -255,7 +255,8 @@ void TextLayoutElement::paint(QPainter &painter)
 {
     auto app = getApp();
 
-    if(this->getRect().size().isEmpty()) return;
+    if (this->getRect().size().isEmpty())
+        return;
 
     // HACK: draw text to a pixmap first to apply drop shadows
     QPixmap pixmap(this->getRect().size());
@@ -272,7 +273,8 @@ void TextLayoutElement::paint(QPainter &painter)
         auto seventvPaint =
             app->seventvPaints->getPaint(this->getLink().value.toLower());
 
-        bool renderPaints = seventvPaint.has_value() && getSettings()->displaySevenTVPaints;
+        bool renderPaints =
+            seventvPaint.has_value() && getSettings()->displaySevenTVPaints;
         if (renderPaints)
         {
             QPen paintPen;
@@ -286,19 +288,22 @@ void TextLayoutElement::paint(QPainter &painter)
 
     textPainter.setPen(pen);
     textPainter.setFont(app->fonts->getFont(this->style_, this->scale_));
-    textPainter.drawText(QRectF(0, 0, 10000, 10000), this->getText(), QTextOption(Qt::AlignLeft | Qt::AlignTop));
+    textPainter.drawText(QRectF(0, 0, 10000, 10000), this->getText(),
+                         QTextOption(Qt::AlignLeft | Qt::AlignTop));
     textPainter.end();
 
     for (const auto &shadow : paintDropShadows)
     {
-        QLabel* label = new QLabel();
+        QLabel *label = new QLabel();
         label->setPixmap(pixmap);
         label->setGraphicsEffect(shadow.getGraphicsEffect());
 
         pixmap = label->grab();
     }
 
-    painter.drawPixmap(QRect(this->getRect().x(), this->getRect().y(), pixmap.width(), pixmap.height()), pixmap);
+    painter.drawPixmap(QRect(this->getRect().x(), this->getRect().y(),
+                             pixmap.width(), pixmap.height()),
+                       pixmap);
 }
 
 void TextLayoutElement::paintAnimated(QPainter &, int)

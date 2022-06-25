@@ -8,7 +8,8 @@ namespace chatterino {
 class UrlPaint : public Paint
 {
 public:
-    UrlPaint(const QString name, const ImagePtr image, const std::vector<PaintDropShadow>);
+    UrlPaint(const QString name, const ImagePtr image,
+             const std::vector<PaintDropShadow>);
 
     QBrush asBrush(QColor userColor, QRectF drawingRect) const override;
     std::vector<PaintDropShadow> getDropShadows() const override;

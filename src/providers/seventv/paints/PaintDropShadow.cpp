@@ -2,12 +2,16 @@
 
 namespace chatterino {
 
-PaintDropShadow::PaintDropShadow(const float xOffset, const float yOffset, const float radius, const QColor color)
-    : xOffset(xOffset), yOffset(yOffset), radius(radius), color(color)
+PaintDropShadow::PaintDropShadow(const float xOffset, const float yOffset,
+                                 const float radius, const QColor color)
+    : xOffset(xOffset)
+    , yOffset(yOffset)
+    , radius(radius)
+    , color(color)
 {
 }
 
-QGraphicsDropShadowEffect * PaintDropShadow::getGraphicsEffect() const
+QGraphicsDropShadowEffect *PaintDropShadow::getGraphicsEffect() const
 {
     auto effect = new QGraphicsDropShadowEffect();
 
@@ -19,4 +23,4 @@ QGraphicsDropShadowEffect * PaintDropShadow::getGraphicsEffect() const
     return effect;
 }
 
-} // namespace chatterino
+}  // namespace chatterino
