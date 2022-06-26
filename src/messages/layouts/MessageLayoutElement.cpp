@@ -299,26 +299,12 @@ void TextLayoutElement::paintAnimated(QPainter &painter, int yOffset)
     {
         auto paint = seventvPaint.value();
 
-        QPixmap buffer(this->getRect().size());
-        buffer.fill(Qt::transparent);
-
-        QPainter bufferPainter(&buffer);
-        bufferPainter.setRenderHint(QPainter::SmoothPixmapTransform);
-        bufferPainter.setFont(
-            getApp()->getFonts()->getFont(this->style_, this->scale_));
-
-        QPen paintPen;
-        QBrush paintBrush = paint->asBrush(this->color_, this->getRect());
-        paintPen.setBrush(paintBrush);
-        bufferPainter.setPen(paintPen);
-
-        bufferPainter.drawText(QRectF(0, 0, 10000, 10000), this->getText(),
-                               QTextOption(Qt::AlignLeft | Qt::AlignTop));
-        bufferPainter.end();
+        auto paintPixmap = paint->getPixmap(this->getText(), font, this->color_,
+                                            this->getRect().size());
 
         auto rect = this->getRect();
         rect.moveTop(rect.y() + yOffset);
-        painter.drawPixmap(rect, buffer, QRectF());
+        painter.drawPixmap(rect, paintPixmap, QRectF());
     }
 }
 
