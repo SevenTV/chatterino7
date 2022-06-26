@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QBrush>
+#include <QFont>
 #include <vector>
 #include "providers/seventv/paints/PaintDropShadow.hpp"
 
@@ -13,30 +14,14 @@ public:
     virtual std::vector<PaintDropShadow> getDropShadows() const = 0;
     virtual bool animated() const = 0;
 
+    QPixmap getPixmap(QString text, QFont font, QColor userColor, QSize size);
+
     virtual ~Paint(){};
 
 protected:
-    QColor overlayColors(QColor background, QColor foreground) const
-    {
-        auto alpha = foreground.alphaF();
-
-        auto r = (1 - alpha) * background.red() + alpha * foreground.red();
-        auto g = (1 - alpha) * background.green() + alpha * foreground.green();
-        auto b = (1 - alpha) * background.blue() + alpha * foreground.blue();
-
-        return QColor(r, g, b);
-    }
-
+    QColor overlayColors(QColor background, QColor foreground) const;
     float offsetRepeatingStopPosition(float position,
-                                      QGradientStops stops) const
-    {
-        float gradientStart = stops.first().first;
-        float gradientEnd = stops.last().first;
-        float gradientLength = gradientEnd - gradientStart;
-        float offsetPosition = (position - gradientStart) / gradientLength;
-
-        return offsetPosition;
-    }
+                                      QGradientStops stops) const;
 };
 
 }  // namespace chatterino

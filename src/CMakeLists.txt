@@ -179,6 +179,7 @@ set(SOURCE_FILES
         providers/seventv/SeventvEmotes.cpp
         providers/seventv/SeventvEmotes.hpp
         providers/seventv/paints/Paint.hpp
+        providers/seventv/paints/Paint.cpp
         providers/seventv/paints/PaintDropShadow.hpp
         providers/seventv/paints/PaintDropShadow.cpp
         providers/seventv/paints/LinearGradientPaint.hpp

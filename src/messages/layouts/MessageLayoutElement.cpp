@@ -267,63 +267,12 @@ void TextLayoutElement::paint(QPainter &painter)
     {
         auto paint = seventvPaint.value();
 
-        // HACK: draw text to a buffer pixmap first to apply drop shadows
-        QPixmap buffer(this->getRect().size());
-        buffer.fill(Qt::transparent);
-
-        QPainter bufferPainter(&buffer);
-        bufferPainter.setRenderHint(QPainter::SmoothPixmapTransform);
-        bufferPainter.setFont(font);
-
-        // NOTE: draw colon separately from the nametag
-        // otherwise the paint would extend onto the colon
-        bool drawColon = false;
-        QRectF nametagBoundingRect = buffer.rect();
-        QString nametagText = this->getText();
-        if (nametagText.endsWith(':'))
-        {
-            drawColon = true;
-            nametagText = nametagText.chopped(1);
-            nametagBoundingRect = bufferPainter.boundingRect(
-                QRectF(0, 0, 10000, 10000), nametagText,
-                QTextOption(Qt::AlignLeft | Qt::AlignTop));
-        }
-
-        QPen paintPen;
-        QBrush paintBrush = paint->asBrush(this->color_, nametagBoundingRect);
-        paintPen.setBrush(paintBrush);
-        bufferPainter.setPen(paintPen);
-
-        bufferPainter.drawText(QRectF(0, 0, 10000, 10000), nametagText,
-                               QTextOption(Qt::AlignLeft | Qt::AlignTop));
-        bufferPainter.end();
-
-        for (const auto &shadow : paint->getDropShadows())
-        {
-            QLabel *label = new QLabel();
-            label->setPixmap(buffer);
-            label->setGraphicsEffect(shadow.getGraphicsEffect());
-
-            buffer = label->grab();
-        }
+        auto paintPixmap = paint->getPixmap(this->getText(), font, this->color_,
+                                            this->getRect().size());
 
         painter.drawPixmap(QRect(this->getRect().x(), this->getRect().y(),
-                                 buffer.width(), buffer.height()),
-                           buffer);
-
-        if (drawColon)
-        {
-            auto colonColor =
-                getApp()->getThemes()->messages.textColors.regular;
-            painter.setPen(QPen(colonColor));
-            painter.setFont(font);
-
-            QRectF colonBoundingRect(
-                this->getRect().x() + nametagBoundingRect.right(),
-                this->getRect().y(), 10000, 10000);
-            painter.drawText(colonBoundingRect, ":",
-                             QTextOption(Qt::AlignLeft | Qt::AlignTop));
-        }
+                                 paintPixmap.width(), paintPixmap.height()),
+                           paintPixmap);
     }
     else
     {
