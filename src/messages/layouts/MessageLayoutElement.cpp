@@ -262,9 +262,11 @@ void TextLayoutElement::paint(QPainter &painter)
     bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
     auto seventvPaint =
         getApp()->seventvPaints->getPaint(this->getLink().value.toLower());
-    if (drawPaint && seventvPaint.has_value() &&
-        !seventvPaint.value()->animated())
+    if (drawPaint && seventvPaint.has_value())
     {
+        if (seventvPaint.value()->animated())
+            return;
+
         auto paint = seventvPaint.value();
 
         auto paintPixmap = paint->getPixmap(this->getText(), font, this->color_,
