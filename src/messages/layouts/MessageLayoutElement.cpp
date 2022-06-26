@@ -274,9 +274,9 @@ void TextLayoutElement::paint(QPainter &painter)
         bufferPainter.setRenderHint(QPainter::SmoothPixmapTransform);
         bufferPainter.setFont(font);
 
-        bool drawColon = false;
         // NOTE: draw colon separately from the nametag
         // otherwise the paint would extend onto the colon
+        bool drawColon = false;
         QRectF nametagBoundingRect = buffer.rect();
         QString nametagText = this->getText();
         if (nametagText.endsWith(':'))
