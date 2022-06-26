@@ -253,57 +253,86 @@ int TextLayoutElement::getSelectionIndexCount() const
 
 void TextLayoutElement::paint(QPainter &painter)
 {
-    auto app = getApp();
-
-    if (this->getRect().size().isEmpty())
+    if (this->getRect().isEmpty())
         return;
 
-    // HACK: draw text to a pixmap first to apply drop shadows
-    QPixmap pixmap(this->getRect().size());
-    pixmap.fill(Qt::transparent);
+    auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
 
-    QPainter textPainter(&pixmap);
-    textPainter.setRenderHint(QPainter::SmoothPixmapTransform);
-
-    QPen pen(this->color_);
-
-    std::vector<PaintDropShadow> paintDropShadows;
-    if (this->getLink().type == chatterino::Link::UserInfo)
+    bool isNametag = this->getLink().type == chatterino::Link::UserInfo;
+    bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
+    auto seventvPaint =
+        getApp()->seventvPaints->getPaint(this->getLink().value.toLower());
+    if (drawPaint && seventvPaint.has_value())
     {
-        auto seventvPaint =
-            app->seventvPaints->getPaint(this->getLink().value.toLower());
+        auto paint = seventvPaint.value();
 
-        bool renderPaints =
-            seventvPaint.has_value() && getSettings()->displaySevenTVPaints;
-        if (renderPaints)
+        // HACK: draw text to a buffer pixmap first to apply drop shadows
+        QPixmap buffer(this->getRect().size());
+        buffer.fill(Qt::transparent);
+
+        QPainter bufferPainter(&buffer);
+        bufferPainter.setRenderHint(QPainter::SmoothPixmapTransform);
+        bufferPainter.setFont(font);
+
+        bool drawColon = false;
+        // NOTE: draw colon separately from the nametag
+        // otherwise the paint would extend onto the colon
+        QRectF nametagBoundingRect = buffer.rect();
+        QString nametagText = this->getText();
+        if (nametagText.endsWith(':'))
         {
-            QPen paintPen;
-            paintPen.setBrush(
-                seventvPaint.value()->asBrush(this->color_, pixmap.rect()));
-            pen = paintPen;
+            drawColon = true;
+            nametagText = nametagText.chopped(1);
+            nametagBoundingRect = bufferPainter.boundingRect(
+                QRectF(0, 0, 10000, 10000), nametagText,
+                QTextOption(Qt::AlignLeft | Qt::AlignTop));
+        }
 
-            paintDropShadows = seventvPaint.value()->getDropShadows();
+        QPen paintPen;
+        QBrush paintBrush = paint->asBrush(this->color_, nametagBoundingRect);
+        paintPen.setBrush(paintBrush);
+        bufferPainter.setPen(paintPen);
+
+        bufferPainter.drawText(QRectF(0, 0, 10000, 10000), nametagText,
+                               QTextOption(Qt::AlignLeft | Qt::AlignTop));
+        bufferPainter.end();
+
+        for (const auto &shadow : paint->getDropShadows())
+        {
+            QLabel *label = new QLabel();
+            label->setPixmap(buffer);
+            label->setGraphicsEffect(shadow.getGraphicsEffect());
+
+            buffer = label->grab();
+        }
+
+        painter.drawPixmap(QRect(this->getRect().x(), this->getRect().y(),
+                                 buffer.width(), buffer.height()),
+                           buffer);
+
+        if (drawColon)
+        {
+            auto colonColor =
+                getApp()->getThemes()->messages.textColors.regular;
+            painter.setPen(QPen(colonColor));
+            painter.setFont(font);
+
+            QRectF colonBoundingRect(
+                this->getRect().x() + nametagBoundingRect.right(),
+                this->getRect().y(), 10000, 10000);
+            painter.drawText(colonBoundingRect, ":",
+                             QTextOption(Qt::AlignLeft | Qt::AlignTop));
         }
     }
-
-    textPainter.setPen(pen);
-    textPainter.setFont(app->fonts->getFont(this->style_, this->scale_));
-    textPainter.drawText(QRectF(0, 0, 10000, 10000), this->getText(),
-                         QTextOption(Qt::AlignLeft | Qt::AlignTop));
-    textPainter.end();
-
-    for (const auto &shadow : paintDropShadows)
+    else
     {
-        QLabel *label = new QLabel();
-        label->setPixmap(pixmap);
-        label->setGraphicsEffect(shadow.getGraphicsEffect());
+        painter.setPen(this->color_);
+        painter.setFont(font);
 
-        pixmap = label->grab();
+        painter.drawText(
+            QRectF(this->getRect().x(), this->getRect().y(), 10000, 10000),
+            this->getText(), QTextOption(Qt::AlignLeft | Qt::AlignTop));
     }
-
-    painter.drawPixmap(QRect(this->getRect().x(), this->getRect().y(),
-                             pixmap.width(), pixmap.height()),
-                       pixmap);
 }
 
 void TextLayoutElement::paintAnimated(QPainter &, int)
