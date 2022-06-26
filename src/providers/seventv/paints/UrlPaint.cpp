@@ -1,5 +1,7 @@
 #include "UrlPaint.hpp"
 
+#include <QPainter>
+
 namespace chatterino {
 
 UrlPaint::UrlPaint(const QString name, const ImagePtr image,
@@ -18,14 +20,20 @@ bool UrlPaint::animated() const
 
 QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
 {
-    // FIX: displaying animated text will need more work inside of chatterinos rendering
-    // if (auto pixmap = this->image->pixmapOrLoad())
-    // {
-    //     return QBrush(pixmap->scaled(drawingRect.size().toSize(),
-    //                                  Qt::IgnoreAspectRatio,
-    //                                  Qt::SmoothTransformation));
-    //     return QBrush(*pixmap);
-    // }
+    if (auto paintPixmap = this->image->pixmapOrLoad())
+    {
+        paintPixmap = paintPixmap->scaledToWidth(drawingRect.width());
+
+        QPixmap userColorPixmap = QPixmap(paintPixmap->size());
+        userColorPixmap.fill(userColor);
+
+        QPainter painter(&userColorPixmap);
+        painter.drawPixmap(0, 0, *paintPixmap);
+
+        QPixmap combinedPixmap = userColorPixmap.copy(
+            QRect(0, 0, drawingRect.width(), drawingRect.height()));
+        return QBrush(combinedPixmap);
+    }
 
     return QBrush(userColor);
 }
