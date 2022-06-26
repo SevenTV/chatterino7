@@ -8,8 +8,7 @@
 
 namespace chatterino {
 
-QPixmap Paint::getPixmap(QString text, QFont font, QColor userColor,
-                         QSize size)
+QPixmap Paint::getPixmap(QString text, QFont font, QColor userColor, QSize size)
 {
     QPixmap buffer(size);
     buffer.fill(Qt::transparent);
