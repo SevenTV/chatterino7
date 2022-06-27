@@ -13,10 +13,10 @@ public:
     QGraphicsDropShadowEffect *getGraphicsEffect() const;
 
 private:
-    const float xOffset;
-    const float yOffset;
-    const float radius;
-    const QColor color;
+    const float xOffset_;
+    const float yOffset_;
+    const float radius_;
+    const QColor color_;
 };
 
 }  // namespace chatterino

@@ -7,20 +7,20 @@ namespace chatterino {
 UrlPaint::UrlPaint(const QString name, const ImagePtr image,
                    const std::vector<PaintDropShadow> dropShadows)
     : Paint()
-    , name(name)
-    , image(image)
-    , dropShadows(dropShadows)
+    , name_(name)
+    , image_(image)
+    , dropShadows_(dropShadows)
 {
 }
 
 bool UrlPaint::animated() const
 {
-    return image->animated();
+    return image_->animated();
 }
 
 QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
 {
-    if (auto paintPixmap = this->image->pixmapOrLoad())
+    if (auto paintPixmap = this->image_->pixmapOrLoad())
     {
         paintPixmap = paintPixmap->scaledToWidth(drawingRect.width());
 
@@ -40,7 +40,7 @@ QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
 std::vector<PaintDropShadow> UrlPaint::getDropShadows() const
 {
-    return dropShadows;
+    return dropShadows_;
 }
 
 }  // namespace chatterino

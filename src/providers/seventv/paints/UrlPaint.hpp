@@ -16,10 +16,10 @@ public:
     bool animated() const override;
 
 private:
-    QString name;
-    ImagePtr image;
+    QString name_;
+    ImagePtr image_;
 
-    std::vector<PaintDropShadow> dropShadows;
+    std::vector<PaintDropShadow> dropShadows_;
 };
 
 }  // namespace chatterino

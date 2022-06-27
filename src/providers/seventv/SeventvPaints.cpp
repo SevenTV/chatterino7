@@ -20,8 +20,8 @@ void SeventvPaints::initialize(Settings &settings, Paths &paths)
 
 std::optional<Paint *> SeventvPaints::getPaint(const QString &userName)
 {
-    auto it = paints.find(userName);
-    if (it != paints.end())
+    auto it = paints_.find(userName);
+    if (it != paints_.end())
     {
         return it->second;
     }
@@ -101,7 +101,7 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
 
         for (const auto &userName : userNames)
         {
-            this->paints[userName] = paint;
+            this->paints_[userName] = paint;
         }
     }
 }

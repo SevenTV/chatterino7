@@ -7,12 +7,12 @@ LinearGradientPaint::LinearGradientPaint(
     const QGradientStops stops, bool repeat, float angle,
     std::vector<PaintDropShadow> dropShadows)
     : Paint()
-    , name(name)
-    , color(color)
-    , stops(stops)
-    , repeat(repeat)
-    , angle(angle)
-    , dropShadows(dropShadows)
+    , name_(name)
+    , color_(color)
+    , stops_(stops)
+    , repeat_(repeat)
+    , angle_(angle)
+    , dropShadows_(dropShadows)
 {
 }
 
@@ -25,17 +25,17 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 {
     QPointF startPoint = drawingRect.bottomLeft();
     QPointF endPoint = drawingRect.topRight();
-    if (angle > 90)
+    if (angle_ > 90)
     {
         startPoint = drawingRect.topLeft();
         endPoint = drawingRect.bottomRight();
     }
-    if (angle > 180)
+    if (angle_ > 180)
     {
         startPoint = drawingRect.topRight();
         endPoint = drawingRect.bottomLeft();
     }
-    if (angle > 270)
+    if (angle_ > 270)
     {
         startPoint = drawingRect.bottomRight();
         endPoint = drawingRect.topLeft();
@@ -43,38 +43,38 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
     QLineF gradientAxis;
     gradientAxis.setP1(drawingRect.center());
-    gradientAxis.setAngle(90.0f - angle);
+    gradientAxis.setAngle(90.0f - angle_);
 
     QLineF colorStartAxis;
     colorStartAxis.setP1(startPoint);
-    colorStartAxis.setAngle(-angle);
+    colorStartAxis.setAngle(-angle_);
 
     QLineF colorStopAxis;
     colorStopAxis.setP1(endPoint);
-    colorStopAxis.setAngle(-angle);
+    colorStopAxis.setAngle(-angle_);
 
     QPointF gradientStart;
     QPointF gradientEnd;
     gradientAxis.intersects(colorStartAxis, &gradientStart);
     gradientAxis.intersects(colorStopAxis, &gradientEnd);
 
-    if (this->repeat)
+    if (this->repeat_)
     {
         QLineF gradientLine(gradientStart, gradientEnd);
-        gradientStart = gradientLine.pointAt(this->stops.front().first);
-        gradientEnd = gradientLine.pointAt(this->stops.back().first);
+        gradientStart = gradientLine.pointAt(this->stops_.front().first);
+        gradientEnd = gradientLine.pointAt(this->stops_.back().first);
     }
 
     QLinearGradient gradient(gradientStart, gradientEnd);
 
-    auto spread = repeat ? QGradient::RepeatSpread : QGradient::PadSpread;
+    auto spread = repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
-    for (auto const &[position, color] : this->stops)
+    for (auto const &[position, color] : this->stops_)
     {
         auto combinedColor = this->overlayColors(userColor, color);
-        float offsetPosition = this->repeat ? this->offsetRepeatingStopPosition(
-                                                  position, this->stops)
+        float offsetPosition = this->repeat_ ? this->offsetRepeatingStopPosition(
+                                                  position, this->stops_)
                                             : position;
         gradient.setColorAt(offsetPosition, combinedColor);
     }
@@ -86,7 +86,7 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
 std::vector<PaintDropShadow> LinearGradientPaint::getDropShadows() const
 {
-    return dropShadows;
+    return dropShadows_;
 }
 
 }  // namespace chatterino

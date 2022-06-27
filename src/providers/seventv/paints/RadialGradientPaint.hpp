@@ -14,11 +14,11 @@ public:
     bool animated() const override;
 
 private:
-    const QString name;
-    const QGradientStops stops;
-    const bool repeat;
+    const QString name_;
+    const QGradientStops stops_;
+    const bool repeat_;
 
-    std::vector<PaintDropShadow> dropShadows;
+    std::vector<PaintDropShadow> dropShadows_;
 };
 
 }  // namespace chatterino

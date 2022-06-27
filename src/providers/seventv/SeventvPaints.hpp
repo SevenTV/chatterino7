@@ -29,7 +29,7 @@ private:
 
     QColor decimalColorToQColor(const uint32_t color);
 
-    std::map<QString, Paint *> paints;
+    std::map<QString, Paint *> paints_;
 };
 
 }  // namespace chatterino
