@@ -212,6 +212,7 @@ SOURCES += \
     src/providers/IvrApi.cpp \
     src/providers/LinkResolver.cpp \
     src/providers/seventv/paints/LinearGradientPaint.cpp \
+    src/providers/seventv/paints/Paint.cpp \
     src/providers/seventv/paints/PaintDropShadow.cpp \
     src/providers/seventv/paints/RadialGradientPaint.cpp \
     src/providers/seventv/paints/UrlPaint.cpp \
