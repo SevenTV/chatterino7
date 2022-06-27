@@ -15,10 +15,10 @@ QGraphicsDropShadowEffect *PaintDropShadow::getGraphicsEffect() const
 {
     auto effect = new QGraphicsDropShadowEffect();
 
-    effect->setXOffset(xOffset_);
-    effect->setYOffset(yOffset_);
-    effect->setBlurRadius(radius_);
-    effect->setColor(color_);
+    effect->setXOffset(this->xOffset_);
+    effect->setYOffset(this->yOffset_);
+    effect->setBlurRadius(this->radius_);
+    effect->setColor(this->color_);
 
     return effect;
 }

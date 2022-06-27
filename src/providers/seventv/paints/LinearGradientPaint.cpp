@@ -25,17 +25,17 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 {
     QPointF startPoint = drawingRect.bottomLeft();
     QPointF endPoint = drawingRect.topRight();
-    if (angle_ > 90)
+    if (this->angle_ > 90)
     {
         startPoint = drawingRect.topLeft();
         endPoint = drawingRect.bottomRight();
     }
-    if (angle_ > 180)
+    if (this->angle_ > 180)
     {
         startPoint = drawingRect.topRight();
         endPoint = drawingRect.bottomLeft();
     }
-    if (angle_ > 270)
+    if (this->angle_ > 270)
     {
         startPoint = drawingRect.bottomRight();
         endPoint = drawingRect.topLeft();
@@ -43,15 +43,15 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
     QLineF gradientAxis;
     gradientAxis.setP1(drawingRect.center());
-    gradientAxis.setAngle(90.0f - angle_);
+    gradientAxis.setAngle(90.0f - this->angle_);
 
     QLineF colorStartAxis;
     colorStartAxis.setP1(startPoint);
-    colorStartAxis.setAngle(-angle_);
+    colorStartAxis.setAngle(-this->angle_);
 
     QLineF colorStopAxis;
     colorStopAxis.setP1(endPoint);
-    colorStopAxis.setAngle(-angle_);
+    colorStopAxis.setAngle(-this->angle_);
 
     QPointF gradientStart;
     QPointF gradientEnd;
@@ -67,7 +67,7 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
     QLinearGradient gradient(gradientStart, gradientEnd);
 
-    auto spread = repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
+    auto spread = this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
     for (auto const &[position, color] : this->stops_)
@@ -86,7 +86,7 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
 std::vector<PaintDropShadow> LinearGradientPaint::getDropShadows() const
 {
-    return dropShadows_;
+    return this->dropShadows_;
 }
 
 }  // namespace chatterino

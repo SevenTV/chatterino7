@@ -40,7 +40,7 @@ QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
 std::vector<PaintDropShadow> UrlPaint::getDropShadows() const
 {
-    return dropShadows_;
+    return this->dropShadows_;
 }
 
 }  // namespace chatterino

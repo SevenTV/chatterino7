@@ -20,18 +20,18 @@ QBrush RadialGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
     double y = drawingRect.y() + drawingRect.height() / 2;
 
     double radius = std::max(drawingRect.width(), drawingRect.height()) / 2;
-    radius = repeat_ ? radius * this->stops_.back().first : radius;
+    radius = this->repeat_ ? radius * this->stops_.back().first : radius;
 
     QRadialGradient gradient(x, y, radius);
 
-    auto spread = repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
+    auto spread = this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
     for (const auto &[position, color] : this->stops_)
     {
         auto combinedColor = this->overlayColors(userColor, color);
         float offsetPosition =
-            this->repeat_ ? offsetRepeatingStopPosition(position, this->stops_)
+            this->repeat_ ? this->offsetRepeatingStopPosition(position, this->stops_)
                          : position;
 
         gradient.setColorAt(offsetPosition, combinedColor);
@@ -47,7 +47,7 @@ bool RadialGradientPaint::animated() const
 
 std::vector<PaintDropShadow> RadialGradientPaint::getDropShadows() const
 {
-    return dropShadows_;
+    return this->dropShadows_;
 }
 
 }  // namespace chatterino

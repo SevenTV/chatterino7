@@ -20,8 +20,8 @@ void SeventvPaints::initialize(Settings &settings, Paths &paths)
 
 std::optional<Paint *> SeventvPaints::getPaint(const QString &userName)
 {
-    auto it = paints_.find(userName);
-    if (it != paints_.end())
+    auto it = this->paints_.find(userName);
+    if (it != this->paints_.end())
     {
         return it->second;
     }
@@ -43,7 +43,7 @@ void SeventvPaints::loadSeventvCosmetics()
             auto root = result.parseJson();
 
             auto jsonPaints = root.value("paints").toArray();
-            loadSeventvPaints(jsonPaints);
+            this->loadSeventvPaints(jsonPaints);
 
             return Success;
         })
@@ -59,17 +59,17 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
 
         QString name = paintObject.value("name").toString();
         QStringList userNames =
-            parsePaintUsers(paintObject.value("users").toArray());
+            this->parsePaintUsers(paintObject.value("users").toArray());
 
-        auto color = parsePaintColor(paintObject.value("color"));
+        auto color = this->parsePaintColor(paintObject.value("color"));
         bool repeat = paintObject.value("repeat").toBool();
         float angle = paintObject.value("angle").toDouble();
 
         QGradientStops stops =
-            parsePaintStops(paintObject.value("stops").toArray());
+            this->parsePaintStops(paintObject.value("stops").toArray());
 
         auto shadows =
-            parseDropShadows(paintObject.value("drop_shadows").toArray());
+            this->parseDropShadows(paintObject.value("drop_shadows").toArray());
 
         QString function = paintObject.value("function").toString();
         if (function == "linear-gradient")
@@ -123,7 +123,7 @@ std::optional<QColor> SeventvPaints::parsePaintColor(QJsonValue color)
     if (color.isNull())
         return std::nullopt;
 
-    return decimalColorToQColor(color.toInt());
+    return this->decimalColorToQColor(color.toInt());
 }
 
 QGradientStops SeventvPaints::parsePaintStops(QJsonArray stops)
@@ -149,7 +149,7 @@ QGradientStops SeventvPaints::parsePaintStops(QJsonArray stops)
 
         lastStop = position;
         parsedStops.append(
-            QGradientStop(position, decimalColorToQColor(decimalColor)));
+            QGradientStop(position, this->decimalColorToQColor(decimalColor)));
     }
 
     return parsedStops;
@@ -170,7 +170,7 @@ std::vector<PaintDropShadow> SeventvPaints::parseDropShadows(
         auto decimalColor = shadowObject.value("color").toInt();
 
         parsedDropShadows.push_back(PaintDropShadow(
-            xOffset, yOffset, radius, decimalColorToQColor(decimalColor)));
+            xOffset, yOffset, radius, this->decimalColorToQColor(decimalColor)));
     }
 
     return parsedDropShadows;
