@@ -4,8 +4,8 @@ namespace chatterino {
 
 LinearGradientPaint::LinearGradientPaint(
     const QString name, const std::optional<QColor> color,
-    const QGradientStops stops, bool repeat, float angle,
-    std::vector<PaintDropShadow> dropShadows)
+    const QGradientStops stops, const bool repeat, const float angle,
+    const std::vector<PaintDropShadow> dropShadows)
     : Paint()
     , name_(name)
     , color_(color)
@@ -21,7 +21,7 @@ bool LinearGradientPaint::animated() const
     return false;
 }
 
-QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
+QBrush LinearGradientPaint::asBrush(const QColor userColor, const QRectF drawingRect) const
 {
     QPointF startPoint = drawingRect.bottomLeft();
     QPointF endPoint = drawingRect.topRight();
@@ -67,13 +67,13 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
 
     QLinearGradient gradient(gradientStart, gradientEnd);
 
-    auto spread = this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
+    const auto spread = this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
     for (auto const &[position, color] : this->stops_)
     {
-        auto combinedColor = this->overlayColors(userColor, color);
-        float offsetPosition = this->repeat_ ? this->offsetRepeatingStopPosition(
+        const auto combinedColor = this->overlayColors(userColor, color);
+        const float offsetPosition = this->repeat_ ? this->offsetRepeatingStopPosition(
                                                   position, this->stops_)
                                             : position;
         gradient.setColorAt(offsetPosition, combinedColor);

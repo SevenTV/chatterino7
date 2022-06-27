@@ -10,18 +10,18 @@ namespace chatterino {
 class Paint
 {
 public:
-    virtual QBrush asBrush(QColor userColor, QRectF drawingRect) const = 0;
+    virtual QBrush asBrush(const QColor userColor, const QRectF drawingRect) const = 0;
     virtual std::vector<PaintDropShadow> getDropShadows() const = 0;
     virtual bool animated() const = 0;
 
-    QPixmap getPixmap(QString text, QFont font, QColor userColor, QSize size);
+    QPixmap getPixmap(const QString text, const QFont font, const QColor userColor, const QSize size);
 
     virtual ~Paint(){};
 
 protected:
-    QColor overlayColors(QColor background, QColor foreground) const;
-    float offsetRepeatingStopPosition(float position,
-                                      QGradientStops stops) const;
+    QColor overlayColors(const QColor background, const QColor foreground) const;
+    float offsetRepeatingStopPosition(const float position,
+                                      const QGradientStops stops) const;
 };
 
 }  // namespace chatterino

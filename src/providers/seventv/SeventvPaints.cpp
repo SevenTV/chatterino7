@@ -18,9 +18,9 @@ void SeventvPaints::initialize(Settings &settings, Paths &paths)
     this->loadSeventvCosmetics();
 }
 
-std::optional<Paint *> SeventvPaints::getPaint(const QString &userName)
+std::optional<Paint *> SeventvPaints::getPaint(const QString &userName) const
 {
-    auto it = this->paints_.find(userName);
+    const auto it = this->paints_.find(userName);
     if (it != this->paints_.end())
     {
         return it->second;
@@ -50,28 +50,28 @@ void SeventvPaints::loadSeventvCosmetics()
         .execute();
 }
 
-void SeventvPaints::loadSeventvPaints(QJsonArray paints)
+void SeventvPaints::loadSeventvPaints(const QJsonArray paints)
 {
     for (const auto &jsonPaint : paints)
     {
         Paint *paint;
-        auto paintObject = jsonPaint.toObject();
+        const auto paintObject = jsonPaint.toObject();
 
-        QString name = paintObject.value("name").toString();
-        QStringList userNames =
+        const QString name = paintObject.value("name").toString();
+        const QStringList userNames =
             this->parsePaintUsers(paintObject.value("users").toArray());
 
-        auto color = this->parsePaintColor(paintObject.value("color"));
-        bool repeat = paintObject.value("repeat").toBool();
-        float angle = paintObject.value("angle").toDouble();
+        const auto color = this->parsePaintColor(paintObject.value("color"));
+        const bool repeat = paintObject.value("repeat").toBool();
+        const float angle = paintObject.value("angle").toDouble();
 
-        QGradientStops stops =
+        const QGradientStops stops =
             this->parsePaintStops(paintObject.value("stops").toArray());
 
-        auto shadows =
+        const auto shadows =
             this->parseDropShadows(paintObject.value("drop_shadows").toArray());
 
-        QString function = paintObject.value("function").toString();
+        const QString function = paintObject.value("function").toString();
         if (function == "linear-gradient")
         {
             paint = new LinearGradientPaint(name, color, stops, repeat, angle,
@@ -79,14 +79,14 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
         }
         else if (function == "radial-gradient")
         {
-            QString shape = paintObject.value("shape").toString();
+            const QString shape = paintObject.value("shape").toString();
 
             paint = new RadialGradientPaint(name, stops, repeat, shadows);
         }
         else if (function == "url")
         {
-            QString url = paintObject.value("image_url").toString();
-            ImagePtr image = Image::fromUrl({url}, 1);
+            const QString url = paintObject.value("image_url").toString();
+            const ImagePtr image = Image::fromUrl({url}, 1);
             if (image == nullptr)
             {
                 continue;
@@ -106,7 +106,7 @@ void SeventvPaints::loadSeventvPaints(QJsonArray paints)
     }
 }
 
-QStringList SeventvPaints::parsePaintUsers(QJsonArray users)
+QStringList SeventvPaints::parsePaintUsers(const QJsonArray users) const
 {
     QStringList userIds;
 
@@ -118,7 +118,7 @@ QStringList SeventvPaints::parsePaintUsers(QJsonArray users)
     return userIds;
 }
 
-std::optional<QColor> SeventvPaints::parsePaintColor(QJsonValue color)
+std::optional<QColor> SeventvPaints::parsePaintColor(const QJsonValue color) const
 {
     if (color.isNull())
         return std::nullopt;
@@ -126,16 +126,16 @@ std::optional<QColor> SeventvPaints::parsePaintColor(QJsonValue color)
     return this->decimalColorToQColor(color.toInt());
 }
 
-QGradientStops SeventvPaints::parsePaintStops(QJsonArray stops)
+QGradientStops SeventvPaints::parsePaintStops(const QJsonArray stops) const
 {
     QGradientStops parsedStops;
     double lastStop = -1;
 
     for (const auto &stop : stops)
     {
-        auto stopObject = stop.toObject();
+        const auto stopObject = stop.toObject();
 
-        auto decimalColor = stopObject.value("color").toInt();
+        const auto decimalColor = stopObject.value("color").toInt();
         auto position = stopObject.value("at").toDouble();
 
         // HACK: qt does not support hard edges in gradients like css does
@@ -156,18 +156,18 @@ QGradientStops SeventvPaints::parsePaintStops(QJsonArray stops)
 }
 
 std::vector<PaintDropShadow> SeventvPaints::parseDropShadows(
-    QJsonArray dropShadows)
+    const QJsonArray dropShadows) const
 {
     std::vector<PaintDropShadow> parsedDropShadows;
 
     for (const auto &shadow : dropShadows)
     {
-        auto shadowObject = shadow.toObject();
+        const auto shadowObject = shadow.toObject();
 
-        auto xOffset = shadowObject.value("x_offset").toDouble();
-        auto yOffset = shadowObject.value("y_offset").toDouble();
-        auto radius = shadowObject.value("radius").toDouble();
-        auto decimalColor = shadowObject.value("color").toInt();
+        const auto xOffset = shadowObject.value("x_offset").toDouble();
+        const auto yOffset = shadowObject.value("y_offset").toDouble();
+        const auto radius = shadowObject.value("radius").toDouble();
+        const auto decimalColor = shadowObject.value("color").toInt();
 
         parsedDropShadows.push_back(PaintDropShadow(
             xOffset, yOffset, radius, this->decimalColorToQColor(decimalColor)));
@@ -176,7 +176,7 @@ std::vector<PaintDropShadow> SeventvPaints::parseDropShadows(
     return parsedDropShadows;
 }
 
-QColor SeventvPaints::decimalColorToQColor(uint32_t color)
+QColor SeventvPaints::decimalColorToQColor(const uint32_t color) const
 {
     auto red = (color >> 24) & 0xFF;
     auto green = (color >> 16) & 0xFF;

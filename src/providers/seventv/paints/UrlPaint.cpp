@@ -18,7 +18,7 @@ bool UrlPaint::animated() const
     return image_->animated();
 }
 
-QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
+QBrush UrlPaint::asBrush(const QColor userColor, const QRectF drawingRect) const
 {
     if (auto paintPixmap = this->image_->pixmapOrLoad())
     {
@@ -30,7 +30,7 @@ QBrush UrlPaint::asBrush(QColor userColor, QRectF drawingRect) const
         QPainter painter(&userColorPixmap);
         painter.drawPixmap(0, 0, *paintPixmap);
 
-        QPixmap combinedPixmap = userColorPixmap.copy(
+        const QPixmap combinedPixmap = userColorPixmap.copy(
             QRect(0, 0, drawingRect.width(), drawingRect.height()));
         return QBrush(combinedPixmap);
     }

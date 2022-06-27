@@ -5,7 +5,7 @@ namespace chatterino {
 
 RadialGradientPaint::RadialGradientPaint(
     const QString name, const QGradientStops stops, const bool repeat,
-    std::vector<PaintDropShadow> dropShadows)
+    const std::vector<PaintDropShadow> dropShadows)
     : Paint()
     , name_(name)
     , stops_(stops)
@@ -14,23 +14,23 @@ RadialGradientPaint::RadialGradientPaint(
 {
 }
 
-QBrush RadialGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
+QBrush RadialGradientPaint::asBrush(const QColor userColor, const QRectF drawingRect) const
 {
-    double x = drawingRect.x() + drawingRect.width() / 2;
-    double y = drawingRect.y() + drawingRect.height() / 2;
+    const double x = drawingRect.x() + drawingRect.width() / 2;
+    const double y = drawingRect.y() + drawingRect.height() / 2;
 
     double radius = std::max(drawingRect.width(), drawingRect.height()) / 2;
     radius = this->repeat_ ? radius * this->stops_.back().first : radius;
 
     QRadialGradient gradient(x, y, radius);
 
-    auto spread = this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
+    const auto spread = this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
     for (const auto &[position, color] : this->stops_)
     {
-        auto combinedColor = this->overlayColors(userColor, color);
-        float offsetPosition =
+        const auto combinedColor = this->overlayColors(userColor, color);
+        const float offsetPosition =
             this->repeat_ ? this->offsetRepeatingStopPosition(position, this->stops_)
                          : position;
 

@@ -256,20 +256,20 @@ void TextLayoutElement::paint(QPainter &painter)
     if (this->getRect().isEmpty())
         return;
 
-    auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
+    const auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
 
-    bool isNametag = this->getLink().type == chatterino::Link::UserInfo;
-    bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
-    auto seventvPaint =
+    const bool isNametag = this->getLink().type == chatterino::Link::UserInfo;
+    const bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
+    const auto seventvPaint =
         getApp()->seventvPaints->getPaint(this->getLink().value.toLower());
     if (drawPaint && seventvPaint.has_value())
     {
         if (seventvPaint.value()->animated())
             return;
 
-        auto paint = seventvPaint.value();
+        const auto paint = seventvPaint.value();
 
-        auto paintPixmap = paint->getPixmap(this->getText(), font, this->color_,
+        const auto paintPixmap = paint->getPixmap(this->getText(), font, this->color_,
                                             this->getRect().size());
 
         painter.drawPixmap(QRect(this->getRect().x(), this->getRect().y(),
@@ -287,24 +287,24 @@ void TextLayoutElement::paint(QPainter &painter)
     }
 }
 
-void TextLayoutElement::paintAnimated(QPainter &painter, int yOffset)
+void TextLayoutElement::paintAnimated(QPainter &painter, const int yOffset)
 {
     if (this->getRect().isEmpty())
         return;
 
-    auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
+    const auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
 
-    bool isNametag = this->getLink().type == chatterino::Link::UserInfo;
-    bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
-    auto seventvPaint =
+    const bool isNametag = this->getLink().type == chatterino::Link::UserInfo;
+    const bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
+    const auto seventvPaint =
         getApp()->seventvPaints->getPaint(this->getLink().value.toLower());
 
     if (drawPaint && seventvPaint.has_value() &&
         seventvPaint.value()->animated())
     {
-        auto paint = seventvPaint.value();
+        const auto paint = seventvPaint.value();
 
-        auto paintPixmap = paint->getPixmap(this->getText(), font, this->color_,
+        const auto paintPixmap = paint->getPixmap(this->getText(), font, this->color_,
                                             this->getRect().size());
 
         auto rect = this->getRect();

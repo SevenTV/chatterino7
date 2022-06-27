@@ -11,15 +11,15 @@ public:
     UrlPaint(const QString name, const ImagePtr image,
              const std::vector<PaintDropShadow>);
 
-    QBrush asBrush(QColor userColor, QRectF drawingRect) const override;
+    QBrush asBrush(const QColor userColor, const QRectF drawingRect) const override;
     std::vector<PaintDropShadow> getDropShadows() const override;
     bool animated() const override;
 
 private:
-    QString name_;
-    ImagePtr image_;
+    const QString name_;
+    const ImagePtr image_;
 
-    std::vector<PaintDropShadow> dropShadows_;
+    const std::vector<PaintDropShadow> dropShadows_;
 };
 
 }  // namespace chatterino

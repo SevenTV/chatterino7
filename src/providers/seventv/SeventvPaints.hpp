@@ -16,18 +16,18 @@ class SeventvPaints : public Singleton
 public:
     virtual void initialize(Settings &settings, Paths &paths) override;
 
-    std::optional<Paint *> getPaint(const QString &userName);
+    std::optional<Paint *> getPaint(const QString &userName) const;
 
 private:
     void loadSeventvCosmetics();
-    void loadSeventvPaints(QJsonArray paints);
+    void loadSeventvPaints(const QJsonArray paints);
 
-    QStringList parsePaintUsers(QJsonArray users);
-    std::optional<QColor> parsePaintColor(QJsonValue color);
-    QGradientStops parsePaintStops(QJsonArray stops);
-    std::vector<PaintDropShadow> parseDropShadows(QJsonArray dropShadows);
+    QStringList parsePaintUsers(const QJsonArray users) const;
+    std::optional<QColor> parsePaintColor(const QJsonValue color) const;
+    QGradientStops parsePaintStops(const QJsonArray stops) const;
+    std::vector<PaintDropShadow> parseDropShadows(const QJsonArray dropShadows) const;
 
-    QColor decimalColorToQColor(const uint32_t color);
+    QColor decimalColorToQColor(const uint32_t color) const;
 
     std::map<QString, Paint *> paints_;
 };
