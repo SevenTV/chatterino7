@@ -79,9 +79,7 @@ QBrush LinearGradientPaint::asBrush(QColor userColor, QRectF drawingRect) const
         gradient.setColorAt(offsetPosition, combinedColor);
     }
 
-    QBrush brush(gradient);
-
-    return brush;
+    return QBrush(gradient);
 }
 
 std::vector<PaintDropShadow> LinearGradientPaint::getDropShadows() const
