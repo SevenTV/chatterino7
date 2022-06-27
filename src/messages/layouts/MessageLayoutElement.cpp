@@ -289,6 +289,9 @@ void TextLayoutElement::paint(QPainter &painter)
 
 void TextLayoutElement::paintAnimated(QPainter &painter, int yOffset)
 {
+    if (this->getRect().isEmpty())
+        return;
+
     auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
 
     bool isNametag = this->getLink().type == chatterino::Link::UserInfo;
