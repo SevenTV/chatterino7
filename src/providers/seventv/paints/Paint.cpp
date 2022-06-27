@@ -9,7 +9,8 @@
 namespace chatterino {
 
 QPixmap Paint::getPixmap(const QString text, const QFont font,
-                         const QColor userColor, const QSize size)
+                         const QColor userColor, const QSize size,
+                         const float scale)
 {
     QPixmap pixmap(size);
     pixmap.fill(Qt::transparent);
@@ -46,10 +47,12 @@ QPixmap Paint::getPixmap(const QString text, const QFont font,
         if (!shadow.isValid())
             continue;
 
+        auto scaledShadow = shadow.scaled(scale);
+
         // HACK: create a QLabel from the pixmap to apply drop shadows
         QLabel *label = new QLabel();
         label->setPixmap(pixmap);
-        label->setGraphicsEffect(shadow.getGraphicsEffect());
+        label->setGraphicsEffect(scaledShadow.getGraphicsEffect());
 
         pixmap = label->grab();
     }

@@ -269,8 +269,9 @@ void TextLayoutElement::paint(QPainter &painter)
 
         const auto paint = seventvPaint.value();
 
-        const auto paintPixmap = paint->getPixmap(
-            this->getText(), font, this->color_, this->getRect().size());
+        const auto paintPixmap =
+            paint->getPixmap(this->getText(), font, this->color_,
+                             this->getRect().size(), this->scale_);
 
         painter.drawPixmap(QRect(this->getRect().x(), this->getRect().y(),
                                  paintPixmap.width(), paintPixmap.height()),
@@ -304,8 +305,9 @@ void TextLayoutElement::paintAnimated(QPainter &painter, const int yOffset)
     {
         const auto paint = seventvPaint.value();
 
-        const auto paintPixmap = paint->getPixmap(
-            this->getText(), font, this->color_, this->getRect().size());
+        const auto paintPixmap =
+            paint->getPixmap(this->getText(), font, this->color_,
+                             this->getRect().size(), this->scale_);
 
         auto rect = this->getRect();
         rect.moveTop(rect.y() + yOffset);

@@ -16,6 +16,12 @@ bool PaintDropShadow::isValid() const
     return radius_ > 0;
 }
 
+PaintDropShadow PaintDropShadow::scaled(const float scale) const
+{
+    return PaintDropShadow(this->xOffset_ * scale, this->yOffset_ * scale,
+                           this->radius_ * scale, this->color_);
+}
+
 QGraphicsDropShadowEffect *PaintDropShadow::getGraphicsEffect() const
 {
     auto effect = new QGraphicsDropShadowEffect();

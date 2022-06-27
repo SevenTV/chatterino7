@@ -11,6 +11,7 @@ public:
                     const float radius, const QColor color);
 
     bool isValid() const;
+    PaintDropShadow scaled(const float scale) const;
     QGraphicsDropShadowEffect *getGraphicsEffect() const;
 
 private:
