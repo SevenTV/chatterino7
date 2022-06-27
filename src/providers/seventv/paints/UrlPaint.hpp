@@ -11,7 +11,8 @@ public:
     UrlPaint(const QString name, const ImagePtr image,
              const std::vector<PaintDropShadow>);
 
-    QBrush asBrush(const QColor userColor, const QRectF drawingRect) const override;
+    QBrush asBrush(const QColor userColor,
+                   const QRectF drawingRect) const override;
     std::vector<PaintDropShadow> getDropShadows() const override;
     bool animated() const override;
 

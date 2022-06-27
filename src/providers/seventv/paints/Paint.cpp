@@ -8,7 +8,8 @@
 
 namespace chatterino {
 
-QPixmap Paint::getPixmap(const QString text, const QFont font, const QColor userColor, const QSize size)
+QPixmap Paint::getPixmap(const QString text, const QFont font,
+                         const QColor userColor, const QSize size)
 {
     QPixmap pixmap(size);
     pixmap.fill(Qt::transparent);
@@ -52,14 +53,16 @@ QPixmap Paint::getPixmap(const QString text, const QFont font, const QColor user
 
     if (drawColon)
     {
-        const auto colonColor = getApp()->getThemes()->messages.textColors.regular;
+        const auto colonColor =
+            getApp()->getThemes()->messages.textColors.regular;
 
         pixmapPainter.begin(&pixmap);
 
         pixmapPainter.setPen(QPen(colonColor));
         pixmapPainter.setFont(font);
 
-        const QRectF colonBoundingRect(nametagBoundingRect.right(), 0, 10000, 10000);
+        const QRectF colonBoundingRect(nametagBoundingRect.right(), 0, 10000,
+                                       10000);
         pixmapPainter.drawText(colonBoundingRect, ":",
                                QTextOption(Qt::AlignLeft | Qt::AlignTop));
         pixmapPainter.end();
@@ -68,12 +71,14 @@ QPixmap Paint::getPixmap(const QString text, const QFont font, const QColor user
     return pixmap;
 }
 
-QColor Paint::overlayColors(const QColor background, const QColor foreground) const
+QColor Paint::overlayColors(const QColor background,
+                            const QColor foreground) const
 {
     const auto alpha = foreground.alphaF();
 
     const auto r = (1 - alpha) * background.red() + alpha * foreground.red();
-    const auto g = (1 - alpha) * background.green() + alpha * foreground.green();
+    const auto g =
+        (1 - alpha) * background.green() + alpha * foreground.green();
     const auto b = (1 - alpha) * background.blue() + alpha * foreground.blue();
 
     return QColor(r, g, b);

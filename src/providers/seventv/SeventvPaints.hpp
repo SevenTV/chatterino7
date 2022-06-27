@@ -25,7 +25,8 @@ private:
     QStringList parsePaintUsers(const QJsonArray users) const;
     std::optional<QColor> parsePaintColor(const QJsonValue color) const;
     QGradientStops parsePaintStops(const QJsonArray stops) const;
-    std::vector<PaintDropShadow> parseDropShadows(const QJsonArray dropShadows) const;
+    std::vector<PaintDropShadow> parseDropShadows(
+        const QJsonArray dropShadows) const;
 
     QColor decimalColorToQColor(const uint32_t color) const;
 

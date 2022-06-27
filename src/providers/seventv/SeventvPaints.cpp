@@ -118,7 +118,8 @@ QStringList SeventvPaints::parsePaintUsers(const QJsonArray users) const
     return userIds;
 }
 
-std::optional<QColor> SeventvPaints::parsePaintColor(const QJsonValue color) const
+std::optional<QColor> SeventvPaints::parsePaintColor(
+    const QJsonValue color) const
 {
     if (color.isNull())
         return std::nullopt;
@@ -169,8 +170,9 @@ std::vector<PaintDropShadow> SeventvPaints::parseDropShadows(
         const auto radius = shadowObject.value("radius").toDouble();
         const auto decimalColor = shadowObject.value("color").toInt();
 
-        parsedDropShadows.push_back(PaintDropShadow(
-            xOffset, yOffset, radius, this->decimalColorToQColor(decimalColor)));
+        parsedDropShadows.push_back(
+            PaintDropShadow(xOffset, yOffset, radius,
+                            this->decimalColorToQColor(decimalColor)));
     }
 
     return parsedDropShadows;

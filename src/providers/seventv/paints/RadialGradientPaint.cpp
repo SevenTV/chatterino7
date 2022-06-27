@@ -14,7 +14,8 @@ RadialGradientPaint::RadialGradientPaint(
 {
 }
 
-QBrush RadialGradientPaint::asBrush(const QColor userColor, const QRectF drawingRect) const
+QBrush RadialGradientPaint::asBrush(const QColor userColor,
+                                    const QRectF drawingRect) const
 {
     const double x = drawingRect.x() + drawingRect.width() / 2;
     const double y = drawingRect.y() + drawingRect.height() / 2;
@@ -24,15 +25,17 @@ QBrush RadialGradientPaint::asBrush(const QColor userColor, const QRectF drawing
 
     QRadialGradient gradient(x, y, radius);
 
-    const auto spread = this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
+    const auto spread =
+        this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
     for (const auto &[position, color] : this->stops_)
     {
         const auto combinedColor = this->overlayColors(userColor, color);
         const float offsetPosition =
-            this->repeat_ ? this->offsetRepeatingStopPosition(position, this->stops_)
-                         : position;
+            this->repeat_
+                ? this->offsetRepeatingStopPosition(position, this->stops_)
+                : position;
 
         gradient.setColorAt(offsetPosition, combinedColor);
     }

@@ -21,7 +21,8 @@ bool LinearGradientPaint::animated() const
     return false;
 }
 
-QBrush LinearGradientPaint::asBrush(const QColor userColor, const QRectF drawingRect) const
+QBrush LinearGradientPaint::asBrush(const QColor userColor,
+                                    const QRectF drawingRect) const
 {
     QPointF startPoint = drawingRect.bottomLeft();
     QPointF endPoint = drawingRect.topRight();
@@ -67,15 +68,17 @@ QBrush LinearGradientPaint::asBrush(const QColor userColor, const QRectF drawing
 
     QLinearGradient gradient(gradientStart, gradientEnd);
 
-    const auto spread = this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
+    const auto spread =
+        this->repeat_ ? QGradient::RepeatSpread : QGradient::PadSpread;
     gradient.setSpread(spread);
 
     for (auto const &[position, color] : this->stops_)
     {
         const auto combinedColor = this->overlayColors(userColor, color);
-        const float offsetPosition = this->repeat_ ? this->offsetRepeatingStopPosition(
-                                                  position, this->stops_)
-                                            : position;
+        const float offsetPosition =
+            this->repeat_
+                ? this->offsetRepeatingStopPosition(position, this->stops_)
+                : position;
         gradient.setColorAt(offsetPosition, combinedColor);
     }
 
