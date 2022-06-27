@@ -9,6 +9,7 @@ class RadialGradientPaint : public Paint
 public:
     RadialGradientPaint(const QString name, const QGradientStops stops,
                         const bool repeat, const std::vector<PaintDropShadow>);
+
     QBrush asBrush(const QColor userColor, const QRectF drawingRect) const override;
     std::vector<PaintDropShadow> getDropShadows() const override;
     bool animated() const override;
