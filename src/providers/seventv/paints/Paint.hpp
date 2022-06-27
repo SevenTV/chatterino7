@@ -16,7 +16,8 @@ public:
     virtual bool animated() const = 0;
 
     QPixmap getPixmap(const QString text, const QFont font,
-                      const QColor userColor, const QSize size, const float scale);
+                      const QColor userColor, const QSize size,
+                      const float scale) const;
 
     virtual ~Paint(){};
 

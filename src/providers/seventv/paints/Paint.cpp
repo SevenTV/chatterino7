@@ -10,7 +10,7 @@ namespace chatterino {
 
 QPixmap Paint::getPixmap(const QString text, const QFont font,
                          const QColor userColor, const QSize size,
-                         const float scale)
+                         const float scale) const
 {
     QPixmap pixmap(size);
     pixmap.fill(Qt::transparent);
