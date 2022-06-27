@@ -26,17 +26,20 @@ QBrush LinearGradientPaint::asBrush(const QColor userColor,
 {
     QPointF startPoint = drawingRect.bottomLeft();
     QPointF endPoint = drawingRect.topRight();
-    if (this->angle_ > 90)
+
+    // NOTE: use modulo to also account for angles >= 360 degrees
+    const int angleStep = int(this->angle_ / 90) % 4;
+    if (angleStep == 1) // 90-179 degrees
     {
         startPoint = drawingRect.topLeft();
         endPoint = drawingRect.bottomRight();
     }
-    if (this->angle_ > 180)
+    if (angleStep == 2) // 180-269 degrees
     {
         startPoint = drawingRect.topRight();
         endPoint = drawingRect.bottomLeft();
     }
-    if (this->angle_ > 270)
+    if (angleStep == 3) // 270-359 degrees
     {
         startPoint = drawingRect.bottomRight();
         endPoint = drawingRect.topLeft();
