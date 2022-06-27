@@ -43,6 +43,9 @@ QPixmap Paint::getPixmap(const QString text, const QFont font,
 
     for (const auto &shadow : this->getDropShadows())
     {
+        if (!shadow.isValid())
+            continue;
+
         // HACK: create a QLabel from the pixmap to apply drop shadows
         QLabel *label = new QLabel();
         label->setPixmap(pixmap);

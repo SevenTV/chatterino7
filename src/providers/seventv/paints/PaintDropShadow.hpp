@@ -10,6 +10,7 @@ public:
     PaintDropShadow(const float xOffset, const float yOffset,
                     const float radius, const QColor color);
 
+    bool isValid() const;
     QGraphicsDropShadowEffect *getGraphicsEffect() const;
 
 private:
