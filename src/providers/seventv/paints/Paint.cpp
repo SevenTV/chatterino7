@@ -10,62 +10,62 @@ namespace chatterino {
 
 QPixmap Paint::getPixmap(QString text, QFont font, QColor userColor, QSize size)
 {
-    QPixmap buffer(size);
-    buffer.fill(Qt::transparent);
+    QPixmap pixmap(size);
+    pixmap.fill(Qt::transparent);
 
-    QPainter bufferPainter(&buffer);
-    bufferPainter.setRenderHint(QPainter::SmoothPixmapTransform);
-    bufferPainter.setFont(font);
+    QPainter pixmapPainter(&pixmap);
+    pixmapPainter.setRenderHint(QPainter::SmoothPixmapTransform);
+    pixmapPainter.setFont(font);
 
     // NOTE: draw colon separately from the nametag
     // otherwise the paint would extend onto the colon
     bool drawColon = false;
-    QRectF nametagBoundingRect = buffer.rect();
+    QRectF nametagBoundingRect = pixmap.rect();
     QString nametagText = text;
     if (nametagText.endsWith(':'))
     {
         drawColon = true;
         nametagText = nametagText.chopped(1);
-        nametagBoundingRect = bufferPainter.boundingRect(
+        nametagBoundingRect = pixmapPainter.boundingRect(
             QRectF(0, 0, 10000, 10000), nametagText,
             QTextOption(Qt::AlignLeft | Qt::AlignTop));
     }
 
-    QPen paintPen;
-    QBrush paintBrush = this->asBrush(userColor, nametagBoundingRect);
-    paintPen.setBrush(paintBrush);
-    bufferPainter.setPen(paintPen);
+    QPen pen;
+    QBrush brush = this->asBrush(userColor, nametagBoundingRect);
+    pen.setBrush(brush);
+    pixmapPainter.setPen(pen);
 
-    bufferPainter.drawText(nametagBoundingRect, nametagText,
+    pixmapPainter.drawText(nametagBoundingRect, nametagText,
                            QTextOption(Qt::AlignLeft | Qt::AlignTop));
-    bufferPainter.end();
+    pixmapPainter.end();
 
     for (const auto &shadow : this->getDropShadows())
     {
         // HACK: create a QLabel from the pixmap to apply drop shadows
         QLabel *label = new QLabel();
-        label->setPixmap(buffer);
+        label->setPixmap(pixmap);
         label->setGraphicsEffect(shadow.getGraphicsEffect());
 
-        buffer = label->grab();
+        pixmap = label->grab();
     }
 
     if (drawColon)
     {
         auto colonColor = getApp()->getThemes()->messages.textColors.regular;
 
-        bufferPainter.begin(&buffer);
+        pixmapPainter.begin(&pixmap);
 
-        bufferPainter.setPen(QPen(colonColor));
-        bufferPainter.setFont(font);
+        pixmapPainter.setPen(QPen(colonColor));
+        pixmapPainter.setFont(font);
 
         QRectF colonBoundingRect(nametagBoundingRect.right(), 0, 10000, 10000);
-        bufferPainter.drawText(colonBoundingRect, ":",
+        pixmapPainter.drawText(colonBoundingRect, ":",
                                QTextOption(Qt::AlignLeft | Qt::AlignTop));
-        bufferPainter.end();
+        pixmapPainter.end();
     }
 
-    return buffer;
+    return pixmap;
 }
 
 QColor Paint::overlayColors(QColor background, QColor foreground) const
