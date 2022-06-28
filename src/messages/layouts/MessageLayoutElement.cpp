@@ -258,7 +258,9 @@ void TextLayoutElement::paint(QPainter &painter)
 
     const auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
 
-    const bool isNametag = this->getLink().type == chatterino::Link::UserInfo;
+    const bool isNametag =
+        this->getLink().type == chatterino::Link::UserInfo ||
+        this->getLink().type == chatterino::Link::UserWhisper;
     const bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
     const auto seventvPaint =
         getApp()->seventvPaints->getPaint(this->getLink().value.toLower());
@@ -295,7 +297,9 @@ void TextLayoutElement::paintAnimated(QPainter &painter, const int yOffset)
 
     const auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
 
-    const bool isNametag = this->getLink().type == chatterino::Link::UserInfo;
+    const bool isNametag =
+        this->getLink().type == chatterino::Link::UserInfo ||
+        this->getLink().type == chatterino::Link::UserWhisper;
     const bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
     const auto seventvPaint =
         getApp()->seventvPaints->getPaint(this->getLink().value.toLower());
