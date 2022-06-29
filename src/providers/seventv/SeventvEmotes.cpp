@@ -63,10 +63,10 @@ namespace {
             visibilityFlags.has(SeventvEmoteVisibilityFlag::ZeroWidth);
 
         auto heightArr = jsonEmote.toObject().value("height").toArray();
+        auto size1x = heightArr.at(0).toDouble();
         auto size2x = heightArr.at(1).toDouble();
         auto size3x = heightArr.at(2).toDouble();
-        auto size4x = heightArr.at(3).toDouble();
-        if (heightArr.size() != 4 || size2x <= 48)
+        if (heightArr.size() != 4 || size2x != 2 * size1x)
         {
             size2x = 0.66;
             size3x = 0.42;
