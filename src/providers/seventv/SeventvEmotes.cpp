@@ -65,9 +65,22 @@ namespace {
         auto heightArr = jsonEmote.toObject().value("height").toArray();
 
         auto size1x = heightArr.at(0).toDouble();
-        auto size2x = heightArr.at(1).toDouble();
-        auto size3x = heightArr.at(2).toDouble();
-        auto size4x = heightArr.at(4).toDouble();
+        auto size2x = size1x * 2;
+        auto size3x = size1x * 3;
+        auto size4x = size1x * 4;
+
+        if (heightArr.size() >= 2)
+        {
+            size2x = heightArr.at(1).toDouble();
+        }
+        if (heightArr.size() >= 3)
+        {
+            size3x = heightArr.at(2).toDouble();
+        }
+        if (heightArr.size() >= 4)
+        {
+            size4x = heightArr.at(3).toDouble();
+        }
 
         auto emote = Emote(
             {name,
