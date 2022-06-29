@@ -50,11 +50,15 @@ QPixmap Paint::getPixmap(const QString text, const QFont font,
         auto scaledShadow = shadow.scaled(scale);
 
         // HACK: create a QLabel from the pixmap to apply drop shadows
-        QLabel *label = new QLabel();
-        label->setPixmap(pixmap);
-        label->setGraphicsEffect(scaledShadow.getGraphicsEffect());
+        QLabel label;
+        label.setPixmap(pixmap);
 
-        pixmap = label->grab();
+        auto dropShadow = scaledShadow.getGraphicsEffect();
+        label.setGraphicsEffect(dropShadow);
+
+        pixmap = label.grab();
+
+        delete dropShadow;
     }
 
     if (drawColon)
