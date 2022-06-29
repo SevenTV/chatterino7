@@ -16,7 +16,8 @@ class SeventvPaints : public Singleton
 public:
     virtual void initialize(Settings &settings, Paths &paths) override;
 
-    std::optional<std::shared_ptr<Paint>> getPaint(const QString &userName) const;
+    std::optional<std::shared_ptr<Paint>> getPaint(
+        const QString &userName) const;
 
 private:
     void loadSeventvCosmetics();
