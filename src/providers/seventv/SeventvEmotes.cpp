@@ -63,26 +63,18 @@ namespace {
             visibilityFlags.has(SeventvEmoteVisibilityFlag::ZeroWidth);
 
         auto heightArr = jsonEmote.toObject().value("height").toArray();
+
         auto size1x = heightArr.at(0).toDouble();
         auto size2x = heightArr.at(1).toDouble();
         auto size3x = heightArr.at(2).toDouble();
-        if (heightArr.size() != 4 || size2x != 2 * size1x)
-        {
-            size2x = 0.66;
-            size3x = 0.42;
-        }
-        else
-        {
-            size2x = 0.5;
-            size3x = 0.33;
-        }
+        auto size4x = heightArr.at(4).toDouble();
 
         auto emote = Emote(
             {name,
-             ImageSet{Image::fromUrl(getEmoteLink(id, "1x"), 1),
-                      Image::fromUrl(getEmoteLink(id, "2x"), size2x),
-                      Image::fromUrl(getEmoteLink(id, "3x"), size3x),
-                      Image::fromUrl(getEmoteLink(id, "4x"), 0.25)},
+             ImageSet{Image::fromUrl(getEmoteLink(id, "1x"), size1x / size1x),
+                      Image::fromUrl(getEmoteLink(id, "2x"), size1x / size2x),
+                      Image::fromUrl(getEmoteLink(id, "3x"), size1x / size3x),
+                      Image::fromUrl(getEmoteLink(id, "4x"), size1x / size4x)},
              Tooltip{QString("%1<br>%2 7TV Emote<br>By: %3")
                          .arg(name.string, (isGlobal ? "Global" : "Channel"),
                               author.string)},
