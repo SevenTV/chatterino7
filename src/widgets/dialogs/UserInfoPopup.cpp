@@ -1028,7 +1028,10 @@ void UserInfoPopup::setSevenTVAvatar(const QString &filename)
     else
     {
         QObject::connect(movie, &QMovie::frameChanged, this, [=] {
-            this->ui_.avatarButton->setPixmap(movie->currentPixmap());
+            if (this->ui_.avatarButton != nullptr)
+            {
+                this->ui_.avatarButton->setPixmap(movie->currentPixmap());
+            }
         });
         movie->start();
     }
