@@ -48,8 +48,8 @@ private:
 
     void loadAvatar(const HelixUser &user);
 
-    void loadSevenTVAvatar(const HelixUser& user);
-    void setSevenTVAvatar(const QString& filename);
+    void loadSevenTVAvatar(const HelixUser &user);
+    void setSevenTVAvatar(const QString &filename);
 
     bool avatarDestroyed;
 

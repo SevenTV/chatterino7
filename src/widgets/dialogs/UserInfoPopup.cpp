@@ -930,7 +930,10 @@ void UserInfoPopup::updateUserData()
 
 void UserInfoPopup::loadAvatar(const HelixUser &user)
 {
-    auto filename = getPaths()->cacheDirectory() + "/" + user.profileImageUrl.right(user.profileImageUrl.lastIndexOf('/')).replace('/', 'a');
+    auto filename =
+        getPaths()->cacheDirectory() + "/" +
+        user.profileImageUrl.right(user.profileImageUrl.lastIndexOf('/'))
+            .replace('/', 'a');
     QFile cacheFile(filename);
     if (cacheFile.exists())
     {
@@ -939,12 +942,13 @@ void UserInfoPopup::loadAvatar(const HelixUser &user)
 
         avatar.loadFromData(cacheFile.readAll());
         this->ui_.avatarButton->setPixmap(avatar);
-    } else 
+    }
+    else
     {
         QNetworkRequest req(user.profileImageUrl);
         static auto manager = new QNetworkAccessManager();
-        auto* reply = manager->get(req);
-    
+        auto *reply = manager->get(req);
+
         QObject::connect(reply, &QNetworkReply::finished, this, [=] {
             if (reply->error() == QNetworkReply::NoError)
             {
@@ -970,13 +974,15 @@ void UserInfoPopup::loadAvatar(const HelixUser &user)
     }
 }
 
-void UserInfoPopup::loadSevenTVAvatar(const HelixUser& user)
+void UserInfoPopup::loadSevenTVAvatar(const HelixUser &user)
 {
     NetworkRequest(SEVENTV_USER_API.arg(user.login))
         .timeout(20000)
         .header("Content-Type", "application/json")
-        .onSuccess([this, hack = std::weak_ptr<bool>(this->hack_)](NetworkResult result) -> Outcome {
-            if (!hack.lock()) {
+        .onSuccess([this, hack = std::weak_ptr<bool>(this->hack_)](
+                       NetworkResult result) -> Outcome {
+            if (!hack.lock())
+            {
                 return Success;
             }
 
@@ -985,21 +991,26 @@ void UserInfoPopup::loadSevenTVAvatar(const HelixUser& user)
             auto profile_picture_id =
                 root.value(QStringLiteral("profile_picture_id")).toString();
 
-            if (profile_picture_id.length() == 0) {
+            if (profile_picture_id.length() == 0)
+            {
                 return Success;
             }
 
             auto URI = SEVENTV_CDR_PP.arg(id, profile_picture_id);
-            auto filename = getPaths()->cacheDirectory() + "/" + "7tv-pp-" + id + "-" + profile_picture_id;
+            auto filename = getPaths()->cacheDirectory() + "/" + "7tv-pp-" +
+                            id + "-" + profile_picture_id;
 
             QFile cacheFile(filename);
-            if (cacheFile.exists()) {
+            if (cacheFile.exists())
+            {
                 this->avatarUrl_ = URI;
                 this->setSevenTVAvatar(filename);
-            } else {
+            }
+            else
+            {
                 QNetworkRequest req(URI);
                 static auto manager = new QNetworkAccessManager();
-                auto* reply = manager->get(req);
+                auto *reply = manager->get(req);
 
                 QObject::connect(reply, &QNetworkReply::finished, this, [=] {
                     if (reply->error() == QNetworkReply::NoError)
@@ -1010,7 +1021,8 @@ void UserInfoPopup::loadSevenTVAvatar(const HelixUser& user)
                     }
                     else
                     {
-                        qCWarning(chatterinoSeventv) << "Error fetching Profile Picture, "
+                        qCWarning(chatterinoSeventv)
+                            << "Error fetching Profile Picture, "
                             << reply->error();
                     }
                 });
@@ -1021,24 +1033,26 @@ void UserInfoPopup::loadSevenTVAvatar(const HelixUser& user)
         .execute();
 }
 
-void UserInfoPopup::setSevenTVAvatar(const QString& filename)
+void UserInfoPopup::setSevenTVAvatar(const QString &filename)
 {
     auto hack = std::weak_ptr<bool>(this->hack_);
 
-    if (this->avatarDestroyed || !hack.lock()) return;
+    if (this->avatarDestroyed || !hack.lock())
+        return;
 
     auto movie = new QMovie(filename, {});
     if (!movie->isValid())
     {
-        qCWarning(chatterinoSeventv) << "Error reading Profile Picture, "
-                                << movie->lastErrorString();
+        qCWarning(chatterinoSeventv)
+            << "Error reading Profile Picture, " << movie->lastErrorString();
         return;
     }
 
     QObject::connect(movie, &QMovie::frameChanged, [this, movie, hack] {
         auto destroyed = this->avatarDestroyed || !hack.lock();
 
-        if (destroyed) {
+        if (destroyed)
+        {
             movie->disconnect();
             movie->stop();
             delete movie;
