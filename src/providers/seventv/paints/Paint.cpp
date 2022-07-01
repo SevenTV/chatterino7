@@ -47,18 +47,22 @@ QPixmap Paint::getPixmap(const QString text, const QFont font,
         if (!shadow.isValid())
             continue;
 
-        auto scaledShadow = shadow.scaled(scale);
-
         // HACK: create a QLabel from the pixmap to apply drop shadows
         QLabel label;
+
+        auto scaledShadow = shadow.scaled(scale / label.devicePixelRatioF());
+
+        // NOTE: avoid scaling issues on high DPI displays
+        pixmap.setDevicePixelRatio(label.devicePixelRatioF());
+
         label.setPixmap(pixmap);
 
         auto dropShadow = scaledShadow.getGraphicsEffect();
         label.setGraphicsEffect(dropShadow);
+        delete dropShadow;
 
         pixmap = label.grab();
-
-        delete dropShadow;
+        pixmap.setDevicePixelRatio(1);
     }
 
     if (drawColon)
