@@ -15,6 +15,7 @@
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchHelpers.hpp"
+#include "singletons/Settings.hpp"
 #include "util/Helpers.hpp"
 #include "util/PostToThread.hpp"
 
@@ -37,7 +38,13 @@ TwitchIrcServer::TwitchIrcServer()
     this->initializeIrc();
 
     this->pubsub = new PubSub(TWITCH_PUBSUB_URL);
-    this->eventApi = new SeventvEventApi(SEVENTV_EVENTAPI_URL);
+
+    if (getSettings()->enableSevenTVEventApi)
+    {
+        this->eventApi = new SeventvEventApi(SEVENTV_EVENTAPI_URL);
+    } else {
+        this->eventApi = nullptr;
+    }
 
     // getSettings()->twitchSeperateWriteConnection.connect([this](auto, auto) {
     // this->connect(); },

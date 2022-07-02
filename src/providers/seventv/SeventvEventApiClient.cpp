@@ -19,6 +19,7 @@ SeventvEventApiClient::SeventvEventApiClient(
     , lastPing_(std::chrono::steady_clock::now())
 {
 }
+
 void SeventvEventApiClient::start()
 {
     assert(!this->started_);
@@ -26,6 +27,7 @@ void SeventvEventApiClient::start()
     this->lastPing_ = std::chrono::steady_clock::now();
     this->checkPing();
 }
+
 void SeventvEventApiClient::stop()
 {
     assert(this->started_);
@@ -60,6 +62,7 @@ bool SeventvEventApiClient::join(const QString &channel)
     {
         return false;
     }
+
     this->channels.emplace_back(EventApiListener{channel});
     rapidjson::Document doc(rapidjson::kObjectType);
     rj::set(doc, "action", "join");
@@ -72,6 +75,7 @@ bool SeventvEventApiClient::join(const QString &channel)
 
     return true;
 }
+
 void SeventvEventApiClient::part(const QString &channel)
 {
     bool found = false;

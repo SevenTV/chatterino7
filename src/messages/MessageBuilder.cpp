@@ -207,13 +207,13 @@ MessagePtr makeSeventvEmoteAddedMessage(const QString &actor,
     return makeSeventvEmoteChanged(
                actor,
                QString(emote.has_value() ? "added 7TV emote %1."
-                                         : "added 7TV emote %1, but you "
-                                           "disabled unlisted emotes.")
+                                         : "added 7TV emote %1, but unlisted "
+                                           "emotes have been disabled.")
                    .arg(emoteName),
                emote)
         .release();
 }
-MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor, bool isAdded,
+MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor,
                                           const QString &baseName,
                                           const QString &updatedName)
 {
@@ -222,27 +222,19 @@ MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor, bool isAdded,
     if (renamed)
     {
         message =
-            QString(isAdded ? "updated 7TV emote %1 (%2)."
-                            : "updated 7TV emote %1 (%2), but it's not added.")
-                .arg(updatedName, baseName);
+            QString("updated 7TV emote %1 (%2).").arg(updatedName, baseName);
     }
     else
     {
-        message = QString(isAdded ? "updated 7TV emote %1."
-                                  : "updated 7TV emote %1, but it's not added.")
-                      .arg(updatedName);
+        message = QString("updated 7TV emote %1.").arg(updatedName);
     }
     return makeSeventvEmoteChanged(actor, message, boost::none).release();
 }
 MessagePtr makeSeventvEmoteRemovedMessage(const QString &actor,
-                                          const QString &emoteName,
-                                          bool wasAdded)
+                                          const QString &emoteName)
 {
     return makeSeventvEmoteChanged(
-               actor,
-               QString(wasAdded ? "removed 7TV emote %1."
-                                : "removed 7TV emote %1, but it wasn't added.")
-                   .arg(emoteName),
+               actor, QString("removed 7TV emote %1.").arg(emoteName),
                boost::none)
         .release();
 }

@@ -186,7 +186,10 @@ TwitchChannel::TwitchChannel(const QString &name)
     });
 
     this->destroyed.connect([this]() {
-        getApp()->twitch->eventApi->partChannel(this->getName());
+        if (getApp()->twitch->eventApi)
+        {
+            getApp()->twitch->eventApi->partChannel(this->getName());
+        }
     });
 
     // timers
@@ -597,17 +600,19 @@ void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
     }
     auto result = SeventvEmotes::updateEmote(
         this->seventvEmotes_, action.emote->baseName, action.emote->json);
-    this->addMessage(makeSeventvEmoteUpdatedMessage(
-        action.actor, result.has_value(), action.emote->baseName,
-        action.emote->json["name"].toString()));
+    if (result.has_value())
+        this->addMessage(makeSeventvEmoteUpdatedMessage(
+            action.actor, action.emote->baseName,
+            action.emote->json["name"].toString()));
 }
 
 void TwitchChannel::removeSeventvEmote(const EventApiEmoteUpdate &action)
 {
-    bool removed =
+    auto removed =
         SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName);
-    this->addMessage(makeSeventvEmoteRemovedMessage(action.actor,
-                                                    action.emoteName, removed));
+    if (removed)
+        this->addMessage(
+            makeSeventvEmoteRemovedMessage(action.actor, action.emoteName));
 }
 
 const QString &TwitchChannel::subscriptionUrl()
@@ -1286,7 +1291,10 @@ boost::optional<CheerEmote> TwitchChannel::cheerEmote(const QString &string)
 
 void TwitchChannel::listenSeventv()
 {
-    getApp()->twitch->eventApi->joinChannel(this->getName());
+    if (getApp()->twitch->eventApi)
+    {
+        getApp()->twitch->eventApi->joinChannel(this->getName());
+    }
 }
 
 }  // namespace chatterino

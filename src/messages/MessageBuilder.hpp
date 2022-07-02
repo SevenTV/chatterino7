@@ -31,12 +31,11 @@ MessagePtr makeAutomodInfoMessage(const AutomodInfoAction &action);
 MessagePtr makeSeventvEmoteAddedMessage(const QString &actor,
                                         const QString &emoteName,
                                         const boost::optional<EmotePtr> &emote);
-MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor, bool isAdded,
+MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor,
                                           const QString &baseName,
                                           const QString &updatedName);
 MessagePtr makeSeventvEmoteRemovedMessage(const QString &actor,
-                                          const QString &emoteName,
-                                          bool wasAdded);
+                                          const QString &emoteName);
 
 struct MessageParseArgs {
     bool disablePingSounds = false;
