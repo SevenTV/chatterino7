@@ -191,7 +191,7 @@ MessageBuilder::MessageBuilder(SevenTvEventApiAddEmoteMessageTag,
     {
         if (i++)
         {
-            text += i == emoteNames.size() ? "and " : ", ";
+            text += i == emoteNames.size() ? " and " : ", ";
         }
         text += emoteName;
     }
