@@ -20,22 +20,23 @@ struct SystemMessageTag {
 };
 struct TimeoutMessageTag {
 };
+struct SevenTvEventApiUpdateEmoteMessageTag {
+};
+struct SevenTvEventApiRemoveEmoteMessageTag {
+};
+struct SevenTvEventApiAddEmoteMessageTag {
+};
 const SystemMessageTag systemMessage{};
 const TimeoutMessageTag timeoutMessage{};
+const SevenTvEventApiUpdateEmoteMessageTag seventvUpdateEmoteMessage{};
+const SevenTvEventApiRemoveEmoteMessageTag seventvRemoveEmoteMessage{};
+const SevenTvEventApiAddEmoteMessageTag seventvAddEmoteMessage{};
 
 MessagePtr makeSystemMessage(const QString &text);
 MessagePtr makeSystemMessage(const QString &text, const QTime &time);
 std::pair<MessagePtr, MessagePtr> makeAutomodMessage(
     const AutomodAction &action);
 MessagePtr makeAutomodInfoMessage(const AutomodInfoAction &action);
-MessagePtr makeSeventvEmoteAddedMessage(const QString &actor,
-                                        const QString &emoteName,
-                                        const boost::optional<EmotePtr> &emote);
-MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor,
-                                          const QString &baseName,
-                                          const QString &updatedName);
-MessagePtr makeSeventvEmoteRemovedMessage(const QString &actor,
-                                          const QString &emoteName);
 
 struct MessageParseArgs {
     bool disablePingSounds = false;
@@ -58,9 +59,16 @@ public:
     MessageBuilder(TimeoutMessageTag, const QString &username,
                    const QString &durationInSeconds, bool multipleTimes,
                    const QTime &time = QTime::currentTime());
+    MessageBuilder(SevenTvEventApiAddEmoteMessageTag,
+        const QString& actor, std::vector<QString> emoteNames);
+    MessageBuilder(SevenTvEventApiRemoveEmoteMessageTag,
+        const QString& actor, std::vector<QString> emoteNames);
+    MessageBuilder(SevenTvEventApiUpdateEmoteMessageTag,
+        const QString& actor, const QString& emoteName, const QString& oldEmoteName);
     MessageBuilder(const BanAction &action, uint32_t count = 1);
     MessageBuilder(const UnbanAction &action);
     MessageBuilder(const AutomodUserAction &action);
+
     virtual ~MessageBuilder() = default;
 
     Message *operator->();

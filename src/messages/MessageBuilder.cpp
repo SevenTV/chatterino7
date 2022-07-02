@@ -172,76 +172,94 @@ std::pair<MessagePtr, MessagePtr> makeAutomodMessage(
     return std::make_pair(message1, message2);
 }
 
-namespace {
-    MessageBuilder makeSeventvEmoteChanged(
-        const QString &actor, const QString &text,
-        const boost::optional<EmotePtr> &emote)
-    {
-        auto builder = MessageBuilder();
-        builder.emplace<TimestampElement>();
-        builder->flags.set(MessageFlag::System);
-        builder
-            .emplace<TextElement>(actor, MessageElementFlag::Username,
-                                  MessageColor::System)
-            ->setLink({Link::UserInfo, actor});
-        builder.emplace<TextElement>(text, MessageElementFlag::Text,
-                                     MessageColor::System);
-
-        if (emote.has_value())
-        {
-            builder.emplace<EmoteElement>(*emote,
-                                          MessageElementFlag::SeventvEmote);
-        }
-        auto finalText = QString("%1 %2").arg(actor, text);
-        builder.message().loginName = actor;
-        builder.message().messageText = finalText;
-        builder.message().searchText = finalText;
-        return builder;
-    }
-}  // namespace
-
-MessagePtr makeSeventvEmoteAddedMessage(const QString &actor,
-                                        const QString &emoteName,
-                                        const boost::optional<EmotePtr> &emote)
-{
-    return makeSeventvEmoteChanged(
-               actor,
-               QString(emote.has_value() ? "added 7TV emote %1."
-                                         : "added 7TV emote %1, but unlisted "
-                                           "emotes have been disabled.")
-                   .arg(emoteName),
-               emote)
-        .release();
-}
-MessagePtr makeSeventvEmoteUpdatedMessage(const QString &actor,
-                                          const QString &baseName,
-                                          const QString &updatedName)
-{
-    bool renamed = baseName != updatedName;
-    QString message;
-    if (renamed)
-    {
-        message =
-            QString("updated 7TV emote %1 (%2).").arg(updatedName, baseName);
-    }
-    else
-    {
-        message = QString("updated 7TV emote %1.").arg(updatedName);
-    }
-    return makeSeventvEmoteChanged(actor, message, boost::none).release();
-}
-MessagePtr makeSeventvEmoteRemovedMessage(const QString &actor,
-                                          const QString &emoteName)
-{
-    return makeSeventvEmoteChanged(
-               actor, QString("removed 7TV emote %1.").arg(emoteName),
-               boost::none)
-        .release();
-}
-
 MessageBuilder::MessageBuilder()
     : message_(std::make_shared<Message>())
 {
+}
+
+MessageBuilder::MessageBuilder(SevenTvEventApiAddEmoteMessageTag,
+    const QString& actor, std::vector<QString> emoteNames) : MessageBuilder()
+{
+    auto text = emoteNames.size() == 1 ? QString("added 7TV emote ") : QString("added %1 7TV emotes ").arg(emoteNames.size());
+
+    auto i = 0;
+    for (const auto & emoteName : emoteNames)
+    {
+        if (i++) {
+            text += i == emoteNames.size() ?  "and " : ", ";
+        }
+        text += emoteName;
+    }
+
+    text += ".";
+
+    this->emplace<TimestampElement>();
+    this->emplace<TextElement>(actor, MessageElementFlag::Username, MessageColor::System)->setLink({ Link::UserInfo, actor });
+    this->emplace<TextElement>(text, MessageElementFlag::Text, MessageColor::System);
+
+    auto finalText = QString("%1 %2").arg(actor, text);
+
+    this->message().loginName = actor;
+    this->message().messageText = finalText;
+    this->message().searchText = finalText;
+    this->message().seventvEventTargetEmotes = emoteNames;
+
+    this->message().flags.set(MessageFlag::System);
+    this->message().flags.set(MessageFlag::SevenTvEventApiAddEmoteMessage);
+    this->message().flags.set(MessageFlag::DoNotTriggerNotification);
+}
+
+MessageBuilder::MessageBuilder(SevenTvEventApiRemoveEmoteMessageTag,
+    const QString& actor, std::vector<QString> emoteNames) : MessageBuilder()
+{
+    auto text = emoteNames.size() == 1 ? QString("removed 7TV emote ") : QString("removed %1 7TV emotes ").arg(emoteNames.size());
+
+    auto i = 0;
+    for (const auto& emoteName : emoteNames)
+    {
+        if (i++) {
+            text += i == emoteNames.size() ? " and " : ", ";
+        }
+        text += emoteName;
+    }
+
+    text += ".";
+
+    this->emplace<TimestampElement>();
+    this->emplace<TextElement>(actor, MessageElementFlag::Username, MessageColor::System)->setLink({ Link::UserInfo, actor });
+    this->emplace<TextElement>(text, MessageElementFlag::Text, MessageColor::System);
+
+    auto finalText = QString("%1 %2").arg(actor, text);
+
+    this->message().loginName = actor;
+    this->message().messageText = finalText;
+    this->message().searchText = finalText;
+    this->message().seventvEventTargetEmotes = emoteNames;
+
+    this->message().flags.set(MessageFlag::System);
+    this->message().flags.set(MessageFlag::SevenTvEventApiRemoveEmoteMessage);
+    this->message().flags.set(MessageFlag::DoNotTriggerNotification);
+}
+
+MessageBuilder::MessageBuilder(SevenTvEventApiUpdateEmoteMessageTag,
+    const QString& actor, const QString& emoteName, const QString& oldEmoteName) : MessageBuilder()
+{
+    auto text = QString("renamed 7TV emote %1 to %2.").arg(oldEmoteName, emoteName);
+
+    this->emplace<TimestampElement>();
+    this->emplace<TextElement>(actor, MessageElementFlag::Username, MessageColor::System)->setLink({ Link::UserInfo, actor });
+    this->emplace<TextElement>(text, MessageElementFlag::Text, MessageColor::System);
+
+    auto finalText = QString("%1 %2").arg(actor, text);
+
+    this->message().loginName = actor;
+    this->message().messageText = finalText;
+    this->message().searchText = finalText;
+    this->message().seventvEventTargetEmotes = { emoteName, oldEmoteName };
+
+    this->message().flags.set(MessageFlag::System);
+    this->message().flags.set(MessageFlag::SevenTvEventApiUpdateEmoteMessage);
+    this->message().flags.set(MessageFlag::DoNotTriggerNotification);
 }
 
 MessageBuilder::MessageBuilder(SystemMessageTag, const QString &text,

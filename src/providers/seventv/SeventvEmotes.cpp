@@ -302,6 +302,7 @@ boost::optional<EmotePtr> SeventvEmotes::updateEmote(
     {
         return boost::none;
     }
+
     EmoteMap updatedMap = *map.get();
     updatedMap.erase(foundEmote.value()->name);
 
