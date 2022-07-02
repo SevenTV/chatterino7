@@ -202,84 +202,101 @@ void Channel::addOrReplaceTimeout(MessagePtr message)
     // WindowManager::instance().repaintVisibleChatWidgets(this);
 }
 
-void Channel::addOrReplaceSevenTvEvent(MessagePtr message)
+void Channel::addOrReplaceSevenTvEventAddRemove(MessagePtr message)
 {
     LimitedQueueSnapshot<MessagePtr> snapshot = this->getMessageSnapshot();
     int snapshotLength = snapshot.size();
 
     int end = std::max(0, snapshotLength - 20);
 
-    bool addMessage = true;
+    auto addMessage = true;
+    auto skip = false;
 
     QTime minimumTime = QTime::currentTime().addSecs(-5);
 
     MessageFlag currentFlag;
-    MessageFlag firstFlag;
-    MessageFlag secondFlag;
-
     if (message->flags.has(MessageFlag::SevenTvEventApiAddEmoteMessage))
     {
         currentFlag = MessageFlag::SevenTvEventApiAddEmoteMessage;
-        firstFlag = MessageFlag::SevenTvEventApiRemoveEmoteMessage;
-        secondFlag = MessageFlag::SevenTvEventApiUpdateEmoteMessage;
     }
     else if (message->flags.has(MessageFlag::SevenTvEventApiRemoveEmoteMessage))
     {
         currentFlag = MessageFlag::SevenTvEventApiRemoveEmoteMessage;
-        firstFlag = MessageFlag::SevenTvEventApiAddEmoteMessage;
-        secondFlag = MessageFlag::SevenTvEventApiUpdateEmoteMessage;
+    }
+    else
+    {
+        // this case should be unreachable because this function is only called with messages which contain the above flags
+        skip = true;
     }
 
-    for (int i = snapshotLength - 1; i >= end; --i)
+    if (!skip)
     {
-        auto& s = snapshot[i];
-
-        if (s->parseTime < minimumTime)
+        for (int i = snapshotLength - 1; i >= end; --i)
         {
-            break;
-        }
+            auto &s = snapshot[i];
 
-        if (s->flags.has(currentFlag) && s->loginName != message->loginName) break;
+            if (s->parseTime < minimumTime)
+            {
+                break;
+            }
 
-        if (s->flags.has(firstFlag) || s->flags.has(secondFlag) || s->flags.has(currentFlag))
-        {
-            auto found = false;
+            if (s->flags.has(currentFlag) && s->loginName != message->loginName)
+                break;
 
-            for (const auto e1 : s->seventvEventTargetEmotes) {
-                for (const auto e2 : message->seventvEventTargetEmotes) {
-                    if (e1 == e2) {
-                        found = true;
-                        break;
+            if (s->flags.hasAny(
+                    {MessageFlag::SevenTvEventApiAddEmoteMessage,
+                     MessageFlag::SevenTvEventApiRemoveEmoteMessage,
+                     MessageFlag::SevenTvEventApiUpdateEmoteMessage}))
+            {
+                auto found = false;
+
+                for (const auto &e1 : s->seventvEventTargetEmotes)
+                {
+                    for (const auto &e2 : message->seventvEventTargetEmotes)
+                    {
+                        if (e1 == e2)
+                        {
+                            found = true;
+                            break;
+                        }
                     }
+
+                    if (found)
+                        break;
                 }
 
-                if (found) break;
+                if (found)
+                    break;
             }
 
-            if (found) break;
-        }
+            if (s->flags.has(currentFlag))
+            {
+                auto emotes = s->seventvEventTargetEmotes;
+                for (auto const &e : message->seventvEventTargetEmotes)
+                {
+                    emotes.push_back(e);
+                }
 
-        if (s->flags.has(currentFlag))
-        {
-            auto emotes = s->seventvEventTargetEmotes;
-            for (auto const& e : message->seventvEventTargetEmotes) {
-                emotes.push_back(e);
+                MessageBuilder replacement;
+                if (currentFlag == MessageFlag::SevenTvEventApiAddEmoteMessage)
+                {
+                    replacement = MessageBuilder(seventvAddEmoteMessage,
+                                                 message->loginName, emotes);
+                }
+                else if (currentFlag ==
+                         MessageFlag::SevenTvEventApiRemoveEmoteMessage)
+                {
+                    replacement = MessageBuilder(seventvRemoveEmoteMessage,
+                                                 message->loginName, emotes);
+                }
+
+                replacement->flags = message->flags;
+
+                this->replaceMessage(s, replacement.release());
+
+                addMessage = false;
+                break;
             }
-
-            MessageBuilder replacement;
-            if (currentFlag == MessageFlag::SevenTvEventApiAddEmoteMessage) {
-                replacement = MessageBuilder(seventvAddEmoteMessage, message->loginName, emotes);
-            }
-            else if (currentFlag == MessageFlag::SevenTvEventApiRemoveEmoteMessage) {
-                replacement = MessageBuilder(seventvRemoveEmoteMessage, message->loginName, emotes);
-            }
-
-            replacement->flags = message->flags;
-
-            this->replaceMessage(s, replacement.release());
-
-            addMessage = false;
-            break;
         }
     }
 

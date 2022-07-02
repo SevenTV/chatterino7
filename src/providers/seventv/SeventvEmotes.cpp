@@ -293,15 +293,17 @@ boost::optional<EmotePtr> SeventvEmotes::addEmote(
 }
 
 boost::optional<EmotePtr> SeventvEmotes::updateEmote(
-    Atomic<std::shared_ptr<const EmoteMap>> &map, const QString &emoteBaseName,
+    Atomic<std::shared_ptr<const EmoteMap>> &map, QString *emoteBaseName,
     const QJsonValue &emoteJson)
 {
     auto oldMap = map.get();
-    auto foundEmote = findEmote(oldMap, emoteBaseName, emoteJson.toObject());
+    auto foundEmote = findEmote(oldMap, *emoteBaseName, emoteJson.toObject());
     if (!foundEmote)
     {
         return boost::none;
     }
+
+    *emoteBaseName = foundEmote->get()->getCopyString();
 
     EmoteMap updatedMap = *map.get();
     updatedMap.erase(foundEmote.value()->name);

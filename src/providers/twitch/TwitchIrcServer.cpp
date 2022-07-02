@@ -42,7 +42,9 @@ TwitchIrcServer::TwitchIrcServer()
     if (getSettings()->enableSevenTVEventApi)
     {
         this->eventApi = new SeventvEventApi(SEVENTV_EVENTAPI_URL);
-    } else {
+    }
+    else
+    {
         this->eventApi = nullptr;
     }
 

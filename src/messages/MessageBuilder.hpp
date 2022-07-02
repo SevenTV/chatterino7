@@ -59,12 +59,12 @@ public:
     MessageBuilder(TimeoutMessageTag, const QString &username,
                    const QString &durationInSeconds, bool multipleTimes,
                    const QTime &time = QTime::currentTime());
-    MessageBuilder(SevenTvEventApiAddEmoteMessageTag,
-        const QString& actor, std::vector<QString> emoteNames);
-    MessageBuilder(SevenTvEventApiRemoveEmoteMessageTag,
-        const QString& actor, std::vector<QString> emoteNames);
-    MessageBuilder(SevenTvEventApiUpdateEmoteMessageTag,
-        const QString& actor, const QString& emoteName, const QString& oldEmoteName);
+    MessageBuilder(SevenTvEventApiAddEmoteMessageTag, const QString &actor,
+                   std::vector<QString> emoteNames);
+    MessageBuilder(SevenTvEventApiRemoveEmoteMessageTag, const QString &actor,
+                   std::vector<QString> emoteNames);
+    MessageBuilder(SevenTvEventApiUpdateEmoteMessageTag, const QString &actor,
+                   const QString &emoteName, const QString &oldEmoteName);
     MessageBuilder(const BanAction &action, uint32_t count = 1);
     MessageBuilder(const UnbanAction &action);
     MessageBuilder(const AutomodUserAction &action);

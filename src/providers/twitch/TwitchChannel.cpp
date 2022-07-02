@@ -588,7 +588,10 @@ void TwitchChannel::addSeventvEmote(const EventApiEmoteUpdate &action)
     }
 
     SeventvEmotes::addEmote(this->seventvEmotes_, action.emote->json);
-    this->addOrReplaceSevenTvEvent(MessageBuilder(seventvAddEmoteMessage, action.actor, { action.emote->json["name"].toString()}).release());
+    this->addOrReplaceSevenTvEventAddRemove(
+        MessageBuilder(seventvAddEmoteMessage, action.actor,
+                       {action.emote->json["name"].toString()})
+            .release());
 }
 
 void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
@@ -597,10 +600,16 @@ void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
     {
         return;  // this shouldn't happen
     }
-    auto result = SeventvEmotes::updateEmote(
-        this->seventvEmotes_, action.emote->baseName, action.emote->json);
-    if (result.has_value()) {
-        this->addMessage(MessageBuilder(seventvUpdateEmoteMessage, action.actor, action.emote->baseName, action.emote->json["name"].toString()).release());
+
+    auto baseName = action.emote->baseName;
+    auto result = SeventvEmotes::updateEmote(this->seventvEmotes_, &baseName,
+                                             action.emote->json);
+    if (result.has_value())
+    {
+        this->addMessage(MessageBuilder(seventvUpdateEmoteMessage, action.actor,
+                                        action.emote->json["name"].toString(),
+                                        baseName)
+                             .release());
     }
 }
 
@@ -609,7 +618,10 @@ void TwitchChannel::removeSeventvEmote(const EventApiEmoteUpdate &action)
     auto removed =
         SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName);
     if (removed)
-        this->addOrReplaceSevenTvEvent(MessageBuilder(seventvRemoveEmoteMessage, action.actor, { action.emoteName }).release());
+        this->addOrReplaceSevenTvEventAddRemove(
+            MessageBuilder(seventvRemoveEmoteMessage, action.actor,
+                           {action.emoteName})
+                .release());
 }
 
 const QString &TwitchChannel::subscriptionUrl()

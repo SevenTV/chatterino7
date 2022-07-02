@@ -152,7 +152,7 @@ void Application::initialize(Settings &settings, Paths &paths)
     }
     this->initPubSub();
 
-    if (settings.enableSevenTVEventApi) 
+    if (settings.enableSevenTVEventApi)
     {
         qWarning("enabled event api");
         this->initEventApi();
