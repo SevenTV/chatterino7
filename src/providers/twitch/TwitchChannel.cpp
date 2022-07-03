@@ -1300,9 +1300,9 @@ boost::optional<CheerEmote> TwitchChannel::cheerEmote(const QString &string)
 
 void TwitchChannel::listenSeventv()
 {
-    if (getApp()->twitch->eventApi)
+    if (auto eventApi = getApp()->twitch->eventApi)
     {
-        getApp()->twitch->eventApi->joinChannel(this->getName());
+        eventApi->joinChannel(this->getName());
     }
 }
 
