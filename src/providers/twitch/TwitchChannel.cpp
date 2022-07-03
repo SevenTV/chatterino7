@@ -616,14 +616,13 @@ void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
 
 void TwitchChannel::removeSeventvEmote(const EventApiEmoteUpdate &action)
 {
-    if (!SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName))
+    if (SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName))
     {
-        return;
+        this->addOrReplaceSevenTvEventAddRemove(
+            MessageBuilder(seventvRemoveEmoteMessage, action.actor,
+                           {action.emoteName})
+                .release());
     }
-    this->addOrReplaceSevenTvEventAddRemove(
-        MessageBuilder(seventvRemoveEmoteMessage, action.actor,
-                       {action.emoteName})
-            .release());
 }
 
 const QString &TwitchChannel::subscriptionUrl()
