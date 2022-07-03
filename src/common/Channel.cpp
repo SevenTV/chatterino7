@@ -248,24 +248,17 @@ void Channel::addOrReplaceSevenTvEventAddRemove(MessagePtr message)
                      MessageFlag::SevenTvEventApiRemoveEmoteMessage,
                      MessageFlag::SevenTvEventApiUpdateEmoteMessage}))
             {
-                auto found = false;
+                auto anyMatchingEmote = std::any_of(
+                    s->seventvEventTargetEmotes.begin(),
+                    s->seventvEventTargetEmotes.end(),
+                    [messageEmotes =
+                         message->seventvEventTargetEmotes](const auto &emote) {
+                        return std::find(messageEmotes.begin(),
+                                         messageEmotes.end(),
+                                         emote) != messageEmotes.end();
+                    });
 
-                for (const auto &e1 : s->seventvEventTargetEmotes)
-                {
-                    for (const auto &e2 : message->seventvEventTargetEmotes)
-                    {
-                        if (e1 == e2)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (found)
-                        break;
-                }
-
-                if (found)
+                if (anyMatchingEmote)
                     break;
             }
 
