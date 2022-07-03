@@ -276,8 +276,7 @@ void Channel::addOrReplaceSevenTvEventAddRemove(MessagePtr message)
                     replacement = MessageBuilder(seventvAddEmoteMessage,
                                                  message->loginName, emotes);
                 }
-                else if (currentFlag ==
-                         MessageFlag::SevenTvEventApiRemoveEmoteMessage)
+                else  // current == RemoveEmoteMessage
                 {
                     replacement = MessageBuilder(seventvRemoveEmoteMessage,
                                                  message->loginName, emotes);
