@@ -186,7 +186,7 @@ TwitchChannel::TwitchChannel(const QString &name)
     });
 
     this->destroyed.connect([this]() {
-        if (auto eventApi = getApp()->twitch->eventApi)
+        if (const auto &eventApi = getApp()->twitch->eventApi)
         {
             eventApi->partChannel(this->getName());
         }
@@ -1302,7 +1302,7 @@ boost::optional<CheerEmote> TwitchChannel::cheerEmote(const QString &string)
 
 void TwitchChannel::listenSeventv()
 {
-    if (auto eventApi = getApp()->twitch->eventApi)
+    if (const auto &eventApi = getApp()->twitch->eventApi)
     {
         eventApi->joinChannel(this->getName());
     }

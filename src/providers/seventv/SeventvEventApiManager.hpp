@@ -38,7 +38,7 @@ public:
     static constexpr int maxConnections = 10;
 
     SeventvEventApi(const QString &host);
-    ~SeventvEventApi() = delete;
+    ~SeventvEventApi() = default;
 
     enum class State {
         Connected,

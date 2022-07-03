@@ -41,11 +41,8 @@ TwitchIrcServer::TwitchIrcServer()
 
     if (getSettings()->enableSevenTVEventApi)
     {
-        this->eventApi = new SeventvEventApi(SEVENTV_EVENTAPI_URL);
-    }
-    else
-    {
-        this->eventApi = nullptr;
+        this->eventApi =
+            std::make_unique<SeventvEventApi>(SEVENTV_EVENTAPI_URL);
     }
 
     // getSettings()->twitchSeperateWriteConnection.connect([this](auto, auto) {
