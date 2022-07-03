@@ -604,13 +604,14 @@ void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
     auto baseName = action.emote->baseName;
     auto result = SeventvEmotes::updateEmote(this->seventvEmotes_, &baseName,
                                              action.emote->json);
-    if (result.has_value())
+    if (!result)
     {
-        this->addMessage(MessageBuilder(seventvUpdateEmoteMessage, action.actor,
-                                        action.emote->json["name"].toString(),
-                                        baseName)
-                             .release());
+        return;
     }
+    this->addMessage(MessageBuilder(seventvUpdateEmoteMessage, action.actor,
+                                    action.emote->json["name"].toString(),
+                                    baseName)
+                         .release());
 }
 
 void TwitchChannel::removeSeventvEmote(const EventApiEmoteUpdate &action)
