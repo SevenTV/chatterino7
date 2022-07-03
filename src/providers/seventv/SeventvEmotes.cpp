@@ -185,12 +185,12 @@ namespace {
         //         This is expensive but the cache entry may be corrupted
         //         when an emote was added with a different alias in some other
         //         channel.
-        for (auto it = map->begin(); it != map->end(); it++)
+        for (const auto &[_, value] : *map)
         {
             // since the url ends with the emote id we can check this
-            if (it->second->homePage.string.endsWith(id))
+            if (value->homePage.string.endsWith(id))
             {
-                return it->second;
+                return value;
             }
         }
         return boost::none;
