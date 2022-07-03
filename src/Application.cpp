@@ -154,7 +154,6 @@ void Application::initialize(Settings &settings, Paths &paths)
 
     if (settings.enableSevenTVEventApi)
     {
-        qWarning("enabled event api");
         this->initEventApi();
     }
 }
