@@ -186,9 +186,9 @@ TwitchChannel::TwitchChannel(const QString &name)
     });
 
     this->destroyed.connect([this]() {
-        if (getApp()->twitch->eventApi)
+        if (auto eventApi = getApp()->twitch->eventApi)
         {
-            getApp()->twitch->eventApi->partChannel(this->getName());
+            eventApi->partChannel(this->getName());
         }
     });
 
