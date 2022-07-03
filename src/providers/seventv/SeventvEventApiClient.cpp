@@ -125,7 +125,7 @@ void SeventvEventApiClient::checkPing()
 {
     assert(this->started_);
     if ((std::chrono::steady_clock::now() - this->lastPing_.load()) >
-        SeventvEventApiClient::MAX_PING_SECONDS)
+        SeventvEventApiClient::CHECK_PING_INTERVAL)
     {
         qCDebug(chatterinoSeventvEventApi)
             << "Didn't receive a ping in time, disconnecting!";
@@ -137,7 +137,7 @@ void SeventvEventApiClient::checkPing()
     auto self = this->shared_from_this();
 
     runAfter(this->websocketClient_.get_io_service(),
-             SeventvEventApiClient::MAX_PING_SECONDS, [self](auto timer) {
+             SeventvEventApiClient::CHECK_PING_INTERVAL, [self](auto timer) {
                  if (!self->started_)
                  {
                      return;

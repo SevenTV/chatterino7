@@ -19,8 +19,9 @@ class SeventvEventApiClient
 public:
     // The max amount of channels we may join with a single connection
     static constexpr std::vector<QString>::size_type MAX_LISTENS = 100;
-    // TODO: document + this is a really terrible name
-    static constexpr std::chrono::seconds MAX_PING_SECONDS =
+    // The server has to send at least one ping during this interval.
+    // After this time, the client checks if it received a ping.
+    static constexpr std::chrono::seconds CHECK_PING_INTERVAL =
         std::chrono::seconds(60);
 
     SeventvEventApiClient(eventapi::WebsocketClient &_websocketClient,
