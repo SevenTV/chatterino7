@@ -322,6 +322,8 @@ bool SeventvEmotes::removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
 {
     EmoteMap updatedMap = *map.get();
     auto it = updatedMap.find(EmoteName{emoteName});
+
+    // Emotes don't store their id, but the emote url always ends with the emote id.
     if (it == updatedMap.end() ||
         !it->second->homePage.string.endsWith(emoteId))
     {
