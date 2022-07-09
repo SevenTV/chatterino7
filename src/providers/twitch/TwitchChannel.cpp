@@ -616,7 +616,8 @@ void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
 
 void TwitchChannel::removeSeventvEmote(const EventApiEmoteUpdate &action)
 {
-    if (SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName))
+    if (SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName,
+                                   action.emoteId))
     {
         this->addOrReplaceSevenTvEventAddRemove(
             MessageBuilder(seventvRemoveEmoteMessage, action.actor,

@@ -317,14 +317,16 @@ boost::optional<EmotePtr> SeventvEmotes::updateEmote(
 }
 
 bool SeventvEmotes::removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
-                                const QString &emoteName)
+                                const QString &emoteName,
+                                const QString &emoteId)
 {
     EmoteMap updatedMap = *map.get();
     auto it = updatedMap.find(EmoteName{emoteName});
-    if (it == updatedMap.end())
+    if (it == updatedMap.end() ||
+        !it->second->homePage.string.endsWith(emoteId))
     {
         // We already copied the map at this point and are now discarding the copy.
-        // This is fine, because this case should be really rare.
+        // This is fine, because these case should be really rare.
         return false;
     }
     updatedMap.erase(it);

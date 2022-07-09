@@ -48,7 +48,7 @@ public:
         Atomic<std::shared_ptr<const EmoteMap>> &map, QString *emoteBaseName,
         const QJsonValue &emoteJson);
     static bool removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
-                            const QString &emoteName);
+                            const QString &emoteName, const QString &emoteId);
     static void loadChannel(std::weak_ptr<Channel> channel,
                             const QString &channelId,
                             std::function<void(EmoteMap &&)> callback,
