@@ -326,7 +326,7 @@ bool SeventvEmotes::removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
         !it->second->homePage.string.endsWith(emoteId))
     {
         // We already copied the map at this point and are now discarding the copy.
-        // This is fine, because these case should be really rare.
+        // This is fine, because these cases should be really rare.
         return false;
     }
     updatedMap.erase(it);
