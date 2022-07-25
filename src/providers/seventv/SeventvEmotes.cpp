@@ -29,9 +29,27 @@ namespace {
     static std::unordered_map<EmoteId, std::weak_ptr<const Emote>> emoteCache;
     static std::mutex emoteCacheMutex;
 
-    Url getEmoteLink(const EmoteId &id, const QString &emoteScale)
-
+    Url getEmoteLink(const QJsonArray &urls, const EmoteId &id,
+                     const QString &emoteScale, int positionHint)
     {
+        // Step 1: Check if the emote has a valid entry at `positionHint`.
+        //         This case should be extremely common.
+        if (urls.at(positionHint).isArray() &&
+            urls.at(positionHint).toArray().at(0).toString() == emoteScale)
+        {
+            return {urls.at(positionHint).toArray().at(1).toString()};
+        }
+
+        // Step 2: Scan the entire array for a url of this size.
+        for (const auto &url : urls)
+        {
+            if (url.toArray().at(0).toString() == emoteScale)
+            {
+                return {url.toArray().at(1).toString()};
+            }
+        }
+
+        // Step 3: We didn't get any url, so we're falling back to the default template.
         const QString urlTemplate("https://cdn.7tv.app/emote/%1/%2");
 
         return {urlTemplate.arg(id.string, emoteScale)};
@@ -84,12 +102,18 @@ namespace {
             size4x = heightArr.at(3).toDouble();
         }
 
+        auto emoteUrls = jsonEmote.toObject().value("urls").toArray();
+
         auto emote = Emote(
             {name,
-             ImageSet{Image::fromUrl(getEmoteLink(id, "1x"), size1x / size1x),
-                      Image::fromUrl(getEmoteLink(id, "2x"), size1x / size2x),
-                      Image::fromUrl(getEmoteLink(id, "3x"), size1x / size3x),
-                      Image::fromUrl(getEmoteLink(id, "4x"), size1x / size4x)},
+             ImageSet{Image::fromUrl(getEmoteLink(emoteUrls, id, "1x", 0),
+                                     size1x / size1x),
+                      Image::fromUrl(getEmoteLink(emoteUrls, id, "2x", 1),
+                                     size1x / size2x),
+                      Image::fromUrl(getEmoteLink(emoteUrls, id, "3x", 2),
+                                     size1x / size3x),
+                      Image::fromUrl(getEmoteLink(emoteUrls, id, "4x", 3),
+                                     size1x / size4x)},
              Tooltip{QString("%1<br>%2 7TV Emote<br>By: %3")
                          .arg(name.string, (isGlobal ? "Global" : "Channel"),
                               author.string)},
@@ -234,6 +258,7 @@ void SeventvEmotes::loadEmotes()
             visibility
             mime
             height
+            urls
             owner {
                 id
                 display_name
@@ -353,6 +378,7 @@ void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,
                     visibility
                     mime
                     height
+                    urls
                     owner {
                         id
                         display_name
