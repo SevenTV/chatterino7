@@ -450,11 +450,6 @@ void TwitchIrcServer::onMessageSendRequested(TwitchChannel *channel,
     sent = true;
 }
 
-const SeventvEmotes &TwitchIrcServer::getSeventvEmotes() const
-{
-    return this->seventv;
-}
-
 void TwitchIrcServer::onReplySendRequested(TwitchChannel *channel,
                                            const QString &message,
                                            const QString &replyId, bool &sent)
@@ -480,6 +475,10 @@ const BttvEmotes &TwitchIrcServer::getBttvEmotes() const
 const FfzEmotes &TwitchIrcServer::getFfzEmotes() const
 {
     return this->ffz;
+}
+const SeventvEmotes &TwitchIrcServer::getSeventvEmotes() const
+{
+    return this->seventv;
 }
 
 void TwitchIrcServer::reloadBTTVGlobalEmotes()
