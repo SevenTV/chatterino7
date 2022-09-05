@@ -514,7 +514,7 @@ void TwitchIrcServer::reloadAllFFZChannelEmotes()
 
 void TwitchIrcServer::reloadSevenTVGlobalEmotes()
 {
-    this->ffz.loadEmotes();
+    this->seventv.loadEmotes();
 }
 
 void TwitchIrcServer::reloadAllSevenTVChannelEmotes()
