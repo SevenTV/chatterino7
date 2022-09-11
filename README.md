@@ -23,14 +23,14 @@ If you still receive an error about `MSVCR120.dll missing`, then you should inst
 To get source code with required submodules run:
 
 ```
-git clone --recurse-submodules https://github.com/Chatterino/chatterino2.git
+git clone --recurse-submodules https://github.com/SevenTV/chatterino7
 ```
 
 or
 
 ```
-git clone https://github.com/Chatterino/chatterino2.git
-cd chatterino2
+git clone https://github.com/SevenTV/chatterino7
+cd chatterino7
 git submodule update --init --recursive
 ```
 
