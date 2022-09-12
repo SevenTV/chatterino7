@@ -25,7 +25,41 @@ enum class SeventvEmoteVisibilityFlag : int64_t {
     ZeroWidth = (1LL << 7),
 };
 
+// https://github.com/SevenTV/API/blob/8fbfc702a3fe0ada59f4b9593c65748d36ac7c0b/data/model/emote-set.model.go#L33-L38
+enum class SeventvActiveEmoteFlag : int64_t {
+    None = 0LL,
+
+    ZeroWidth = (1LL << 0),
+
+    OverrideTwitchGlobal = (1 << 16),
+    OverrideTwitchSubscriber = (1 << 17),
+    OverrideBetterTTV = (1 << 18),
+};
+
+enum class SeventvEmoteFlag : int64_t {
+    None = 0LL,
+    // The emote is private and can only be accessed by its owner, editors and moderators
+    Private = 1 << 0,
+    // The emote was verified to be an original creation by the uploader
+    Authentic = (1LL << 1),
+    // The emote is recommended to be enabled as Zero-Width
+    ZeroWidth = (1LL << 8),
+
+    // Content Flags
+
+    // Sexually Suggesive
+    ContentSexual = (1LL << 16),
+    // Rapid flashing
+    ContentEpilepsy = (1LL << 17),
+    // Edgy or distasteful, may be offensive to some users
+    ContentEdgy = (1 << 18),
+    // Not allowed specifically on the Twitch platform
+    ContentTwitchDisallowed = (1LL << 24),
+};
+
 using SeventvEmoteVisibilityFlags = FlagsEnum<SeventvEmoteVisibilityFlag>;
+using SeventvActiveEmoteFlags = FlagsEnum<SeventvActiveEmoteFlag>;
+using SeventvEmoteFlags = FlagsEnum<SeventvEmoteFlag>;
 
 struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;

@@ -1,5 +1,6 @@
 #include "providers/seventv/SeventvEmotes.hpp"
 
+#include "SeventvEmoteCache.hpp"
 #include "common/Common.hpp"
 #include "common/NetworkRequest.hpp"
 #include "common/QLogging.hpp"
@@ -22,12 +23,15 @@ namespace {
     const QString CHANNEL_HAS_NO_EMOTES(
         "This channel has no 7TV channel emotes.");
     const QString emoteLinkFormat("https://7tv.app/emotes/%1");
+    const QString apiUrlChannelEmotes("https://7tv.io/v3/users/twitch/%1");
 
     // maximum pageSize that 7tv's API accepts
     constexpr int maxPageSize = 150;
 
     static std::unordered_map<EmoteId, std::weak_ptr<const Emote>> emoteCache;
     static std::mutex emoteCacheMutex;
+    static SeventvEmoteCache v3Cache;
+    static std::mutex v3CacheMutex;
 
     Url getEmoteLink(const EmoteId &id, const QString &emoteScale)
 
@@ -99,6 +103,156 @@ namespace {
         return result;
     }
 
+    ImageSet makeImageSet(const QJsonObject &jsonEmote)
+    {
+        auto host = jsonEmote["host"].toObject();
+        auto baseUrl = host["url"].toString();
+        ImageSet set;
+        int nextSize = 1;
+        double baseWidth = -1;
+        // assume the files array is sorted
+        for (auto fileItem : host["files"].toArray())
+        {
+            auto file = fileItem.toObject();
+            if (file["format"].toString() != "WEBP")
+            {
+                continue;
+            }
+            double width = file["width"].toDouble();
+            double scale = 1.0;
+            // this expects the array to be sorted
+            if (baseWidth < 0.0)
+            {
+                baseWidth = width;
+            }
+            else
+            {
+                scale = baseWidth / width;
+            }
+            auto image = Image::fromUrl(
+                {QString("https:%1/%2").arg(baseUrl, file["name"].toString())},
+                scale);
+            switch (nextSize)
+            {
+                case 1: {
+                    set.setImage1(image);
+                }
+                break;
+                case 2: {
+                    set.setImage2(image);
+                }
+                break;
+                case 3: {
+                    set.setImage3(image);
+                }
+                break;
+                case 4: {
+                    set.setImage4(image);
+                    break;
+                }
+            }
+            nextSize++;
+        }
+
+        return set;
+    }
+
+    Tooltip createTooltip(const QString &name, const QString &author,
+                          bool isGlobal)
+    {
+        return Tooltip{QString("%1<br>%2 7TV Emote<br>By: %3")
+                           .arg(name, isGlobal ? "Global" : "Channel",
+                                author.isEmpty() ? "<deleted>" : author)};
+    }
+
+    Tooltip createAliasedTooltip(const QString &name, const QString &baseName,
+                                 const QString &author, bool isGlobal)
+    {
+        return Tooltip{QString("%1<br>Alias to %2<br>%3 7TV Emote<br>By: %4")
+                           .arg(name, baseName, isGlobal ? "Global" : "Channel",
+                                author.isEmpty() ? "<deleted>" : author)};
+    }
+
+    /**
+     * Creates a "regular" (i.e. not aliased or global) emote
+     * that will be added to the cache.
+     */
+    Emote createV3Emote(const EmoteId &id, const QJsonObject &emoteData,
+                        ImageSet *imageSet)
+    {
+        auto name = EmoteName{emoteData.value("name").toString()};
+        auto author = EmoteAuthor{emoteData.value("owner")
+                                      .toObject()
+                                      .value("display_name")
+                                      .toString()};
+        auto flags = SeventvEmoteFlags(
+            SeventvEmoteFlag(emoteData.value("flags").toInt()));
+        bool zeroWidth = flags.has(SeventvEmoteFlag::ZeroWidth);
+
+        auto emote = Emote(
+            {name, imageSet != nullptr ? *imageSet : makeImageSet(emoteData),
+             createTooltip(name.string, author.string, false),
+             Url{emoteLinkFormat.arg(id.string)}, zeroWidth});
+
+        return emote;
+    }
+
+    /**
+     * Creates a new aliased or global emote where the base
+     * emote isn't cached. The emote's images may be cached
+     * already (supplied by <code>imageSet</code>.
+     */
+    Emote createV3AliasedOrGlobalEmote(const EmoteId &id, bool isGlobal,
+                                       const QJsonObject &addedEmote,
+                                       const QJsonObject &emoteData,
+                                       ImageSet *imageSet)
+    {
+        auto name = EmoteName{addedEmote.value("name").toString()};
+        auto author = EmoteAuthor{emoteData.value("owner")
+                                      .toObject()
+                                      .value("display_name")
+                                      .toString()};
+        auto flags = SeventvActiveEmoteFlags(
+            SeventvActiveEmoteFlag(addedEmote.value("flags").toInt()));
+        bool zeroWidth = flags.has(SeventvActiveEmoteFlag::ZeroWidth);
+        bool isAliased =
+            addedEmote["name"].toString() != emoteData["name"].toString();
+        auto tooltip = isAliased
+                           ? createAliasedTooltip(name.string,
+                                                  emoteData["name"].toString(),
+                                                  author.string, false)
+                           : createTooltip(name.string, author.string, false);
+
+        auto emote = Emote(
+            {name, imageSet != nullptr ? *imageSet : makeImageSet(emoteData),
+             tooltip, Url{emoteLinkFormat.arg(id.string)}, zeroWidth});
+
+        return emote;
+    }
+
+    /**
+     * Creates an aliased or global emote where
+     * the base emote is cached.
+     */
+    Emote createV3ForkedEmote(const QJsonObject &addedEmote,
+                              const EmotePtr &baseEmote, const QString &author)
+    {
+        auto name = EmoteName{addedEmote.value("name").toString()};
+        bool isAliased =
+            addedEmote["name"].toString() != baseEmote->name.string;
+        auto tooltip =
+            isAliased ? createAliasedTooltip(
+                            name.string, baseEmote->name.string, author, false)
+                      : createTooltip(name.string, author, false);
+        auto flags = SeventvActiveEmoteFlags(
+            SeventvActiveEmoteFlag(addedEmote.value("flags").toInt()));
+        bool zeroWidth = flags.has(SeventvActiveEmoteFlag::ZeroWidth);
+
+        auto emote = Emote(
+            {name, baseEmote->images, tooltip, baseEmote->homePage, zeroWidth});
+        return emote;
+    }
+
     std::pair<Outcome, EmoteMap> parseGlobalEmotes(
         const QJsonArray &jsonEmotes, const EmoteMap &currentEmotes)
     {
@@ -124,23 +278,71 @@ namespace {
                getSettings()->showUnlistedEmotes;
     }
 
-    EmoteMap parseChannelEmotes(const QJsonObject &root,
-                                const QString &channelName)
+    bool checkEmoteVisibilityV3(const QJsonObject &emoteData)
+    {
+        return emoteData.value("listed").toBool() ||
+               getSettings()->showUnlistedEmotes;
+    }
+
+    EmoteMap parseChannelEmotes(const QJsonArray &jsonEmotes)
     {
         auto emotes = EmoteMap();
+        std::lock_guard<std::mutex> guard(v3CacheMutex);
 
-        auto jsonEmotes = root.value("emotes").toArray();
         for (auto jsonEmote_ : jsonEmotes)
         {
-            auto jsonEmote = jsonEmote_.toObject();
+            auto addedEmote = jsonEmote_.toObject();
+            auto emoteData = addedEmote["data"].toObject();
 
-            if (!checkEmoteVisibility(jsonEmote))
+            if (!checkEmoteVisibilityV3(emoteData))
             {
                 continue;
             }
-
-            auto emote = createEmote(jsonEmote, false);
-            emotes[emote.name] = cachedOrMake(std::move(emote.emote), emote.id);
+            auto emoteId = EmoteId{addedEmote["id"].toString()};
+            bool isAliased =
+                addedEmote["name"].toString() != emoteData["name"].toString();
+            auto cached = v3Cache.getEmote(emoteId);
+            if (cached)
+            {
+                if (isAliased)
+                {
+                    // We don't cache aliased emotes.
+                    auto emote = std::make_shared<Emote>(
+                        createV3ForkedEmote(addedEmote, cached,
+                                            emoteData["owner"]
+                                                .toObject()["display_name"]
+                                                .toString()));
+                    emotes[cached->name] = emote;
+                }
+                else
+                {
+                    emotes[cached->name] = cached;
+                }
+            }
+            else
+            {
+                auto *cachedImages = v3Cache.getImageSet(emoteId);
+                if (isAliased)
+                {
+                    // We don't cache aliased emotes...
+                    auto emote = std::make_shared<Emote>(
+                        createV3AliasedOrGlobalEmote(emoteId, false, addedEmote,
+                                                     emoteData, cachedImages));
+                    if (cachedImages == nullptr)
+                    {
+                        // ...however, we do cache the images.
+                        v3Cache.putImageSet(emoteId, emote->images);
+                    }
+                    emotes[emote->name] = emote;
+                }
+                else
+                {
+                    auto emote = v3Cache.putEmote(
+                        emoteId,
+                        createV3Emote(emoteId, emoteData, cachedImages));
+                    emotes[emote->name] = emote;
+                }
+            }
         }
 
         return emotes;
@@ -346,49 +548,17 @@ void SeventvEmotes::loadChannel(std::weak_ptr<Channel> channel,
     qCDebug(chatterinoSeventv)
         << "Reloading 7TV Channel Emotes" << channelId << manualRefresh;
 
-    QJsonObject payload, variables;
-
-    QString query = R"(
-        query loadUserEmotes($login: String!) {
-            user(id: $login) {
-                emotes {
-                    id
-                    name
-                    provider
-                    provider_id
-                    visibility
-                    mime
-                    height
-                    owner {
-                        id
-                        display_name
-                        login
-                        twitch_id
-                    }
-                }
-            }
-        })";
-
-    variables.insert("login", channelId);
-
-    payload.insert("query", query.replace(whitespaceRegex, " "));
-    payload.insert("variables", variables);
-
-    qDebug() << QJsonDocument(payload).toJson(QJsonDocument::Compact);
-
-    NetworkRequest(apiUrlGQL, NetworkRequestType::Post)
+    NetworkRequest(apiUrlChannelEmotes.arg(channelId), NetworkRequestType::Get)
         .timeout(20000)
-        .header("Content-Type", "application/json")
-        .payload(QJsonDocument(payload).toJson(QJsonDocument::Compact))
         .onSuccess([callback = std::move(callback), channel, channelId,
                     manualRefresh](NetworkResult result) -> Outcome {
-            QJsonObject parsedEmotes = result.parseJson()
-                                           .value("data")
-                                           .toObject()
-                                           .value("user")
-                                           .toObject();
+            auto parsedEmotes = result.parseJson()
+                                    .value("emote_set")
+                                    .toObject()
+                                    .value("emotes")
+                                    .toArray();
 
-            auto emoteMap = parseChannelEmotes(parsedEmotes, channelId);
+            auto emoteMap = parseChannelEmotes(parsedEmotes);
             bool hasEmotes = !emoteMap.empty();
 
             qCDebug(chatterinoSeventv)
