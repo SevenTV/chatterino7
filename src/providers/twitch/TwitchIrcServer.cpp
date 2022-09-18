@@ -25,7 +25,7 @@
 using namespace std::chrono_literals;
 
 #define TWITCH_PUBSUB_URL "wss://pubsub-edge.twitch.tv"
-#define SEVENTV_EVENTAPI_URL "wss://events.7tv.app/v1/channel-emotes"
+#define SEVENTV_EVENTAPI_URL "wss://events.7tv.io/v3"
 
 namespace chatterino {
 
@@ -522,6 +522,29 @@ void TwitchIrcServer::reloadAllSevenTVChannelEmotes()
         if (auto *channel = dynamic_cast<TwitchChannel *>(chan.get()))
         {
             channel->refreshSevenTVChannelEmotes(false);
+        }
+    });
+}
+
+void TwitchIrcServer::forEachSeventvEmoteSet(
+    const QString &emoteSetId, std::function<void(TwitchChannel &)> func)
+{
+    this->forEachChannel([emoteSetId, func](const auto &chan) {
+        if (auto *channel = dynamic_cast<TwitchChannel *>(chan.get());
+            channel->seventvEmoteSetId() == emoteSetId)
+        {
+            func(*channel);
+        }
+    });
+}
+void TwitchIrcServer::forEachSeventvUser(
+    const QString &userId, std::function<void(TwitchChannel &)> func)
+{
+    this->forEachChannel([userId, func](const auto &chan) {
+        if (auto *channel = dynamic_cast<TwitchChannel *>(chan.get());
+            channel->seventvUserId() == userId)
+        {
+            func(*channel);
         }
     });
 }

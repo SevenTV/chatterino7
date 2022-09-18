@@ -43,6 +43,11 @@ public:
     void reloadSevenTVGlobalEmotes();
     void reloadAllSevenTVChannelEmotes();
 
+    void forEachSeventvEmoteSet(const QString &emoteSetId,
+                                std::function<void(TwitchChannel &)> func);
+    void forEachSeventvUser(const QString &userId,
+                            std::function<void(TwitchChannel &)> func);
+
     Atomic<QString> lastUserThatWhisperedMe;
 
     const ChannelPtr whispersChannel;

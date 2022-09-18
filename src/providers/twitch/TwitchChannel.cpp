@@ -115,7 +115,7 @@ TwitchChannel::TwitchChannel(const QString &name)
     this->destroyed.connect([this]() {
         if (const auto &eventApi = getApp()->twitch->eventApi)
         {
-            eventApi->partChannel(this->getName());
+            // TODO: unsubscribe + check emote-sets
         }
     });
 
@@ -173,7 +173,6 @@ void TwitchChannel::initialize()
     this->fetchDisplayName();
     this->refreshChatters();
     this->refreshBadges();
-    this->listenSeventv();
 }
 
 bool TwitchChannel::isEmpty() const
@@ -216,10 +215,25 @@ void TwitchChannel::refreshSevenTVChannelEmotes(bool manualRefresh)
 
     SeventvEmotes::loadChannel(
         weakOf<Channel>(this), this->roomId(),
-        [this, weak = weakOf<Channel>(this)](auto &&emoteMap) {
+        [this, weak = weakOf<Channel>(this)](auto &&emoteMap,
+                                             auto channelInfo) {
             if (auto shared = weak.lock())
+            {
                 this->seventvEmotes_.set(
                     std::make_shared<EmoteMap>(std::move(emoteMap)));
+                if (this->seventvUserId_ == channelInfo.userId &&
+                    this->seventvEmoteSetId_ == channelInfo.emoteSetId)
+                {
+                    return;
+                }
+                this->seventvUserId_ = channelInfo.userId;
+                this->seventvEmoteSetId_ = channelInfo.emoteSetId;
+                if (getApp()->twitch->eventApi)
+                {
+                    getApp()->twitch->eventApi->subscribeUser(
+                        this->seventvUserId_, this->seventvEmoteSetId_);
+                }
+            }
         },
         manualRefresh);
 }
@@ -608,47 +622,56 @@ std::shared_ptr<const EmoteMap> TwitchChannel::ffzEmotes() const
     return this->ffzEmotes_.get();
 }
 
-void TwitchChannel::addSeventvEmote(const EventApiEmoteUpdate &action)
+const QString &TwitchChannel::seventvUserId() const
 {
-    if (!action.emote)
+    return this->seventvUserId_;
+}
+const QString &TwitchChannel::seventvEmoteSetId() const
+{
+    return this->seventvEmoteSetId_;
+}
+
+void TwitchChannel::addSeventvEmote(const EventApiEmoteAddDispatch &dispatch)
+{
+    if (dispatch.emoteJson.isEmpty())
     {
         return;  // this shouldn't happen
     }
 
-    SeventvEmotes::addEmote(this->seventvEmotes_, action.emote->json);
+    SeventvEmotes::addEmote(this->seventvEmotes_, dispatch);
     this->addOrReplaceSevenTvEventAddRemove(
-        MessageBuilder(seventvAddEmoteMessage, action.actor,
-                       {action.emote->json["name"].toString()})
+        MessageBuilder(seventvAddEmoteMessage, dispatch.actorName,
+                       {dispatch.emoteJson["name"].toString()})
             .release());
 }
 
-void TwitchChannel::updateSeventvEmote(const EventApiEmoteUpdate &action)
+void TwitchChannel::updateSeventvEmote(
+    const EventApiEmoteUpdateDispatch &dispatch)
 {
-    if (!action.emote)
+    if (dispatch.emoteId.isEmpty())
     {
         return;  // this shouldn't happen
     }
 
-    auto baseName = action.emote->baseName;
-    auto result = SeventvEmotes::updateEmote(this->seventvEmotes_, &baseName,
-                                             action.emote->json);
+    auto result = SeventvEmotes::updateEmote(this->seventvEmotes_, dispatch);
     if (!result)
     {
         return;
     }
-    this->addMessage(MessageBuilder(seventvUpdateEmoteMessage, action.actor,
-                                    action.emote->json["name"].toString(),
-                                    baseName)
+    this->addMessage(MessageBuilder(seventvUpdateEmoteMessage,
+                                    dispatch.actorName, dispatch.emoteName,
+                                    dispatch.oldEmoteName)
                          .release());
 }
 
-void TwitchChannel::removeSeventvEmote(const EventApiEmoteUpdate &action)
+void TwitchChannel::removeSeventvEmote(
+    const EventApiEmoteRemoveDispatch &dispatch)
 {
-    if (SeventvEmotes::removeEmote(this->seventvEmotes_, action.emoteName))
+    if (SeventvEmotes::removeEmote(this->seventvEmotes_, dispatch))
     {
         this->addOrReplaceSevenTvEventAddRemove(
-            MessageBuilder(seventvRemoveEmoteMessage, action.actor,
-                           {action.emoteName})
+            MessageBuilder(seventvRemoveEmoteMessage, dispatch.actorName,
+                           {dispatch.emoteName})
                 .release());
     }
 }
@@ -1344,14 +1367,6 @@ boost::optional<CheerEmote> TwitchChannel::cheerEmote(const QString &string)
         }
     }
     return boost::none;
-}
-
-void TwitchChannel::listenSeventv()
-{
-    if (const auto &eventApi = getApp()->twitch->eventApi)
-    {
-        eventApi->joinChannel(this->getName());
-    }
 }
 
 }  // namespace chatterino

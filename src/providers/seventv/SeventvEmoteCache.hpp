@@ -4,6 +4,17 @@
 #include "messages/Emote.hpp"
 
 namespace chatterino {
+struct WeakImageSet {
+    std::weak_ptr<Image> size1x;
+    std::weak_ptr<Image> size2x;
+    std::weak_ptr<Image> size3x;
+    std::weak_ptr<Image> size4x;
+
+    WeakImageSet(const ImageSet &imageSet);
+
+    boost::optional<ImageSet> lock() const;
+};
+
 class SeventvEmoteCache
 {
 public:
@@ -20,11 +31,11 @@ public:
     /**
      * Adds the image set to the cache.
      */
-    void putImageSet(const EmoteId &id, ImageSet set);
+    void putImageSet(const EmoteId &id, const ImageSet &set);
     /**
      * Retrieves the cached image-set. If it doesn't exist, returns a nullptr.
      */
-    ImageSet *getImageSet(const EmoteId &id);
+    WeakImageSet *getImageSet(const EmoteId &id);
 
 private:
     /**
@@ -34,6 +45,6 @@ private:
     /**
      * This cache only contains image-sets where the emote isn't yet cached.
      */
-    std::unordered_map<EmoteId, ImageSet> imageCache_ = {};
+    std::unordered_map<EmoteId, WeakImageSet> imageCache_ = {};
 };
 }  // namespace chatterino

@@ -1,8 +1,10 @@
 #pragma once
 
+#include "providers/seventv/SeventvEventApi.hpp"
 #include "providers/seventv/SeventvEventApiClient.hpp"
 #include "providers/seventv/SeventvEventApiMessages.hpp"
 #include "providers/seventv/SeventvEventApiWebsocket.hpp"
+#include "providers/seventv/eventapimessages/EventApiDispatch.hpp"
 #include "util/ExponentialBackoff.hpp"
 
 #include <QJsonObject>
@@ -50,29 +52,29 @@ public:
 
     bool isConnected() const
     {
-        return this->state == State::Connected;
+        return this->state_ == State::Connected;
     }
 
     struct {
-        Signal<EventApiEmoteUpdate> emoteAdded;
-        Signal<EventApiEmoteUpdate> emoteUpdated;
-        Signal<EventApiEmoteUpdate> emoteRemoved;
+        Signal<EventApiEmoteAddDispatch> emoteAdded;
+        Signal<EventApiEmoteUpdateDispatch> emoteUpdated;
+        Signal<EventApiEmoteRemoveDispatch> emoteRemoved;
     } signals_;
 
-    void joinChannel(const QString &channelName);
-    void partChannel(const QString &channelName);
-    bool isJoinedChannel(const QString &channelName);
+    void subscribeUser(const QString &userId, const QString &emoteSetId);
 
 private:
-    std::vector<QString> pendingChannels;
-    std::atomic<bool> addingClient{false};
-    ExponentialBackoff<5> connectBackoff{std::chrono::milliseconds(1000)};
+    std::vector<EventApiSubscription> pendingSubscriptions_;
+    std::unordered_set<QString> subscribedEmoteSets_;
+    std::unordered_set<QString> subscribedUsers_;
+    std::atomic<bool> addingClient_{false};
+    ExponentialBackoff<5> connectBackoff_{std::chrono::milliseconds(1000)};
 
-    State state = State::Connected;
+    State state_ = State::Connected;
 
     std::map<eventapi::WebsocketHandle, std::shared_ptr<SeventvEventApiClient>,
              std::owner_less<eventapi::WebsocketHandle>>
-        clients;
+        clients_;
 
     void onMessage(websocketpp::connection_hdl hdl, WebsocketMessagePtr msg);
     void onConnectionOpen(websocketpp::connection_hdl hdl);
@@ -83,10 +85,11 @@ private:
     void runThread();
     void addClient();
 
-    bool tryJoinChannel(const QString &channel);
-    void handleUpdateAction(const EventApiEmoteUpdate &update);
+    void subscribe(const EventApiSubscription &subscription);
+    bool trySubscribe(const EventApiSubscription &subscription);
+    void handleDispatch(const EventApiDispatch &dispatch);
 
-    std::shared_ptr<boost::asio::io_service::work> work{nullptr};
+    std::shared_ptr<boost::asio::io_service::work> work_{nullptr};
 
     const QString host_;
 

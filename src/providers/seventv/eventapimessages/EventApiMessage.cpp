@@ -2,14 +2,8 @@
 
 namespace chatterino {
 EventApiMessage::EventApiMessage(QJsonObject _json)
-    : json(std::move(_json))
-    , actionString(this->json.value("action").toString())
+    : data(_json["d"].toObject())
+    , op(SeventvEventApiOpcode(_json["op"].toInt()))
 {
-    auto action =
-        magic_enum::enum_cast<Action>(this->actionString.toStdString());
-    if (action.has_value())
-    {
-        this->action = action.value();
-    }
 }
 }  // namespace chatterino

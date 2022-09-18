@@ -10,6 +10,7 @@
 #include "common/UniqueAccess.hpp"
 #include "messages/MessageThread.hpp"
 #include "providers/seventv/SeventvEventApiMessages.hpp"
+#include "providers/seventv/eventapimessages/EventApiDispatch.hpp"
 #include "providers/twitch/ChannelPointReward.hpp"
 #include "providers/twitch/TwitchEmotes.hpp"
 #include "providers/twitch/api/Helix.hpp"
@@ -116,9 +117,12 @@ public:
     std::shared_ptr<const EmoteMap> bttvEmotes() const;
     std::shared_ptr<const EmoteMap> ffzEmotes() const;
 
-    void addSeventvEmote(const EventApiEmoteUpdate &action);
-    void updateSeventvEmote(const EventApiEmoteUpdate &action);
-    void removeSeventvEmote(const EventApiEmoteUpdate &action);
+    const QString &seventvUserId() const;
+    const QString &seventvEmoteSetId() const;
+
+    void addSeventvEmote(const EventApiEmoteAddDispatch &action);
+    void updateSeventvEmote(const EventApiEmoteUpdateDispatch &action);
+    void removeSeventvEmote(const EventApiEmoteRemoveDispatch &action);
 
     virtual void refreshSevenTVChannelEmotes(bool manualRefresh);
     virtual void refreshBTTVChannelEmotes(bool manualRefresh);
@@ -175,7 +179,6 @@ private:
     void loadRecentMessages();
     void loadRecentMessagesReconnect();
     void fetchDisplayName();
-    void listenSeventv();
     void cleanUpReplyThreads();
     void showLoginMessage();
 
@@ -230,6 +233,9 @@ private:
     QElapsedTimer titleRefreshedTimer_;
     QElapsedTimer clipCreationTimer_;
     bool isClipCreationInProgress{false};
+
+    QString seventvUserId_;
+    QString seventvEmoteSetId_;
 
     pajlada::Signals::SignalHolder signalHolder_;
     std::vector<boost::signals2::scoped_connection> bSignals_;

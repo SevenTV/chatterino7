@@ -182,6 +182,8 @@ set(SOURCE_FILES
         providers/seventv/SeventvBadges.hpp
         providers/seventv/SeventvPaints.cpp
         providers/seventv/SeventvPaints.hpp
+        providers/seventv/SeventvEmoteCache.cpp
+        providers/seventv/SeventvEmoteCache.hpp
         providers/seventv/SeventvEmotes.cpp
         providers/seventv/SeventvEmotes.hpp
         providers/seventv/paints/Paint.hpp
@@ -194,6 +196,8 @@ set(SOURCE_FILES
         providers/seventv/paints/RadialGradientPaint.cpp
         providers/seventv/paints/UrlPaint.hpp
         providers/seventv/paints/UrlPaint.cpp
+        providers/seventv/SeventvEventApi.cpp
+        providers/seventv/SeventvEventApi.hpp
         providers/seventv/SeventvEventApiClient.cpp
         providers/seventv/SeventvEventApiClient.hpp
         providers/seventv/SeventvEventApiManager.cpp
@@ -203,6 +207,8 @@ set(SOURCE_FILES
 
         providers/seventv/eventapimessages/EventApiMessage.cpp
         providers/seventv/eventapimessages/EventApiMessage.hpp
+        providers/seventv/eventapimessages/EventApiDispatch.cpp
+        providers/seventv/eventapimessages/EventApiDispatch.hpp
         providers/seventv/eventapimessages/EventApiEmoteUpdate.cpp
         providers/seventv/eventapimessages/EventApiEmoteUpdate.hpp
         providers/seventv/eventapimessages/EventApiEmoteData.cpp

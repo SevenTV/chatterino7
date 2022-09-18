@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QString>
+#include <boost/functional/hash.hpp>
 #include <pajlada/signals/signal.hpp>
+#include "providers/seventv/SeventvEventApi.hpp"
 #include "providers/seventv/SeventvEventApiMessages.hpp"
 #include "providers/seventv/SeventvEventApiWebsocket.hpp"
 
@@ -9,8 +11,9 @@
 #include <vector>
 
 namespace chatterino {
-struct EventApiListener {
-    QString channel;
+struct EventApiSubscription {
+    QString condition;
+    SeventvEventApiSubscriptionType type;
 };
 
 class SeventvEventApiClient
@@ -19,10 +22,6 @@ class SeventvEventApiClient
 public:
     // The max amount of channels we may join with a single connection
     static constexpr std::vector<QString>::size_type MAX_LISTENS = 100;
-    // The server has to send at least one ping during this interval.
-    // After this time, the client checks if it received a ping.
-    static constexpr std::chrono::seconds CHECK_PING_INTERVAL =
-        std::chrono::seconds(60);
 
     SeventvEventApiClient(eventapi::WebsocketClient &_websocketClient,
                           eventapi::WebsocketHandle _handle);
@@ -34,24 +33,42 @@ public:
                websocketpp::close::status::value code =
                    websocketpp::close::status::normal);
 
-    bool join(const QString &channel);
-    void part(const QString &channel);
+    bool subscribe(const EventApiSubscription &subscription);
+    void unsubscribe(const QString &condition,
+                     SeventvEventApiSubscriptionType type);
 
-    void handlePing();
+    void setHeartbeatInterval(int intervalMs);
+    void handleHeartbeat();
 
-    bool isJoinedChannel(const QString &channel);
+    bool isSubscribedToEmoteSet(const QString &emoteSetId);
 
-    std::vector<EventApiListener> getListeners() const;
+    std::vector<EventApiSubscription> getSubscriptions() const;
 
 private:
-    void checkPing();
+    void checkHeartbeat();
     bool send(const char *payload);
 
     eventapi::WebsocketClient &websocketClient_;
     eventapi::WebsocketHandle handle_;
-    std::vector<EventApiListener> channels;
+    std::vector<EventApiSubscription> subscriptions_;
 
-    std::atomic<std::chrono::time_point<std::chrono::steady_clock>> lastPing_;
+    std::atomic<std::chrono::time_point<std::chrono::steady_clock>>
+        lastHeartbeat_;
+    std::atomic<std::chrono::milliseconds> heartbeatInterval_;
     std::atomic<bool> started_{false};
 };
 }  // namespace chatterino
+
+namespace std {
+template <>
+struct hash<chatterino::EventApiSubscription> {
+    size_t operator()(const chatterino::EventApiSubscription &sub) const
+    {
+        std::size_t seed = 0;
+        boost::hash_combine(seed, qHash(sub.condition));
+        boost::hash_combine(seed, sub.type);
+
+        return seed;
+    }
+};
+}  // namespace std
