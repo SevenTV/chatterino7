@@ -4,37 +4,31 @@
 #include "common/Outcome.hpp"
 #include "messages/Emote.hpp"
 
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QJsonValue>
-#include <QThread>
 #include <QUrl>
 #include <QUrlQuery>
 
 #include <map>
 
 namespace chatterino {
-void SeventvBadges::initialize(Settings &settings, Paths &paths)
+void SeventvBadges::initialize(Settings & /*settings*/, Paths & /*paths*/)
 {
     this->loadSeventvBadges();
 }
 
-SeventvBadges::SeventvBadges()
-{
-}
-
 boost::optional<EmotePtr> SeventvBadges::getBadge(const UserId &id)
 {
-    auto it = badgeMap.find(id.string);
-    if (it != badgeMap.end())
+    auto it = badgeMap_.find(id.string);
+    if (it != badgeMap_.end())
     {
-        return emotes[it->second];
+        return emotes_[it->second];
     }
     return boost::none;
 }
 
 void SeventvBadges::loadSeventvBadges()
 {
+    // Cosmetics will work differently in v3, until this is ready
+    // we'll use this endpoint.
     static QUrl url("https://api.7tv.app/v2/badges");
 
     static QUrlQuery urlQuery;
@@ -44,13 +38,13 @@ void SeventvBadges::loadSeventvBadges()
     url.setQuery(urlQuery);
 
     NetworkRequest(url)
-        .onSuccess([this](NetworkResult result) -> Outcome {
+        .onSuccess([this](const NetworkResult &result) -> Outcome {
             auto root = result.parseJson();
 
             int index = 0;
-            for (const auto &jsonBadge_ : root.value("badges").toArray())
+            for (const auto &jsonBadge : root.value("badges").toArray())
             {
-                auto badge = jsonBadge_.toObject();
+                auto badge = jsonBadge.toObject();
                 auto urls = badge.value("urls").toArray();
                 auto emote =
                     Emote{EmoteName{},
@@ -59,12 +53,12 @@ void SeventvBadges::loadSeventvBadges()
                                    Url{urls.at(2).toArray().at(1).toString()}},
                           Tooltip{badge.value("tooltip").toString()}, Url{}};
 
-                emotes.push_back(
+                emotes_.push_back(
                     std::make_shared<const Emote>(std::move(emote)));
 
                 for (const auto &user : badge.value("users").toArray())
                 {
-                    badgeMap[user.toString()] = index;
+                    badgeMap_[user.toString()] = index;
                 }
                 ++index;
             }

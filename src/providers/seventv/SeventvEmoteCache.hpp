@@ -1,7 +1,9 @@
 #pragma once
 
+#include <boost/optional.hpp>
 #include "common/Aliases.hpp"
 #include "messages/Emote.hpp"
+#include "messages/ImageSet.hpp"
 
 namespace chatterino {
 struct WeakImageSet {

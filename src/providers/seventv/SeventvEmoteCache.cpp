@@ -1,4 +1,5 @@
 #include "SeventvEmoteCache.hpp"
+
 namespace chatterino {
 WeakImageSet::WeakImageSet(const ImageSet &imageSet)
     : size1x(imageSet.getImage1())
@@ -27,7 +28,7 @@ EmotePtr SeventvEmoteCache::putEmote(const EmoteId &id, Emote &&emote)
     {
         this->imageCache_.erase(it);
     }
-    auto ptr = std::make_shared<Emote>(std::move(emote));
+    auto ptr = std::make_shared<const Emote>(std::move(emote));
     this->emoteCache_[id] = ptr;
     return ptr;
 }

@@ -3,6 +3,7 @@
 #include "boost/optional.hpp"
 #include "common/Aliases.hpp"
 #include "common/Atomic.hpp"
+#include "providers/seventv/SeventvEmoteCache.hpp"
 #include "providers/seventv/eventapimessages/EventApiDispatch.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 
@@ -10,33 +11,22 @@
 
 namespace chatterino {
 
-// https://github.com/SevenTV/ServerGo/blob/dfe867f991e8cfd7a79d93b9bec681216c32abdb/src/mongo/datastructure/datastructure.go#L56-L67
-enum class SeventvEmoteVisibilityFlag : int64_t {
-    None = 0LL,
-
-    Private = (1LL << 0),
-    Global = (1LL << 1),
-    Unlisted = (1LL << 2),
-
-    OverrideBttv = (1LL << 3),
-    OverrideFfz = (1LL << 4),
-    OverrideTwitchGlobal = (1LL << 5),
-    OverrideTwitchSubscriber = (1LL << 6),
-
-    ZeroWidth = (1LL << 7),
-};
-
-// https://github.com/SevenTV/API/blob/8fbfc702a3fe0ada59f4b9593c65748d36ac7c0b/data/model/emote-set.model.go#L33-L38
+// https://github.com/SevenTV/API/blob/a84e884b5590dbb5d91a5c6b3548afabb228f385/data/model/emote-set.model.go#L29-L36
 enum class SeventvActiveEmoteFlag : int64_t {
     None = 0LL,
 
+    // Emote is zero-width
     ZeroWidth = (1LL << 0),
 
+    // Overrides Twitch Global emotes with the same name
     OverrideTwitchGlobal = (1 << 16),
+    // Overrides Twitch Subscriber emotes with the same name
     OverrideTwitchSubscriber = (1 << 17),
+    // Overrides BetterTTV emotes with the same name
     OverrideBetterTTV = (1 << 18),
 };
 
+// https://github.com/SevenTV/API/blob/a84e884b5590dbb5d91a5c6b3548afabb228f385/data/model/emote.model.go#L57-L70
 enum class SeventvEmoteFlag : int64_t {
     None = 0LL,
     // The emote is private and can only be accessed by its owner, editors and moderators
@@ -58,7 +48,6 @@ enum class SeventvEmoteFlag : int64_t {
     ContentTwitchDisallowed = (1LL << 24),
 };
 
-using SeventvEmoteVisibilityFlags = FlagsEnum<SeventvEmoteVisibilityFlag>;
 using SeventvActiveEmoteFlags = FlagsEnum<SeventvActiveEmoteFlag>;
 using SeventvEmoteFlags = FlagsEnum<SeventvEmoteFlag>;
 
@@ -68,8 +57,6 @@ class EmoteMap;
 
 class SeventvEmotes final
 {
-    static constexpr const char *apiUrlGQL = "https://api.7tv.app/v2/gql";
-
     struct ChannelInfo {
         QString userId;
         QString emoteSetId;
@@ -81,6 +68,11 @@ public:
     std::shared_ptr<const EmoteMap> emotes() const;
     boost::optional<EmotePtr> emote(const EmoteName &name) const;
     void loadEmotes();
+    static void loadChannel(
+        const std::weak_ptr<Channel> &channel, const QString &channelId,
+        std::function<void(EmoteMap &&, ChannelInfo)> callback,
+        bool manualRefresh);
+
     static boost::optional<EmotePtr> addEmote(
         Atomic<std::shared_ptr<const EmoteMap>> &map,
         const EventApiEmoteAddDispatch &dispatch);
@@ -89,10 +81,6 @@ public:
         const EventApiEmoteUpdateDispatch &dispatch);
     static bool removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
                             const EventApiEmoteRemoveDispatch &dispatch);
-    static void loadChannel(
-        std::weak_ptr<Channel> channel, const QString &channelId,
-        std::function<void(EmoteMap &&, ChannelInfo)> callback,
-        bool manualRefresh);
 
 private:
     Atomic<std::shared_ptr<const EmoteMap>> global_;
