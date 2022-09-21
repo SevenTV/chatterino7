@@ -9,24 +9,24 @@
 #include "providers/seventv/SeventvEventApi.hpp"
 
 namespace chatterino {
-struct EventApiMessage {
+struct SeventvEventApiMessage {
     QJsonObject data;
 
     SeventvEventApiOpcode op;
 
-    EventApiMessage(QJsonObject _json);
+    SeventvEventApiMessage(QJsonObject _json);
 
     template <class InnerClass>
     boost::optional<InnerClass> toInner();
 };
 
 template <class InnerClass>
-boost::optional<InnerClass> EventApiMessage::toInner()
+boost::optional<InnerClass> SeventvEventApiMessage::toInner()
 {
     return InnerClass{this->data};
 }
 
-static boost::optional<EventApiMessage> parseEventApiBaseMessage(
+static boost::optional<SeventvEventApiMessage> parseSeventvEventApiBaseMessage(
     const QString &blob)
 {
     QJsonDocument jsonDoc(QJsonDocument::fromJson(blob.toUtf8()));
@@ -36,7 +36,7 @@ static boost::optional<EventApiMessage> parseEventApiBaseMessage(
         return boost::none;
     }
 
-    return EventApiMessage(jsonDoc.object());
+    return SeventvEventApiMessage(jsonDoc.object());
 }
 
 }  // namespace chatterino

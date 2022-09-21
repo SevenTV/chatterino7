@@ -1,8 +1,8 @@
 #include "providers/seventv/SeventvEventApiManager.hpp"
 
 #include "common/QLogging.hpp"
-#include "providers/seventv/SeventvEventApiMessages.hpp"
-#include "providers/seventv/eventapimessages/EventApiDispatch.hpp"
+#include "providers/seventv/eventapimessages/SeventvEventApiDispatch.hpp"
+#include "providers/seventv/eventapimessages/SeventvEventApiMessage.hpp"
 #include "providers/twitch/PubSubHelpers.hpp"
 #include "util/DebugCount.hpp"
 #include "util/Helpers.hpp"
@@ -106,7 +106,7 @@ void SeventvEventApi::subscribeUser(const QString &userId,
     }
 }
 
-void SeventvEventApi::subscribe(const EventApiSubscription &subscription)
+void SeventvEventApi::subscribe(const SeventvEventApiSubscription &subscription)
 {
     if (this->trySubscribe(subscription))
     {
@@ -118,7 +118,8 @@ void SeventvEventApi::subscribe(const EventApiSubscription &subscription)
     DebugCount::increase("EventApi subscription backlog");
 }
 
-bool SeventvEventApi::trySubscribe(const EventApiSubscription &subscription)
+bool SeventvEventApi::trySubscribe(
+    const SeventvEventApiSubscription &subscription)
 {
     for (auto &client : this->clients_)
     {
@@ -136,7 +137,7 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
     const auto &payload =
         QString::fromStdString(websocketMessage->get_payload());
 
-    auto pMessage = parseEventApiBaseMessage(payload);
+    auto pMessage = parseSeventvEventApiBaseMessage(payload);
 
     if (!pMessage)
     {
@@ -172,7 +173,7 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
         }
         break;
         case SeventvEventApiOpcode::Dispatch: {
-            auto dispatch = message.toInner<EventApiDispatch>();
+            auto dispatch = message.toInner<SeventvEventApiDispatch>();
             if (!dispatch)
             {
                 qCDebug(chatterinoSeventvEventApi)
@@ -307,7 +308,7 @@ SeventvEventApi::WebsocketContextPtr SeventvEventApi::onTLSInit(
     return ctx;
 }
 
-void SeventvEventApi::handleDispatch(const EventApiDispatch &dispatch)
+void SeventvEventApi::handleDispatch(const SeventvEventApiDispatch &dispatch)
 {
     switch (dispatch.type)
     {
@@ -315,10 +316,11 @@ void SeventvEventApi::handleDispatch(const EventApiDispatch &dispatch)
             for (const auto pushed_ : dispatch.body["pushed"].toArray())
             {
                 auto pushed = pushed_.toObject();
-                if(pushed["key"].toString() != "emotes") {
+                if (pushed["key"].toString() != "emotes")
+                {
                     continue;
                 }
-                EventApiEmoteAddDispatch added(
+                SeventvEventApiEmoteAddDispatch added(
                     dispatch, pushed["value"].toObject());
                 this->signals_.emoteAdded.invoke(added);
             }
@@ -328,8 +330,7 @@ void SeventvEventApi::handleDispatch(const EventApiDispatch &dispatch)
                 if(updated["key"].toString() != "emotes") {
                     continue;
                 }
-                EventApiEmoteUpdateDispatch update(
-                        dispatch, updated);
+                SeventvEventApiEmoteUpdateDispatch update(dispatch, updated);
                 if (update.emoteName != update.oldEmoteName)
                 {
                     this->signals_.emoteUpdated.invoke(update);
@@ -341,8 +342,8 @@ void SeventvEventApi::handleDispatch(const EventApiDispatch &dispatch)
                 if(pulled["key"].toString() != "emotes") {
                     continue;
                 }
-                EventApiEmoteRemoveDispatch removed(
-                        dispatch, pulled["old_value"].toObject());
+                SeventvEventApiEmoteRemoveDispatch removed(
+                    dispatch, pulled["old_value"].toObject());
                 this->signals_.emoteRemoved.invoke(removed);
             }
         }

@@ -1,7 +1,7 @@
-#include "EventApiDispatch.hpp"
+#include "SeventvEventApiDispatch.hpp"
 
 namespace chatterino {
-EventApiDispatch::EventApiDispatch(QJsonObject obj)
+SeventvEventApiDispatch::SeventvEventApiDispatch(QJsonObject obj)
     : body(obj["body"].toObject())
     , id(this->body["id"].toString())
     , actorName(this->body["actor"].toObject()["display_name"].toString())
@@ -14,8 +14,8 @@ EventApiDispatch::EventApiDispatch(QJsonObject obj)
     }
 }
 
-EventApiEmoteAddDispatch::EventApiEmoteAddDispatch(
-    const EventApiDispatch &dispatch, QJsonObject emote)
+SeventvEventApiEmoteAddDispatch::SeventvEventApiEmoteAddDispatch(
+    const SeventvEventApiDispatch &dispatch, QJsonObject emote)
     : emoteSetId(dispatch.id)
     , actorName(dispatch.actorName)
     , emoteJson(emote)
@@ -23,8 +23,8 @@ EventApiEmoteAddDispatch::EventApiEmoteAddDispatch(
 {
 }
 
-EventApiEmoteRemoveDispatch::EventApiEmoteRemoveDispatch(
-    const EventApiDispatch &dispatch, QJsonObject emote)
+SeventvEventApiEmoteRemoveDispatch::SeventvEventApiEmoteRemoveDispatch(
+    const SeventvEventApiDispatch &dispatch, QJsonObject emote)
     : emoteSetId(dispatch.id)
     , actorName(dispatch.actorName)
     , emoteId(emote["id"].toString())
@@ -32,8 +32,8 @@ EventApiEmoteRemoveDispatch::EventApiEmoteRemoveDispatch(
 {
 }
 
-EventApiEmoteUpdateDispatch::EventApiEmoteUpdateDispatch(
-    const EventApiDispatch &dispatch, QJsonObject changeField)
+SeventvEventApiEmoteUpdateDispatch::SeventvEventApiEmoteUpdateDispatch(
+    const SeventvEventApiDispatch &dispatch, QJsonObject changeField)
     : emoteSetId(dispatch.id)
     , actorName(dispatch.actorName)
 {

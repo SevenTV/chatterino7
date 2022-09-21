@@ -202,17 +202,12 @@ set(SOURCE_FILES
         providers/seventv/SeventvEventApiClient.hpp
         providers/seventv/SeventvEventApiManager.cpp
         providers/seventv/SeventvEventApiManager.hpp
-        providers/seventv/SeventvEventApiMessages.hpp
         providers/seventv/SeventvEventApiWebsocket.hpp
 
-        providers/seventv/eventapimessages/EventApiMessage.cpp
-        providers/seventv/eventapimessages/EventApiMessage.hpp
-        providers/seventv/eventapimessages/EventApiDispatch.cpp
-        providers/seventv/eventapimessages/EventApiDispatch.hpp
-        providers/seventv/eventapimessages/EventApiEmoteUpdate.cpp
-        providers/seventv/eventapimessages/EventApiEmoteUpdate.hpp
-        providers/seventv/eventapimessages/EventApiEmoteData.cpp
-        providers/seventv/eventapimessages/EventApiEmoteData.hpp
+        providers/seventv/eventapimessages/SeventvEventApiMessage.cpp
+        providers/seventv/eventapimessages/SeventvEventApiMessage.hpp
+        providers/seventv/eventapimessages/SeventvEventApiDispatch.cpp
+        providers/seventv/eventapimessages/SeventvEventApiDispatch.hpp
 
         providers/bttv/BttvEmotes.cpp
         providers/bttv/BttvEmotes.hpp

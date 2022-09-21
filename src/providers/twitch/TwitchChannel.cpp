@@ -631,7 +631,8 @@ const QString &TwitchChannel::seventvEmoteSetId() const
     return this->seventvEmoteSetId_;
 }
 
-void TwitchChannel::addSeventvEmote(const EventApiEmoteAddDispatch &dispatch)
+void TwitchChannel::addSeventvEmote(
+    const SeventvEventApiEmoteAddDispatch &dispatch)
 {
     if (dispatch.emoteJson.isEmpty())
     {
@@ -646,7 +647,7 @@ void TwitchChannel::addSeventvEmote(const EventApiEmoteAddDispatch &dispatch)
 }
 
 void TwitchChannel::updateSeventvEmote(
-    const EventApiEmoteUpdateDispatch &dispatch)
+    const SeventvEventApiEmoteUpdateDispatch &dispatch)
 {
     if (dispatch.emoteId.isEmpty())
     {
@@ -665,7 +666,7 @@ void TwitchChannel::updateSeventvEmote(
 }
 
 void TwitchChannel::removeSeventvEmote(
-    const EventApiEmoteRemoveDispatch &dispatch)
+    const SeventvEventApiEmoteRemoveDispatch &dispatch)
 {
     if (SeventvEmotes::removeEmote(this->seventvEmotes_, dispatch))
     {

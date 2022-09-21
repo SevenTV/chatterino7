@@ -4,7 +4,7 @@
 #include "common/Aliases.hpp"
 #include "common/Atomic.hpp"
 #include "providers/seventv/SeventvEmoteCache.hpp"
-#include "providers/seventv/eventapimessages/EventApiDispatch.hpp"
+#include "providers/seventv/eventapimessages/SeventvEventApiDispatch.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 
 #include <memory>
@@ -75,12 +75,12 @@ public:
 
     static boost::optional<EmotePtr> addEmote(
         Atomic<std::shared_ptr<const EmoteMap>> &map,
-        const EventApiEmoteAddDispatch &dispatch);
+        const SeventvEventApiEmoteAddDispatch &dispatch);
     static boost::optional<EmotePtr> updateEmote(
         Atomic<std::shared_ptr<const EmoteMap>> &map,
-        const EventApiEmoteUpdateDispatch &dispatch);
+        const SeventvEventApiEmoteUpdateDispatch &dispatch);
     static bool removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
-                            const EventApiEmoteRemoveDispatch &dispatch);
+                            const SeventvEventApiEmoteRemoveDispatch &dispatch);
 
 private:
     Atomic<std::shared_ptr<const EmoteMap>> global_;

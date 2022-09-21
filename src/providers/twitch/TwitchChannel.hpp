@@ -9,8 +9,7 @@
 #include "common/Outcome.hpp"
 #include "common/UniqueAccess.hpp"
 #include "messages/MessageThread.hpp"
-#include "providers/seventv/SeventvEventApiMessages.hpp"
-#include "providers/seventv/eventapimessages/EventApiDispatch.hpp"
+#include "providers/seventv/eventapimessages/SeventvEventApiDispatch.hpp"
 #include "providers/twitch/ChannelPointReward.hpp"
 #include "providers/twitch/TwitchEmotes.hpp"
 #include "providers/twitch/api/Helix.hpp"
@@ -120,9 +119,9 @@ public:
     const QString &seventvUserId() const;
     const QString &seventvEmoteSetId() const;
 
-    void addSeventvEmote(const EventApiEmoteAddDispatch &action);
-    void updateSeventvEmote(const EventApiEmoteUpdateDispatch &action);
-    void removeSeventvEmote(const EventApiEmoteRemoveDispatch &action);
+    void addSeventvEmote(const SeventvEventApiEmoteAddDispatch &action);
+    void updateSeventvEmote(const SeventvEventApiEmoteUpdateDispatch &action);
+    void removeSeventvEmote(const SeventvEventApiEmoteRemoveDispatch &action);
 
     virtual void refreshSevenTVChannelEmotes(bool manualRefresh);
     virtual void refreshBTTVChannelEmotes(bool manualRefresh);

@@ -342,8 +342,9 @@ namespace {
         map.set(std::make_shared<EmoteMap>(std::move(updatedMap)));
     }
 
-    EmotePtr createUpdatedEmote(const EmotePtr &oldEmote,
-                                const EventApiEmoteUpdateDispatch &dispatch)
+    EmotePtr createUpdatedEmote(
+        const EmotePtr &oldEmote,
+        const SeventvEventApiEmoteUpdateDispatch &dispatch)
     {
         bool toNonAliased = oldEmote->baseName.has_value() &&
                             dispatch.emoteName == oldEmote->baseName->string;
@@ -507,7 +508,7 @@ void SeventvEmotes::loadChannel(
 
 boost::optional<EmotePtr> SeventvEmotes::addEmote(
     Atomic<std::shared_ptr<const EmoteMap>> &map,
-    const EventApiEmoteAddDispatch &dispatch)
+    const SeventvEventApiEmoteAddDispatch &dispatch)
 {
     // Check for visibility first, so we don't copy the map.
     auto emoteData = dispatch.emoteJson["data"].toObject();
@@ -527,7 +528,7 @@ boost::optional<EmotePtr> SeventvEmotes::addEmote(
 
 boost::optional<EmotePtr> SeventvEmotes::updateEmote(
     Atomic<std::shared_ptr<const EmoteMap>> &map,
-    const EventApiEmoteUpdateDispatch &dispatch)
+    const SeventvEventApiEmoteUpdateDispatch &dispatch)
 {
     auto oldMap = map.get();
     auto oldEmote = oldMap->find({dispatch.oldEmoteName});
@@ -546,8 +547,9 @@ boost::optional<EmotePtr> SeventvEmotes::updateEmote(
     return emote;
 }
 
-bool SeventvEmotes::removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
-                                const EventApiEmoteRemoveDispatch &dispatch)
+bool SeventvEmotes::removeEmote(
+    Atomic<std::shared_ptr<const EmoteMap>> &map,
+    const SeventvEventApiEmoteRemoveDispatch &dispatch)
 {
     EmoteMap updatedMap = *map.get();
     auto it = updatedMap.find(EmoteName{dispatch.emoteName});

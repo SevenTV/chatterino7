@@ -2,9 +2,9 @@
 
 #include "providers/seventv/SeventvEventApi.hpp"
 #include "providers/seventv/SeventvEventApiClient.hpp"
-#include "providers/seventv/SeventvEventApiMessages.hpp"
 #include "providers/seventv/SeventvEventApiWebsocket.hpp"
-#include "providers/seventv/eventapimessages/EventApiDispatch.hpp"
+#include "providers/seventv/eventapimessages/SeventvEventApiDispatch.hpp"
+#include "providers/seventv/eventapimessages/SeventvEventApiMessage.hpp"
 #include "util/ExponentialBackoff.hpp"
 
 #include <QJsonObject>
@@ -56,15 +56,15 @@ public:
     }
 
     struct {
-        Signal<EventApiEmoteAddDispatch> emoteAdded;
-        Signal<EventApiEmoteUpdateDispatch> emoteUpdated;
-        Signal<EventApiEmoteRemoveDispatch> emoteRemoved;
+        Signal<SeventvEventApiEmoteAddDispatch> emoteAdded;
+        Signal<SeventvEventApiEmoteUpdateDispatch> emoteUpdated;
+        Signal<SeventvEventApiEmoteRemoveDispatch> emoteRemoved;
     } signals_;
 
     void subscribeUser(const QString &userId, const QString &emoteSetId);
 
 private:
-    std::vector<EventApiSubscription> pendingSubscriptions_;
+    std::vector<SeventvEventApiSubscription> pendingSubscriptions_;
     std::unordered_set<QString> subscribedEmoteSets_;
     std::unordered_set<QString> subscribedUsers_;
     std::atomic<bool> addingClient_{false};
@@ -85,9 +85,9 @@ private:
     void runThread();
     void addClient();
 
-    void subscribe(const EventApiSubscription &subscription);
-    bool trySubscribe(const EventApiSubscription &subscription);
-    void handleDispatch(const EventApiDispatch &dispatch);
+    void subscribe(const SeventvEventApiSubscription &subscription);
+    bool trySubscribe(const SeventvEventApiSubscription &subscription);
+    void handleDispatch(const SeventvEventApiDispatch &dispatch);
 
     std::shared_ptr<boost::asio::io_service::work> work_{nullptr};
 

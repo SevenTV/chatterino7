@@ -91,7 +91,8 @@ void SeventvEventApiClient::setHeartbeatInterval(int intervalMs)
     this->heartbeatInterval_.store(std::chrono::milliseconds(intervalMs));
 }
 
-bool SeventvEventApiClient::subscribe(const EventApiSubscription &subscription)
+bool SeventvEventApiClient::subscribe(
+    const SeventvEventApiSubscription &subscription)
 {
     if (this->subscriptions_.size() >= SeventvEventApiClient::MAX_LISTENS)
     {
@@ -154,15 +155,15 @@ bool SeventvEventApiClient::isSubscribedToEmoteSet(const QString &emoteSetId)
 {
     return std::any_of(
         this->subscriptions_.begin(), this->subscriptions_.end(),
-        [emoteSetId](const EventApiSubscription &listener) {
+        [emoteSetId](const SeventvEventApiSubscription &listener) {
             return listener.type ==
                        SeventvEventApiSubscriptionType::UpdateEmoteSet &&
                    listener.condition == emoteSetId;
         });
 }
 
-std::vector<EventApiSubscription> SeventvEventApiClient::getSubscriptions()
-    const
+std::vector<SeventvEventApiSubscription>
+    SeventvEventApiClient::getSubscriptions() const
 {
     return this->subscriptions_;
 }

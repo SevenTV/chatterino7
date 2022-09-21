@@ -4,14 +4,13 @@
 #include <boost/functional/hash.hpp>
 #include <pajlada/signals/signal.hpp>
 #include "providers/seventv/SeventvEventApi.hpp"
-#include "providers/seventv/SeventvEventApiMessages.hpp"
 #include "providers/seventv/SeventvEventApiWebsocket.hpp"
 
 #include <atomic>
 #include <vector>
 
 namespace chatterino {
-struct EventApiSubscription {
+struct SeventvEventApiSubscription {
     QString condition;
     SeventvEventApiSubscriptionType type;
 };
@@ -33,7 +32,7 @@ public:
                websocketpp::close::status::value code =
                    websocketpp::close::status::normal);
 
-    bool subscribe(const EventApiSubscription &subscription);
+    bool subscribe(const SeventvEventApiSubscription &subscription);
     void unsubscribe(const QString &condition,
                      SeventvEventApiSubscriptionType type);
 
@@ -42,7 +41,7 @@ public:
 
     bool isSubscribedToEmoteSet(const QString &emoteSetId);
 
-    std::vector<EventApiSubscription> getSubscriptions() const;
+    std::vector<SeventvEventApiSubscription> getSubscriptions() const;
 
 private:
     void checkHeartbeat();
@@ -50,7 +49,7 @@ private:
 
     eventapi::WebsocketClient &websocketClient_;
     eventapi::WebsocketHandle handle_;
-    std::vector<EventApiSubscription> subscriptions_;
+    std::vector<SeventvEventApiSubscription> subscriptions_;
 
     std::atomic<std::chrono::time_point<std::chrono::steady_clock>>
         lastHeartbeat_;
@@ -61,8 +60,8 @@ private:
 
 namespace std {
 template <>
-struct hash<chatterino::EventApiSubscription> {
-    size_t operator()(const chatterino::EventApiSubscription &sub) const
+struct hash<chatterino::SeventvEventApiSubscription> {
+    size_t operator()(const chatterino::SeventvEventApiSubscription &sub) const
     {
         std::size_t seed = 0;
         boost::hash_combine(seed, qHash(sub.condition));
