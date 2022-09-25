@@ -593,6 +593,12 @@ void Application::initEventApi()
                     });
             });
         });
+    this->twitch->eventApi->signals_.userUpdated.connect([&](const auto &data) {
+        this->twitch->forEachSeventvUser(data.userId,
+                                         [data](TwitchChannel &chan) {
+                                             chan.updateSeventvUser(data);
+                                         });
+    });
     this->twitch->eventApi->start();
 }
 

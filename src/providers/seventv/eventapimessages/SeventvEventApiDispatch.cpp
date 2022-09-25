@@ -43,4 +43,13 @@ SeventvEventApiEmoteUpdateDispatch::SeventvEventApiEmoteUpdateDispatch(
     this->emoteName = value["name"].toString();
     this->oldEmoteName = oldValue["name"].toString();
 }
+SeventvEventApiUserConnectionUpdateDispatch::
+    SeventvEventApiUserConnectionUpdateDispatch(
+        const SeventvEventApiDispatch &dispatch, const QJsonObject &update)
+    : userId(dispatch.id)
+    , actorName(dispatch.actorName)
+    , oldEmoteSetId(update["old_value"].toObject()["id"].toString())
+    , emoteSetId(update["value"].toObject()["id"].toString())
+{
+}
 }  // namespace chatterino

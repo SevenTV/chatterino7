@@ -59,6 +59,7 @@ public:
         Signal<SeventvEventApiEmoteAddDispatch> emoteAdded;
         Signal<SeventvEventApiEmoteUpdateDispatch> emoteUpdated;
         Signal<SeventvEventApiEmoteRemoveDispatch> emoteRemoved;
+        Signal<SeventvEventApiUserConnectionUpdateDispatch> userUpdated;
     } signals_;
 
     void subscribeUser(const QString &userId, const QString &emoteSetId);

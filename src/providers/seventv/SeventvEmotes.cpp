@@ -34,6 +34,7 @@ namespace {
 
     // TODO(nerix): add links to documentation (7tv.io)
     const QString API_URL_USER("https://7tv.io/v3/users/twitch/%1");
+    const QString API_URL_EMOTE_SET("https://7tv.io/v3/emote-sets/%1");
     const QString API_URL_GLOBAL_EMOTE_SET(
         "https://7tv.io/v3/emote-sets/global");
 
@@ -428,6 +429,42 @@ bool SeventvEmotes::removeEmote(
     updatedMap.erase(it);
     updateEmoteMapPtr(map, std::move(updatedMap));
     return true;
+}
+
+void SeventvEmotes::updateEmoteSet(
+    const QString &emoteSetId,
+    std::function<void(EmoteMap &&, QString)> successCallback,
+    std::function<void(QString)> errorCallback)
+{
+    qCDebug(chatterinoSeventv) << "Loading 7TV Emote Set" << emoteSetId;
+
+    NetworkRequest(API_URL_EMOTE_SET.arg(emoteSetId), NetworkRequestType::Get)
+        .timeout(20000)
+        .onSuccess([callback = std::move(successCallback),
+                    emoteSetId](const NetworkResult &result) -> Outcome {
+            auto json = result.parseJson();
+            auto parsedEmotes = json["emotes"].toArray();
+
+            auto emoteMap = parseEmotes(parsedEmotes, false);
+
+            qCDebug(chatterinoSeventv) << "Loaded" << emoteMap.size()
+                                       << "7TV Emotes from" << emoteSetId;
+
+            callback(std::move(emoteMap), json["name"].toString());
+            return Success;
+        })
+        .onError([emoteSetId, callback = std::move(errorCallback)](
+                     const NetworkResult &result) {
+            if (result.status() == NetworkResult::timedoutStatus)
+            {
+                callback("timed out");
+            }
+            else
+            {
+                callback(QString("status: %1").arg(result.status()));
+            }
+        })
+        .execute();
 }
 
 }  // namespace chatterino

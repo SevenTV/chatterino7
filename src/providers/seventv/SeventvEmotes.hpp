@@ -82,6 +82,11 @@ public:
     static bool removeEmote(Atomic<std::shared_ptr<const EmoteMap>> &map,
                             const SeventvEventApiEmoteRemoveDispatch &dispatch);
 
+    static void updateEmoteSet(
+        const QString &emoteSetId,
+        std::function<void(EmoteMap &&, QString)> successCallback,
+        std::function<void(QString)> errorCallback);
+
 private:
     Atomic<std::shared_ptr<const EmoteMap>> global_;
 };

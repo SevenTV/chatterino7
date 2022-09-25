@@ -44,4 +44,14 @@ struct SeventvEventApiEmoteUpdateDispatch {
     SeventvEventApiEmoteUpdateDispatch(const SeventvEventApiDispatch &dispatch,
                                        QJsonObject emote);
 };
+
+struct SeventvEventApiUserConnectionUpdateDispatch {
+    QString userId;
+    QString actorName;
+    QString oldEmoteSetId;
+    QString emoteSetId;
+
+    SeventvEventApiUserConnectionUpdateDispatch(
+        const SeventvEventApiDispatch &dispatch, const QJsonObject &update);
+};
 }  // namespace chatterino

@@ -349,8 +349,25 @@ void SeventvEventApi::handleDispatch(const SeventvEventApiDispatch &dispatch)
         }
         break;
         case SeventvEventApiSubscriptionType::UpdateUser: {
-            qCDebug(chatterinoSeventvEventApi)
-                << "Unhandled update user dispatch:" << dispatch.body;
+            for (const auto updated_ : dispatch.body["updated"].toArray())
+            {
+                auto updated = updated_.toObject();
+                if (updated["key"].toString() != "connections")
+                {
+                    continue;
+                }
+                for (const auto value_ : updated["value"].toArray())
+                {
+                    auto value = value_.toObject();
+                    if (value["key"].toString() != "emote_set")
+                    {
+                        continue;
+                    }
+                    SeventvEventApiUserConnectionUpdateDispatch update(dispatch,
+                                                                       value);
+                    this->signals_.userUpdated.invoke(update);
+                }
+            }
         }
         break;
         default: {

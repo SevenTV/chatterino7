@@ -122,6 +122,8 @@ public:
     void addSeventvEmote(const SeventvEventApiEmoteAddDispatch &action);
     void updateSeventvEmote(const SeventvEventApiEmoteUpdateDispatch &action);
     void removeSeventvEmote(const SeventvEventApiEmoteRemoveDispatch &action);
+    void updateSeventvUser(
+        const SeventvEventApiUserConnectionUpdateDispatch &dispatch);
 
     virtual void refreshSevenTVChannelEmotes(bool manualRefresh);
     virtual void refreshBTTVChannelEmotes(bool manualRefresh);

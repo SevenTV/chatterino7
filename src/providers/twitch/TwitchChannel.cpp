@@ -677,6 +677,38 @@ void TwitchChannel::removeSeventvEmote(
     }
 }
 
+void TwitchChannel::updateSeventvUser(
+    const SeventvEventApiUserConnectionUpdateDispatch &dispatch)
+{
+    SeventvEmotes::updateEmoteSet(
+        dispatch.emoteSetId,
+        [this, weak = weakOf<Channel>(this), dispatch](auto &&emotes,
+                                                       const auto &name) {
+            postToThread([this, weak, dispatch, emotes, name]() {
+                if (auto shared = weak.lock())
+                {
+                    this->seventvEmotes_.set(
+                        std::make_shared<EmoteMap>(emotes));
+                    this->addMessage(
+                        MessageBuilder(seventvUpdateEmoteSetMessage,
+                                       dispatch.actorName, name)
+                            .release());
+                }
+            });
+        },
+        [this, weak = weakOf<Channel>(this)](const auto &reason) {
+            postToThread([this, weak, reason]() {
+                if (auto shared = weak.lock())
+                {
+                    this->seventvEmotes_.set(EMPTY_EMOTE_MAP);
+                    this->addMessage(makeSystemMessage(
+                        QString("Failed updating 7TV emote set (%1).")
+                            .arg(reason)));
+                }
+            });
+        });
+}
+
 const QString &TwitchChannel::subscriptionUrl()
 {
     return this->subscriptionUrl_;
