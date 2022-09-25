@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QString>
 #include "providers/seventv/SeventvEventApi.hpp"
 
