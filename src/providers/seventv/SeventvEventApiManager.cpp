@@ -157,7 +157,8 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
 
             auto &client = *clientIt;
 
-            client.second->setHeartbeatInterval(message.data["heartbeat_interval"].toInt());
+            client.second->setHeartbeatInterval(
+                message.data["heartbeat_interval"].toInt());
         }
         break;
         case SeventvEventApiOpcode::Heartbeat: {
@@ -327,7 +328,8 @@ void SeventvEventApi::handleDispatch(const SeventvEventApiDispatch &dispatch)
             for (const auto updated_ : dispatch.body["updated"].toArray())
             {
                 auto updated = updated_.toObject();
-                if(updated["key"].toString() != "emotes") {
+                if (updated["key"].toString() != "emotes")
+                {
                     continue;
                 }
                 SeventvEventApiEmoteUpdateDispatch update(dispatch, updated);
@@ -339,7 +341,8 @@ void SeventvEventApi::handleDispatch(const SeventvEventApiDispatch &dispatch)
             for (const auto pulled_ : dispatch.body["pulled"].toArray())
             {
                 auto pulled = pulled_.toObject();
-                if(pulled["key"].toString() != "emotes") {
+                if (pulled["key"].toString() != "emotes")
+                {
                     continue;
                 }
                 SeventvEventApiEmoteRemoveDispatch removed(
