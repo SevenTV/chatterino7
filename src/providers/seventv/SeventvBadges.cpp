@@ -1,4 +1,4 @@
-#include "SeventvBadges.hpp"
+#include "providers/seventv/SeventvBadges.hpp"
 
 #include "common/NetworkRequest.hpp"
 #include "common/Outcome.hpp"
@@ -10,6 +10,7 @@
 #include <map>
 
 namespace chatterino {
+
 void SeventvBadges::initialize(Settings & /*settings*/, Paths & /*paths*/)
 {
     this->loadSeventvBadges();

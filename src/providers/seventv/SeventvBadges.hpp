@@ -1,12 +1,13 @@
 #pragma once
 
 #include "common/Aliases.hpp"
+#include "util/QStringHash.hpp"
 
 #include <boost/optional.hpp>
 #include <common/Singleton.hpp>
 
-#include <map>
 #include <memory>
+#include <unordered_map>
 
 namespace chatterino {
 
@@ -22,7 +23,7 @@ public:
 
 private:
     void loadSeventvBadges();
-    std::map<QString, int> badgeMap_;
+    std::unordered_map<QString, int> badgeMap_;
     std::vector<EmotePtr> emotes_;
 };
 
