@@ -221,18 +221,8 @@ void TwitchChannel::refreshSevenTVChannelEmotes(bool manualRefresh)
             {
                 this->seventvEmotes_.set(
                     std::make_shared<EmoteMap>(std::move(emoteMap)));
-                if (this->seventvUserId_ == channelInfo.userId &&
-                    this->seventvEmoteSetId_ == channelInfo.emoteSetId)
-                {
-                    return;
-                }
-                this->seventvUserId_ = channelInfo.userId;
-                this->seventvEmoteSetId_ = channelInfo.emoteSetId;
-                if (getApp()->twitch->eventApi)
-                {
-                    getApp()->twitch->eventApi->subscribeUser(
-                        this->seventvUserId_, this->seventvEmoteSetId_);
-                }
+                this->updateSeventvData(channelInfo.userId,
+                                        channelInfo.emoteSetId);
             }
         },
         manualRefresh);
@@ -680,6 +670,7 @@ void TwitchChannel::removeSeventvEmote(
 void TwitchChannel::updateSeventvUser(
     const SeventvEventApiUserConnectionUpdateDispatch &dispatch)
 {
+    updateSeventvData(this->seventvUserId_, dispatch.emoteSetId);
     SeventvEmotes::updateEmoteSet(
         dispatch.emoteSetId,
         [this, weak = weakOf<Channel>(this), dispatch](auto &&emotes,
@@ -709,6 +700,31 @@ void TwitchChannel::updateSeventvUser(
         });
 }
 
+void TwitchChannel::updateSeventvData(QString userId, QString emoteSetId)
+{
+    if (this->seventvUserId_ == userId &&
+        this->seventvEmoteSetId_ == emoteSetId)
+    {
+        return;
+    }
+    this->seventvUserId_ = userId;
+    this->seventvEmoteSetId_ = emoteSetId;
+    auto fn = [this]() {
+        if (getApp()->twitch->eventApi)
+        {
+            getApp()->twitch->eventApi->subscribeUser(this->seventvUserId_,
+                                                      this->seventvEmoteSetId_);
+        }
+    };
+    if (isGuiThread())
+    {
+        fn();
+    }
+    else
+    {
+        postToThread(fn);
+    }
+}
 const QString &TwitchChannel::subscriptionUrl()
 {
     return this->subscriptionUrl_;

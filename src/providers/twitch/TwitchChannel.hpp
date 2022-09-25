@@ -124,6 +124,7 @@ public:
     void removeSeventvEmote(const SeventvEventApiEmoteRemoveDispatch &action);
     void updateSeventvUser(
         const SeventvEventApiUserConnectionUpdateDispatch &dispatch);
+    void updateSeventvData(QString userId, QString emoteSetId);
 
     virtual void refreshSevenTVChannelEmotes(bool manualRefresh);
     virtual void refreshBTTVChannelEmotes(bool manualRefresh);
