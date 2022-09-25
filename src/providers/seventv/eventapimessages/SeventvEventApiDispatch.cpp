@@ -27,8 +27,8 @@ SeventvEventApiEmoteRemoveDispatch::SeventvEventApiEmoteRemoveDispatch(
     const SeventvEventApiDispatch &dispatch, QJsonObject emote)
     : emoteSetId(dispatch.id)
     , actorName(dispatch.actorName)
-    , emoteId(emote["id"].toString())
     , emoteName(emote["name"].toString())
+    , emoteId(emote["id"].toString())
 {
 }
 
@@ -40,8 +40,8 @@ SeventvEventApiEmoteUpdateDispatch::SeventvEventApiEmoteUpdateDispatch(
     auto oldValue = changeField["old_value"].toObject();
     auto value = changeField["value"].toObject();
     this->emoteId = value["id"].toString();
-    this->emoteName = value["name"].toString();
     this->oldEmoteName = oldValue["name"].toString();
+    this->emoteName = value["name"].toString();
 }
 SeventvEventApiUserConnectionUpdateDispatch::
     SeventvEventApiUserConnectionUpdateDispatch(
