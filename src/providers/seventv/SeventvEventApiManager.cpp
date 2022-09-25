@@ -7,6 +7,8 @@
 #include "util/DebugCount.hpp"
 #include "util/Helpers.hpp"
 
+#include <QJsonArray>
+#include <QJsonObject>
 #include <algorithm>
 #include <exception>
 #include <thread>
