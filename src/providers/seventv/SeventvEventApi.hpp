@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QString>
+#include <boost/functional/hash.hpp>
 #include "magic_enum.hpp"
 
 namespace chatterino {
@@ -38,6 +40,13 @@ enum class SeventvEventApiCloseCode {
     NotSubscribed = 4010,
     InsufficientPrivilege = 4011,
 };
+
+struct SeventvEventApiSubscription {
+    bool operator==(const SeventvEventApiSubscription &rhs) const;
+    bool operator!=(const SeventvEventApiSubscription &rhs) const;
+    QString condition;
+    SeventvEventApiSubscriptionType type;
+};
 }  // namespace chatterino
 
 template <>
@@ -56,3 +65,17 @@ constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<
             return default_tag;
     }
 }
+
+namespace std {
+template <>
+struct hash<chatterino::SeventvEventApiSubscription> {
+    size_t operator()(const chatterino::SeventvEventApiSubscription &sub) const
+    {
+        std::size_t seed = 0;
+        boost::hash_combine(seed, qHash(sub.condition));
+        boost::hash_combine(seed, sub.type);
+
+        return seed;
+    }
+};
+}  // namespace std

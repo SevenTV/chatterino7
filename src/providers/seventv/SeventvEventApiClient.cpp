@@ -103,7 +103,14 @@ bool SeventvEventApiClient::subscribe(
     QJsonObject root;
     root["op"] = (int)SeventvEventApiOpcode::Subscribe;
     root["d"] = createDataJson(typeName, subscription.condition);
-    this->subscriptions_.emplace_back(subscription);
+    if (!this->subscriptions_.emplace(subscription).second)
+    {
+        qCWarning(chatterinoSeventvEventApi)
+            << "Tried subscribing to" << typeName
+            << "object_id:" << subscription.condition
+            << "but we're already subscribed!";
+        return true;  // true because the subscription already exists
+    }
 
     qCDebug(chatterinoSeventvEventApi)
         << "Subscribing to" << typeName
@@ -118,18 +125,7 @@ bool SeventvEventApiClient::subscribe(
 bool SeventvEventApiClient::unsubscribe(
     const SeventvEventApiSubscription &subscription)
 {
-    bool found = false;
-    for (auto it = this->subscriptions_.begin();
-         it != this->subscriptions_.end(); it++)
-    {
-        if (*it == subscription)
-        {
-            this->subscriptions_.erase(it);
-            found = true;
-            break;
-        }
-    }
-    if (!found)
+    if (this->subscriptions_.erase(subscription) <= 0)
     {
         return false;
     }
@@ -164,7 +160,7 @@ bool SeventvEventApiClient::isSubscribedToEmoteSet(const QString &emoteSetId)
         });
 }
 
-std::vector<SeventvEventApiSubscription>
+std::unordered_set<SeventvEventApiSubscription>
     SeventvEventApiClient::getSubscriptions() const
 {
     return this->subscriptions_;
@@ -211,16 +207,5 @@ bool SeventvEventApiClient::send(const char *payload)
     }
 
     return true;
-}
-bool SeventvEventApiSubscription::operator==(
-    const SeventvEventApiSubscription &rhs) const
-{
-    return std::tie(this->condition, this->type) ==
-           std::tie(rhs.condition, rhs.type);
-}
-bool SeventvEventApiSubscription::operator!=(
-    const SeventvEventApiSubscription &rhs) const
-{
-    return !(rhs == *this);
 }
 }  // namespace chatterino
