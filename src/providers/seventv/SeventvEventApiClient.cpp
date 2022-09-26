@@ -1,5 +1,7 @@
 #include "providers/seventv/SeventvEventApiClient.hpp"
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QStringView>
 #include "common/QLogging.hpp"
 #include "providers/twitch/PubSubHelpers.hpp"
