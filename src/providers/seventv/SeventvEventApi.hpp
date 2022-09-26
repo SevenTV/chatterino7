@@ -1,7 +1,7 @@
 #pragma once
 
+#include <QHash>
 #include <QString>
-#include <boost/functional/hash.hpp>
 #include "magic_enum.hpp"
 
 namespace chatterino {
@@ -71,11 +71,7 @@ template <>
 struct hash<chatterino::SeventvEventApiSubscription> {
     size_t operator()(const chatterino::SeventvEventApiSubscription &sub) const
     {
-        std::size_t seed = 0;
-        boost::hash_combine(seed, qHash(sub.condition));
-        boost::hash_combine(seed, sub.type);
-
-        return seed;
+        return (size_t)qHash(sub.condition, qHash((int)sub.type));
     }
 };
 }  // namespace std
