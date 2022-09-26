@@ -47,6 +47,8 @@ public:
                                 std::function<void(TwitchChannel &)> func);
     void forEachSeventvUser(const QString &userId,
                             std::function<void(TwitchChannel &)> func);
+    void dropSeventvEmoteSet(const QString &id);
+    void dropSeventvUser(const QString &id);
 
     Atomic<QString> lastUserThatWhisperedMe;
 

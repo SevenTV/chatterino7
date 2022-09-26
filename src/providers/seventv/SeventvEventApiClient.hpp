@@ -11,6 +11,8 @@
 
 namespace chatterino {
 struct SeventvEventApiSubscription {
+    bool operator==(const SeventvEventApiSubscription &rhs) const;
+    bool operator!=(const SeventvEventApiSubscription &rhs) const;
     QString condition;
     SeventvEventApiSubscriptionType type;
 };
@@ -33,8 +35,7 @@ public:
                    websocketpp::close::status::normal);
 
     bool subscribe(const SeventvEventApiSubscription &subscription);
-    void unsubscribe(const QString &condition,
-                     SeventvEventApiSubscriptionType type);
+    bool unsubscribe(const SeventvEventApiSubscription &subscription);
 
     void setHeartbeatInterval(int intervalMs);
     void handleHeartbeat();

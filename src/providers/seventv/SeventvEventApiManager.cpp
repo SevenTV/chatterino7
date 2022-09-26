@@ -108,6 +108,23 @@ void SeventvEventApi::subscribeUser(const QString &userId,
     }
 }
 
+void SeventvEventApi::unsubscribeEmoteSet(const QString &id)
+{
+    if (this->subscribedEmoteSets_.erase(id) > 0)
+    {
+        this->unsubscribe(
+            {id, SeventvEventApiSubscriptionType::UpdateEmoteSet});
+    }
+}
+
+void SeventvEventApi::unsubscribeUser(const QString &id)
+{
+    if (this->subscribedUsers_.erase(id) > 0)
+    {
+        this->unsubscribe({id, SeventvEventApiSubscriptionType::UpdateUser});
+    }
+}
+
 void SeventvEventApi::subscribe(const SeventvEventApiSubscription &subscription)
 {
     if (this->trySubscribe(subscription))
@@ -131,6 +148,18 @@ bool SeventvEventApi::trySubscribe(
         }
     }
     return false;
+}
+
+void SeventvEventApi::unsubscribe(
+    const SeventvEventApiSubscription &subscription)
+{
+    for (auto &client : this->clients_)
+    {
+        if (client.second->unsubscribe(subscription))
+        {
+            return;
+        }
+    }
 }
 
 void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,

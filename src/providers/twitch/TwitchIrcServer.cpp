@@ -548,4 +548,54 @@ void TwitchIrcServer::forEachSeventvUser(
         }
     });
 }
+
+void TwitchIrcServer::dropSeventvEmoteSet(const QString &id)
+{
+    std::lock_guard<std::mutex> lock(this->channelMutex);
+
+    for (std::weak_ptr<Channel> &weak : this->channels)
+    {
+        ChannelPtr chan = weak.lock();
+        if (!chan)
+        {
+            continue;
+        }
+
+        if (auto *channel = dynamic_cast<TwitchChannel *>(chan.get());
+            channel->seventvEmoteSetId() == id)
+        {
+            return;
+        }
+    }
+
+    if (this->eventApi)
+    {
+        this->eventApi->unsubscribeEmoteSet(id);
+    }
+}
+
+void TwitchIrcServer::dropSeventvUser(const QString &id)
+{
+    std::lock_guard<std::mutex> lock(this->channelMutex);
+
+    for (std::weak_ptr<Channel> &weak : this->channels)
+    {
+        ChannelPtr chan = weak.lock();
+        if (!chan)
+        {
+            continue;
+        }
+
+        if (auto *channel = dynamic_cast<TwitchChannel *>(chan.get());
+            channel->seventvUserId() == id)
+        {
+            return;
+        }
+    }
+
+    if (this->eventApi)
+    {
+        this->eventApi->unsubscribeUser(id);
+    }
+}
 }  // namespace chatterino

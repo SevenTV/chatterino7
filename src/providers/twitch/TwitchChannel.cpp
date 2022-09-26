@@ -32,6 +32,7 @@
 #include <QJsonValue>
 #include <QThread>
 #include <QTimer>
+#include <boost/optional.hpp>
 
 namespace chatterino {
 namespace {
@@ -113,9 +114,10 @@ TwitchChannel::TwitchChannel(const QString &name)
     });
 
     this->destroyed.connect([this]() {
-        if (const auto &eventApi = getApp()->twitch->eventApi)
+        if (getApp()->twitch->eventApi)
         {
-            // TODO: unsubscribe + check emote-sets
+            getApp()->twitch->dropSeventvUser(this->seventvUserId_);
+            getApp()->twitch->dropSeventvEmoteSet(this->seventvEmoteSetId_);
         }
     });
 
@@ -707,13 +709,30 @@ void TwitchChannel::updateSeventvData(QString userId, QString emoteSetId)
     {
         return;
     }
+    boost::optional<QString> oldUserId = boost::make_optional(
+        !this->seventvUserId_.isEmpty() && this->seventvUserId_ != userId,
+        this->seventvUserId_);
+    boost::optional<QString> oldEmoteSetId =
+        boost::make_optional(!this->seventvEmoteSetId_.isEmpty() &&
+                                 this->seventvEmoteSetId_ != emoteSetId,
+                             this->seventvEmoteSetId_);
+
     this->seventvUserId_ = userId;
     this->seventvEmoteSetId_ = emoteSetId;
-    auto fn = [this]() {
+    auto fn = [this, oldUserId, oldEmoteSetId]() {
         if (getApp()->twitch->eventApi)
         {
             getApp()->twitch->eventApi->subscribeUser(this->seventvUserId_,
                                                       this->seventvEmoteSetId_);
+
+            if (oldUserId)
+            {
+                getApp()->twitch->dropSeventvUser(oldUserId.get());
+            }
+            if (oldEmoteSetId)
+            {
+                getApp()->twitch->dropSeventvEmoteSet(oldEmoteSetId.get());
+            }
         }
     };
     if (isGuiThread())

@@ -63,6 +63,8 @@ public:
     } signals_;
 
     void subscribeUser(const QString &userId, const QString &emoteSetId);
+    void unsubscribeUser(const QString &id);
+    void unsubscribeEmoteSet(const QString &id);
 
 private:
     std::vector<SeventvEventApiSubscription> pendingSubscriptions_;
@@ -88,6 +90,7 @@ private:
 
     void subscribe(const SeventvEventApiSubscription &subscription);
     bool trySubscribe(const SeventvEventApiSubscription &subscription);
+    void unsubscribe(const SeventvEventApiSubscription &subscription);
     void handleDispatch(const SeventvEventApiDispatch &dispatch);
 
     std::shared_ptr<boost::asio::io_service::work> work_{nullptr};

@@ -99,7 +99,7 @@ bool SeventvEventApiClient::subscribe(
         return false;
     }
 
-    auto typeName = typeToString(subscription.type);
+    const auto *typeName = typeToString(subscription.type);
     QJsonObject root;
     root["op"] = (int)SeventvEventApiOpcode::Subscribe;
     root["d"] = createDataJson(typeName, subscription.condition);
@@ -115,14 +115,14 @@ bool SeventvEventApiClient::subscribe(
     return true;
 }
 
-void SeventvEventApiClient::unsubscribe(const QString &condition,
-                                        SeventvEventApiSubscriptionType type)
+bool SeventvEventApiClient::unsubscribe(
+    const SeventvEventApiSubscription &subscription)
 {
     bool found = false;
     for (auto it = this->subscriptions_.begin();
          it != this->subscriptions_.end(); it++)
     {
-        if (it->condition == condition && it->type == type)
+        if (*it == subscription)
         {
             this->subscriptions_.erase(it);
             found = true;
@@ -131,19 +131,21 @@ void SeventvEventApiClient::unsubscribe(const QString &condition,
     }
     if (!found)
     {
-        return;
+        return false;
     }
 
-    auto typeName = typeToString(type);
+    const auto *typeName = typeToString(subscription.type);
     QJsonObject root;
     root["op"] = (int)SeventvEventApiOpcode::Unsubscribe;
-    root["d"] = createDataJson(typeName, condition);
+    root["d"] = createDataJson(typeName, subscription.condition);
 
     qCDebug(chatterinoSeventvEventApi)
-        << "Unsubscribing from " << typeName << " object_id:" << condition;
-    DebugCount::increase("EventApi subscriptions");
+        << "Unsubscribing from" << typeName
+        << "object_id:" << subscription.condition;
+    DebugCount::decrease("EventApi subscriptions");
 
     this->send(QJsonDocument(root).toJson());
+    return true;
 }
 
 void SeventvEventApiClient::handleHeartbeat()
@@ -209,5 +211,16 @@ bool SeventvEventApiClient::send(const char *payload)
     }
 
     return true;
+}
+bool SeventvEventApiSubscription::operator==(
+    const SeventvEventApiSubscription &rhs) const
+{
+    return std::tie(this->condition, this->type) ==
+           std::tie(rhs.condition, rhs.type);
+}
+bool SeventvEventApiSubscription::operator!=(
+    const SeventvEventApiSubscription &rhs) const
+{
+    return !(rhs == *this);
 }
 }  // namespace chatterino
