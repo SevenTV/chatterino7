@@ -300,8 +300,8 @@ MessageBuilder::MessageBuilder(SevenTvEventApiUpdateEmoteSetMessageTag,
                                const QString &emoteSetName)
     : MessageBuilder()
 {
-    auto text =
-        QString("switched the active 7TV Emote Set to \"%1\".").arg(emoteSetName);
+    auto text = QString("switched the active 7TV Emote Set to \"%1\".")
+                    .arg(emoteSetName);
 
     this->emplace<TimestampElement>();
     this->emplace<TextElement>(actor, MessageElementFlag::Username,
