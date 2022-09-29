@@ -42,6 +42,7 @@ namespace {
         Emote emote;
         EmoteId id;
         EmoteName name;
+        bool hasImages;
     };
 
     EmotePtr cachedOrMake(Emote &&emote, const EmoteId &id)
@@ -124,10 +125,9 @@ namespace {
             // this means we didn't get all sizes of an emote
             if (nextSize == 0)
             {
-                qCWarning(chatterinoSeventv)
+                qCDebug(chatterinoSeventv)
                     << "Got file list without any eligible files";
                 // When this emote is typed, chatterino will segfault.
-                // TODO: provide fallback?
                 return ImageSet{};
             }
             for (; nextSize < sizes.size(); nextSize++)
@@ -177,7 +177,8 @@ namespace {
                    Url{EMOTE_LINK_FORMAT.arg(emoteId.string)}, zeroWidth,
                    author, boost::make_optional(aliasedName, baseEmoteName)});
 
-        return {emote, emoteId, emoteName};
+        return {emote, emoteId, emoteName,
+                !emote.images.getImage1()->isEmpty()};
     }
 
     bool checkEmoteVisibility(const QJsonObject &emoteData)
@@ -205,6 +206,13 @@ namespace {
                 continue;
             }
             auto result = createEmote(activeEmote, emoteData, isGlobal);
+            if (!result.hasImages)
+            {
+                // this shouldn't happen but if it does it will crash
+                qCDebug(chatterinoSeventv)
+                    << "Emote without images:" << activeEmote;
+                continue;
+            }
             auto ptr = cachedOrMake(std::move(result.emote), result.id);
             emotes[result.name] = ptr;
         }
@@ -387,6 +395,13 @@ boost::optional<EmotePtr> SeventvEmotes::addEmote(
 
     EmoteMap updatedMap = *map.get();
     auto result = createEmote(dispatch.emoteJson, emoteData, false);
+    if (!result.hasImages)
+    {
+        // this shouldn't happen but if it does it will crash
+        qCDebug(chatterinoSeventv)
+            << "Emote without images:" << dispatch.emoteJson;
+        return boost::none;
+    }
     auto emote = std::make_shared<const Emote>(std::move(result.emote));
     updatedMap[result.name] = emote;
     updateEmoteMapPtr(map, std::move(updatedMap));
