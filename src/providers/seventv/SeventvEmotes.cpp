@@ -201,7 +201,7 @@ namespace {
             auto activeEmote = activeEmoteJson.toObject();
             auto emoteData = activeEmote["data"].toObject();
 
-            if (!checkEmoteVisibility(emoteData))
+            if (emoteData.empty() || !checkEmoteVisibility(emoteData))
             {
                 continue;
             }
@@ -388,7 +388,7 @@ boost::optional<EmotePtr> SeventvEmotes::addEmote(
 {
     // Check for visibility first, so we don't copy the map.
     auto emoteData = dispatch.emoteJson["data"].toObject();
-    if (!checkEmoteVisibility(emoteData))
+    if (emoteData.empty() || !checkEmoteVisibility(emoteData))
     {
         return boost::none;
     }
