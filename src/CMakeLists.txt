@@ -182,8 +182,6 @@ set(SOURCE_FILES
         providers/seventv/SeventvBadges.hpp
         providers/seventv/SeventvPaints.cpp
         providers/seventv/SeventvPaints.hpp
-        providers/seventv/SeventvEmoteCache.cpp
-        providers/seventv/SeventvEmoteCache.hpp
         providers/seventv/SeventvEmotes.cpp
         providers/seventv/SeventvEmotes.hpp
         providers/seventv/paints/Paint.hpp
