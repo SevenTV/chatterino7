@@ -35,6 +35,7 @@ const QString EMOTE_LINK_FORMAT("https://7tv.app/emotes/%1");
 // TODO(nerix): add links to documentation (7tv.io)
 const QString API_URL_USER("https://7tv.io/v3/users/twitch/%1");
 const QString API_URL_GLOBAL_EMOTE_SET("https://7tv.io/v3/emote-sets/global");
+const QString API_URL_EMOTE_SET("https://7tv.io/v3/emote-sets/%1");
 
 struct CreateEmoteResult {
     Emote emote;

@@ -98,7 +98,6 @@ private:
 
     void appendTwitchBadges();
     void appendChatterinoBadges();
-    void appendSeventvBadges();
     void appendFfzBadges();
     void appendSeventvBadges();
     Outcome tryParseCheermote(const QString &string);

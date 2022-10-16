@@ -109,7 +109,6 @@ WindowManager::WindowManager()
     this->wordFlagsListener_.addSetting(settings->showBadgesSubscription);
     this->wordFlagsListener_.addSetting(settings->showBadgesVanity);
     this->wordFlagsListener_.addSetting(settings->showBadgesChatterino);
-    this->wordFlagsListener_.addSetting(settings->showBadgesSeventv);
     this->wordFlagsListener_.addSetting(settings->showBadgesFfz);
     this->wordFlagsListener_.addSetting(settings->showBadgesSevenTV);
     this->wordFlagsListener_.addSetting(settings->enableEmoteImages);
@@ -180,7 +179,6 @@ void WindowManager::updateWordTypeMask()
     flags.set(settings->showBadgesVanity ? MEF::BadgeVanity : MEF::None);
     flags.set(settings->showBadgesChatterino ? MEF::BadgeChatterino
                                              : MEF::None);
-    flags.set(settings->showBadgesSeventv ? MEF::BadgeSeventv : MEF::None);
     flags.set(settings->showBadgesFfz ? MEF::BadgeFfz : MEF::None);
     flags.set(settings->showBadgesSevenTV ? MEF::BadgeSevenTV : MEF::None);
 

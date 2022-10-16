@@ -88,7 +88,6 @@ public:
     HighlightController *const highlights{};
     TwitchIrcServer *const twitch{};
     ChatterinoBadges *const chatterinoBadges{};
-    SeventvBadges *const seventvBadges{};
     SeventvPaints *const seventvPaints{};
     FfzBadges *const ffzBadges{};
     SeventvBadges *const seventvBadges{};
