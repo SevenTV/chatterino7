@@ -1,4 +1,4 @@
-#include "SeventvEventApiDispatch.hpp"
+#include "providers/seventv/eventapimessages/SeventvEventApiDispatch.hpp"
 
 namespace chatterino {
 SeventvEventApiDispatch::SeventvEventApiDispatch(QJsonObject obj)

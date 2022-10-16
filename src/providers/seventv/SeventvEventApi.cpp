@@ -1,4 +1,4 @@
-#include "SeventvEventApi.hpp"
+#include "providers/seventv/SeventvEventApi.hpp"
 
 namespace chatterino {
 
