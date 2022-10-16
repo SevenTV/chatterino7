@@ -81,8 +81,7 @@ ImageSet makeImageSet(const QJsonObject &emoteData)
     auto baseUrl = host["url"].toString();
     auto files = host["files"].toArray();
 
-    // TODO: emit four images
-    std::array<ImagePtr, 3> sizes;
+    std::array<ImagePtr, 4> sizes;
     double baseWidth = 0.0;
     int nextSize = 0;
 
@@ -136,7 +135,7 @@ ImageSet makeImageSet(const QJsonObject &emoteData)
         }
     }
 
-    return ImageSet{sizes[0], sizes[1], sizes[2]};
+    return ImageSet{sizes[0], sizes[1], sizes[2], sizes[3]};
 }
 
 Tooltip createTooltip(const QString &name, const QString &author, bool isGlobal)
