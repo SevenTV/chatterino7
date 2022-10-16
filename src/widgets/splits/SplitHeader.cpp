@@ -1000,6 +1000,7 @@ void SplitHeader::reloadChannelEmotes()
         twitchChannel->refreshSevenTVChannelEmotes(true);
         twitchChannel->refreshFFZChannelEmotes(true);
         twitchChannel->refreshBTTVChannelEmotes(true);
+        twitchChannel->refreshSevenTVChannelEmotes(true);
     }
 }
 

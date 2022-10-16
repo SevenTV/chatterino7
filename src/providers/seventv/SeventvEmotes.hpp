@@ -3,7 +3,6 @@
 #include "boost/optional.hpp"
 #include "common/Aliases.hpp"
 #include "common/Atomic.hpp"
-#include "providers/seventv/SeventvEmoteCache.hpp"
 #include "providers/seventv/eventapimessages/SeventvEventApiDispatch.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 
@@ -65,10 +64,10 @@ class SeventvEmotes final
 public:
     SeventvEmotes();
 
-    std::shared_ptr<const EmoteMap> emotes() const;
-    boost::optional<EmotePtr> emote(const EmoteName &name) const;
-    void loadEmotes();
-    static void loadChannel(
+    std::shared_ptr<const EmoteMap> globalEmotes() const;
+    boost::optional<EmotePtr> globalEmote(const EmoteName &name) const;
+    void loadGlobalEmotes();
+    static void loadChannelEmotes(
         const std::weak_ptr<Channel> &channel, const QString &channelId,
         std::function<void(EmoteMap &&, ChannelInfo)> callback,
         bool manualRefresh);

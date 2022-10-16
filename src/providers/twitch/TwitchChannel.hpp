@@ -51,9 +51,9 @@ using EmotePtr = std::shared_ptr<const Emote>;
 class EmoteMap;
 
 class TwitchBadges;
-class SeventvEmotes;
 class FfzEmotes;
 class BttvEmotes;
+class SeventvEmotes;
 
 class TwitchIrcServer;
 
@@ -109,12 +109,12 @@ public:
     SharedAccessGuard<const StreamStatus> accessStreamStatus() const;
 
     // Emotes
-    boost::optional<EmotePtr> seventvEmote(const EmoteName &name) const;
     boost::optional<EmotePtr> bttvEmote(const EmoteName &name) const;
     boost::optional<EmotePtr> ffzEmote(const EmoteName &name) const;
-    std::shared_ptr<const EmoteMap> seventvEmotes() const;
+    boost::optional<EmotePtr> seventvEmote(const EmoteName &name) const;
     std::shared_ptr<const EmoteMap> bttvEmotes() const;
     std::shared_ptr<const EmoteMap> ffzEmotes() const;
+    std::shared_ptr<const EmoteMap> seventvEmotes() const;
 
     const QString &seventvUserId() const;
     const QString &seventvEmoteSetId() const;
@@ -126,9 +126,9 @@ public:
         const SeventvEventApiUserConnectionUpdateDispatch &dispatch);
     void updateSeventvData(QString userId, QString emoteSetId);
 
-    virtual void refreshSevenTVChannelEmotes(bool manualRefresh);
     virtual void refreshBTTVChannelEmotes(bool manualRefresh);
     virtual void refreshFFZChannelEmotes(bool manualRefresh);
+    virtual void refreshSevenTVChannelEmotes(bool manualRefresh);
 
     // Badges
     boost::optional<EmotePtr> ffzCustomModBadge() const;
@@ -209,9 +209,9 @@ private:
     std::unordered_map<QString, std::weak_ptr<MessageThread>> threads_;
 
 protected:
-    Atomic<std::shared_ptr<const EmoteMap>> seventvEmotes_;
     Atomic<std::shared_ptr<const EmoteMap>> bttvEmotes_;
     Atomic<std::shared_ptr<const EmoteMap>> ffzEmotes_;
+    Atomic<std::shared_ptr<const EmoteMap>> seventvEmotes_;
     Atomic<boost::optional<EmotePtr>> ffzCustomModBadge_;
     Atomic<boost::optional<EmotePtr>> ffzCustomVipBadge_;
 

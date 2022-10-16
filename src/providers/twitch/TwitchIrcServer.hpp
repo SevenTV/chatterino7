@@ -60,9 +60,9 @@ public:
     PubSub *pubsub;
     std::unique_ptr<SeventvEventApi> eventApi;
 
-    const SeventvEmotes &getSeventvEmotes() const;
     const BttvEmotes &getBttvEmotes() const;
     const FfzEmotes &getFfzEmotes() const;
+    const SeventvEmotes &getSeventvEmotes() const;
 
 protected:
     virtual void initializeConnection(IrcConnection *connection,
@@ -97,9 +97,9 @@ private:
     std::chrono::steady_clock::time_point lastErrorTimeSpeed_;
     std::chrono::steady_clock::time_point lastErrorTimeAmount_;
 
-    SeventvEmotes seventv;
     BttvEmotes bttv;
     FfzEmotes ffz;
+    SeventvEmotes seventv_;
     QTimer bulkLiveStatusTimer_;
 
     pajlada::Signals::SignalHolder signalHolder_;

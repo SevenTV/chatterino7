@@ -74,9 +74,9 @@ Application::Application(Settings &_settings, Paths &_paths)
     , highlights(&this->emplace<HighlightController>())
     , twitch(&this->emplace<TwitchIrcServer>())
     , chatterinoBadges(&this->emplace<ChatterinoBadges>())
+    , ffzBadges(&this->emplace<FfzBadges>())
     , seventvBadges(&this->emplace<SeventvBadges>())
     , seventvPaints(&this->emplace<SeventvPaints>())
-    , ffzBadges(&this->emplace<FfzBadges>())
     , logging(&this->emplace<Logging>())
 {
     this->instance = this;

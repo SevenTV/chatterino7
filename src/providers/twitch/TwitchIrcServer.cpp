@@ -478,7 +478,7 @@ const FfzEmotes &TwitchIrcServer::getFfzEmotes() const
 }
 const SeventvEmotes &TwitchIrcServer::getSeventvEmotes() const
 {
-    return this->seventv;
+    return this->seventv_;
 }
 
 void TwitchIrcServer::reloadBTTVGlobalEmotes()
@@ -513,7 +513,7 @@ void TwitchIrcServer::reloadAllFFZChannelEmotes()
 
 void TwitchIrcServer::reloadSevenTVGlobalEmotes()
 {
-    this->seventv.loadEmotes();
+    this->seventv_.loadGlobalEmotes();
 }
 
 void TwitchIrcServer::reloadAllSevenTVChannelEmotes()
