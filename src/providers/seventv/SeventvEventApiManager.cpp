@@ -224,7 +224,7 @@ void SeventvEventApi::onMessage(websocketpp::connection_hdl hdl,
 
 void SeventvEventApi::onConnectionOpen(eventapi::WebsocketHandle hdl)
 {
-    DebugCount::increase("PubSub connections");
+    DebugCount::increase("EventApi connections");
     this->addingClient_ = false;
 
     this->connectBackoff_.reset();
