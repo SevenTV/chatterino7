@@ -213,6 +213,11 @@ public:
     FloatSetting emoteScale = {"/emotes/scale", 1.f};
     BoolSetting showUnlistedSevenTVEmotes = {
         "/emotes/showUnlistedSevenTVEmotes", false};
+    /**
+     * This setting is kept for backwards compatibility.
+     */
+    BoolSetting showUnlistedEmotesDontUse = {"/emotes/showUnlistedEmotes",
+                                             false};
 
     QStringSetting emojiSet = {"/emotes/emojiSet", "Twitter"};
 
