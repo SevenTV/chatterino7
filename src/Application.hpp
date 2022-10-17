@@ -88,9 +88,9 @@ public:
     HighlightController *const highlights{};
     TwitchIrcServer *const twitch{};
     ChatterinoBadges *const chatterinoBadges{};
-    SeventvPaints *const seventvPaints{};
     FfzBadges *const ffzBadges{};
     SeventvBadges *const seventvBadges{};
+    SeventvPaints *const seventvPaints{};
 
     /*[[deprecated]]*/ Logging *const logging{};
 
