@@ -82,6 +82,7 @@ private:
         Label *userIDLabel = nullptr;
         Label *followageLabel = nullptr;
         Label *subageLabel = nullptr;
+        Label *rolesLabel = nullptr;
 
         QCheckBox *block = nullptr;
         QCheckBox *ignoreHighlights = nullptr;

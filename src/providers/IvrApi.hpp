@@ -32,6 +32,21 @@ struct IvrSubage {
     }
 };
 
+struct IvrResolve {
+    const bool isPartner;
+    const bool isAffiliate;
+    const bool isBot;
+    const bool isStaff;
+
+    IvrResolve(QJsonObject root)
+        : isPartner(root.value("partner").toBool())
+        , isAffiliate(root.value("affiliate").toBool())
+        , isBot(root.value("bot").toBool())
+        , isStaff(root.value("roles").toObject().value("isStaff").toBool())
+    {
+    }
+};
+
 struct IvrEmoteSet {
     const QString setId;
     const QString displayName;
@@ -80,6 +95,11 @@ public:
     void getSubage(QString userName, QString channelName,
                    ResultCallback<IvrSubage> resultCallback,
                    IvrFailureCallback failureCallback);
+
+        // https://api.ivr.fi/v2/docs/static/index.html#/Twitch/get_twitch_user
+    void getUserRoles(QString userName,
+                      ResultCallback<IvrResolve> resultCallback,
+                      IvrFailureCallback failureCallback);
 
     // https://api.ivr.fi/v2/docs/static/index.html#/Twitch/get_twitch_emotes_sets
     void getBulkEmoteSets(QString emoteSetList,
