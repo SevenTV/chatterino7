@@ -987,7 +987,7 @@ void SplitHeader::reloadChannelEmotes()
     using namespace std::chrono_literals;
 
     auto now = std::chrono::steady_clock::now();
-    if (this->lastReloadedChannelEmotes_ + 30s > now)
+    if (this->lastReloadedChannelEmotes_ + 1s > now)
     {
         return;
     }
@@ -1008,7 +1008,7 @@ void SplitHeader::reloadSubscriberEmotes()
     using namespace std::chrono_literals;
 
     auto now = std::chrono::steady_clock::now();
-    if (this->lastReloadedSubEmotes_ + 30s > now)
+    if (this->lastReloadedSubEmotes_ + 1s > now)
     {
         return;
     }
