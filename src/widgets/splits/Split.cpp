@@ -603,8 +603,9 @@ void Split::updateInputPlaceholder()
     else
     {
         placeholderText =
-            QString("Send message as %1...")
-                .arg(getApp()->accounts->twitch.getCurrent()->getUserName());
+            QString("Send message as %1 in %2...")
+                .arg(getApp()->accounts->twitch.getCurrent()->getUserName(),
+                     this->getChannel()->getName());
     }
 
     this->input_->ui_.textEdit->setPlaceholderText(placeholderText);
