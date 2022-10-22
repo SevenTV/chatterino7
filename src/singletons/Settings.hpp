@@ -423,6 +423,9 @@ public:
     /// Misc
     BoolSetting useBotLimits = {"/misc/botLimits", false};
     BoolSetting betaUpdates = {"/misc/beta", false};
+    BoolSetting abnormalNonceDetection = {"/misc/abnormalNonceDetection",
+                                          false};
+    BoolSetting normalNonceDetection = {"/misc/normalNonceDetection", false};
 #ifdef Q_OS_LINUX
     BoolSetting useKeyring = {"/misc/useKeyring", true};
 #endif
