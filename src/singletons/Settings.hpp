@@ -421,6 +421,7 @@ public:
         "/external/imageUploader/deletionLink", ""};
 
     /// Misc
+    BoolSetting useBotLimits = {"/misc/botLimits", false};
     BoolSetting betaUpdates = {"/misc/beta", false};
 #ifdef Q_OS_LINUX
     BoolSetting useKeyring = {"/misc/useKeyring", true};

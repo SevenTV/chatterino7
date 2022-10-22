@@ -9,6 +9,7 @@
 #include "common/Common.hpp"
 #include "providers/irc/IrcConnection2.hpp"
 #include "util/RatelimitBucket.hpp"
+#include "widgets/settingspages/SettingsPage.hpp"
 
 namespace chatterino {
 

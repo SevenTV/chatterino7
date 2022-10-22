@@ -662,6 +662,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                        s.useCustomFfzVipBadges);
 
     layout.addSubtitle("Miscellaneous");
+    layout.addCheckbox("Use bot limits", s.useBotLimits);
 
     if (supportsIncognitoLinks())
     {

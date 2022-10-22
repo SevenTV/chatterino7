@@ -391,6 +391,10 @@ bool TwitchIrcServer::prepareToSend(TwitchChannel *channel)
     auto &lastMessage = channel->hasHighRateLimit() ? this->lastMessageMod_
                                                     : this->lastMessagePleb_;
     size_t maxMessageCount = channel->hasHighRateLimit() ? 99 : 19;
+    if (getSettings()->useBotLimits)
+    {
+        maxMessageCount = 7499;
+    }
     auto minMessageOffset = (channel->hasHighRateLimit() ? 100ms : 1100ms);
 
     auto now = std::chrono::steady_clock::now();
