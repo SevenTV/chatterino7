@@ -663,6 +663,8 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     layout.addSubtitle("Miscellaneous");
     layout.addCheckbox("Use bot limits", s.useBotLimits);
+    layout.addCheckbox("Enable. Required for settings below to work!",
+                       s.nonceFuckeryEnabled);
     layout.addCheckbox("Abnormal nonce detection", s.abnormalNonceDetection);
     layout.addCheckbox("Webchat detection. Adds a little orange asterisk before the "
             "message timestamp if it was sent from webchat.",

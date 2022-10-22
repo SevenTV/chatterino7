@@ -426,6 +426,7 @@ public:
     BoolSetting abnormalNonceDetection = {"/misc/abnormalNonceDetection",
                                           false};
     BoolSetting normalNonceDetection = {"/misc/normalNonceDetection", false};
+    BoolSetting nonceFuckeryEnabled = {"/misc/nonceFuckeryEnabled", false};
 #ifdef Q_OS_LINUX
     BoolSetting useKeyring = {"/misc/useKeyring", true};
 #endif
