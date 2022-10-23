@@ -20,10 +20,6 @@ jobs:
         os: [windows-latest]
         qt-version: [5.15.2]
         pch: [true]
-        include:
-          - os: ubuntu-latest
-            qt-version: 5.15.2
-            pch: false
       fail-fast: false
 
     steps:
