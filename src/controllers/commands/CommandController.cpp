@@ -845,6 +845,46 @@ void CommandController::initialize(Settings &, Paths &paths)
         return "";
     });
 
+    this->registerCommand("/logs", [](const auto& words, auto channel) {
+        if (words.size() < 2)
+        {
+            channel->addMessage(makeSystemMessage(
+                "Usage: /logs <user> [channel]"));
+            return "";
+        }
+
+        QString userName = words[1];
+        stripUserName(userName);
+        QString channelName = channel->getName();
+
+        if (words.size() > 2) {
+            channelName = words[2];
+            stripUserName(channelName);
+        }
+
+        QString urlStr = "https://logs.ivr.fi/?channel=" + channelName +
+                      "&username=" + userName;
+
+        QUrl url = QUrl::fromUserInput(urlStr);
+
+        bool res = false;
+        if (supportsIncognitoLinks() && getSettings()->openLinksIncognito)
+        {
+            res = openLinkIncognito(url.toString(QUrl::FullyEncoded));
+        }
+        else
+        {
+            res = QDesktopServices::openUrl(url);
+        }
+
+        if (!res)
+        {
+            channel->addMessage(makeSystemMessage("Could not open URL."));
+        }
+
+        return "";
+    });
+
     this->registerCommand("/requests", [](const QStringList &words,
                                           ChannelPtr channel) {
         QString target(words.value(1));
