@@ -4,7 +4,7 @@ name: Build
 on:
   push:
     branches:
-      - chatterino7
+      - technorino
   pull_request:
   workflow_dispatch:
 
