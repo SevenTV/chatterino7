@@ -845,11 +845,11 @@ void CommandController::initialize(Settings &, Paths &paths)
         return "";
     });
 
-    this->registerCommand("/logs", [](const auto& words, auto channel) {
+    this->registerCommand("/logs", [](const auto &words, auto channel) {
         if (words.size() < 2)
         {
-            channel->addMessage(makeSystemMessage(
-                "Usage: /logs <user> [channel]"));
+            channel->addMessage(
+                makeSystemMessage("Usage: /logs <user> [channel]"));
             return "";
         }
 
@@ -857,13 +857,14 @@ void CommandController::initialize(Settings &, Paths &paths)
         stripUserName(userName);
         QString channelName = channel->getName();
 
-        if (words.size() > 2) {
+        if (words.size() > 2)
+        {
             channelName = words[2];
             stripUserName(channelName);
         }
 
         QString urlStr = "https://logs.ivr.fi/?channel=" + channelName +
-                      "&username=" + userName;
+                         "&username=" + userName;
 
         QUrl url = QUrl::fromUserInput(urlStr);
 

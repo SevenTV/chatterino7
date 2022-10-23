@@ -96,7 +96,7 @@ public:
                    ResultCallback<IvrSubage> resultCallback,
                    IvrFailureCallback failureCallback);
 
-        // https://api.ivr.fi/v2/docs/static/index.html#/Twitch/get_twitch_user
+    // https://api.ivr.fi/v2/docs/static/index.html#/Twitch/get_twitch_user
     void getUserRoles(QString userName,
                       ResultCallback<IvrResolve> resultCallback,
                       IvrFailureCallback failureCallback);

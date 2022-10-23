@@ -403,10 +403,10 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, QWidget *parent,
 
         QObject::connect(
             externalLogs.getElement(), &Button::leftClicked, [this] {
-            QDesktopServices::openUrl("https://logs.ivr.fi/?channel=" +
-                                      this->underlyingChannel_->getName() +
-                                      "&username=" + this->userName_);
-        });
+                QDesktopServices::openUrl("https://logs.ivr.fi/?channel=" +
+                                          this->underlyingChannel_->getName() +
+                                          "&username=" + this->userName_);
+            });
 
         QObject::connect(mod.getElement(), &Button::leftClicked, [this] {
             this->underlyingChannel_->sendMessage("/mod " + this->userName_);
@@ -879,7 +879,7 @@ void UserInfoPopup::updateUserData()
             },
             [] {});
 
-         // get roles
+        // get roles
         getIvr()->getUserRoles(
             this->userName_,
             [this, hack](const IvrResolve &userInfo) {
