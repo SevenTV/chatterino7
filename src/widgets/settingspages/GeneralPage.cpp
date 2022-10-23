@@ -663,12 +663,15 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     layout.addSubtitle("Miscellaneous");
     layout.addCheckbox("Use bot limits", s.useBotLimits);
-    layout.addCheckbox("Enable. Required for settings below to work!",
+    layout.addCheckbox("Enable. Required for abnormal nonce and webchat detection to work!",
                        s.nonceFuckeryEnabled);
     layout.addCheckbox("Abnormal nonce detection", s.abnormalNonceDetection);
-    layout.addCheckbox("Webchat detection. Adds a little orange asterisk before the "
-            "message timestamp if it was sent from webchat.",
-            s.normalNonceDetection);
+    layout.addCheckbox("Webchat detection. Highlights messages sent from "
+                       "webchat in color specified below.",
+                       s.normalNonceDetection);
+    layout.addColorButton("Webchat detected color",
+                          QColor(getSettings()->webchatColor.getValue()),
+                          getSettings()->webchatColor);
 
     if (supportsIncognitoLinks())
     {

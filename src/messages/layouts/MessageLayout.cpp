@@ -360,6 +360,12 @@ void MessageLayout::updateBuffer(QPixmap *buffer, int /*messageIndex*/,
     {
         backgroundColor = QColor("#4A273D");
     }
+    else if (this->message_->flags.has(MessageFlag::WebchatDetected) &&
+             getSettings()->normalNonceDetection)
+    {
+        backgroundColor =
+            blendColors(backgroundColor, QColor(getSettings()->webchatColor));
+    }
 
     painter.fillRect(buffer->rect(), backgroundColor);
 

@@ -30,7 +30,8 @@ static const QMap<QString, QString> validIdentifiersMap = {
     {"flags.reply", "reply message?"},
     {"flags.automod", "automod message?"},
     {"message.content", "message text"},
-    {"message.length", "message length"}};
+    {"message.length", "message length"},
+    {"flags.webchat_detected", "Webchat detected"}};
 
 // clang-format off
 static const QRegularExpression tokenRegex(
