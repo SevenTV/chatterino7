@@ -378,6 +378,8 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, QWidget *parent,
             .assign(&this->ui_.ignoreHighlights);
         auto usercard = user.emplace<EffectLabel2>(this);
         usercard->getLabel().setText("Usercard");
+        auto externalLogs = user.emplace<EffectLabel2>(this);
+        externalLogs->getLabel().setText("Logs");
         auto mod = user.emplace<Button>(this);
         mod->setPixmap(getResources().buttons.mod);
         mod->setScaleIndependantSize(30, 30);
@@ -397,6 +399,13 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, QWidget *parent,
             QDesktopServices::openUrl("https://www.twitch.tv/popout/" +
                                       this->underlyingChannel_->getName() +
                                       "/viewercard/" + this->userName_);
+        });
+
+        QObject::connect(
+            externalLogs.getElement(), &Button::leftClicked, [this] {
+            QDesktopServices::openUrl("https://logs.ivr.fi/?channel=" +
+                                      this->underlyingChannel_->getName() +
+                                      "&username=" + this->userName_);
         });
 
         QObject::connect(mod.getElement(), &Button::leftClicked, [this] {
