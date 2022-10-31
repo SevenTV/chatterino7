@@ -662,6 +662,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                        s.useCustomFfzVipBadges);
 
     layout.addSubtitle("Miscellaneous");
+    layout.addCheckbox("Fake messages as webchat", s.fakeWebChat);
     layout.addCheckbox("Use bot limits", s.useBotLimits);
     layout.addCheckbox(
         "Enable. Required for abnormal nonce and webchat detection to work!",

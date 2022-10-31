@@ -1,6 +1,7 @@
 #pragma once
 
 #include <IrcMessage>
+#include <QRandomGenerator>
 #include <functional>
 #include <mutex>
 #include <pajlada/signals/signal.hpp>
@@ -103,6 +104,8 @@ private:
     pajlada::Signals::SignalHolder connections_;
 
     bool initialized_{false};
+
+    QRandomGenerator generator;
 };
 
 }  // namespace chatterino

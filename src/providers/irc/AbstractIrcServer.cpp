@@ -8,6 +8,7 @@
 #include "messages/MessageBuilder.hpp"
 
 #include <QCoreApplication>
+#include <sstream>
 
 namespace chatterino {
 
@@ -186,7 +187,22 @@ void AbstractIrcServer::disconnect()
 void AbstractIrcServer::sendMessage(const QString &channelName,
                                     const QString &message)
 {
-    this->sendRawMessage("PRIVMSG #" + channelName + " :" + message);
+    if (getSettings()->fakeWebChat)
+    {
+        std::ostringstream stream;
+        for (int i = 0; i < 4; i++)
+        {
+            qint64 nonce = this->generator.generate();
+            stream << std::hex << nonce;
+        }
+        QString hex = QString::fromStdString(stream.str());
+        this->sendRawMessage("@client-nonce=" + hex + " PRIVMSG #" +
+                             channelName + " :" + message);
+    }
+    else
+    {
+        this->sendRawMessage("PRIVMSG #" + channelName + " :" + message);
+    }
 }
 
 void AbstractIrcServer::sendRawMessage(const QString &rawMessage)
