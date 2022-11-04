@@ -65,7 +65,7 @@ void AB_THEME_CLASS::actuallyUpdate(double hue, double multiplier)
 #ifdef Q_OS_LINUX
         this->window.background = lightWin ? "#fff" : QColor(61, 60, 56);
 #else
-        this->window.background = lightWin ? "#fff" : "#111";
+        this->window.background = lightWin ? "#fff" : "#000";
 #endif
 
         QColor fg = this->window.text = lightWin ? "#000" : "#eee";
@@ -110,11 +110,11 @@ void AB_THEME_CLASS::actuallyUpdate(double hue, double multiplier)
             this->tabs.regular = {
                 QColor("#aaa"),
                 {QColor("#252525"), QColor("#252525"), QColor("#252525")},
-                {QColor("#444"), QColor("#444"), QColor("#444")}};
+                {QColor("#111"), QColor("#111"), QColor("#111")}};
             this->tabs.newMessage = {
                 fg,
                 {QColor("#252525"), QColor("#252525"), QColor("#252525")},
-                {QColor("#888"), QColor("#888"), QColor("#888")}};
+                {QColor("#333"), QColor("#333"), QColor("#333")}};
             this->tabs.highlighted = {
                 fg,
                 {QColor("#252525"), QColor("#252525"), QColor("#252525")},
@@ -122,7 +122,7 @@ void AB_THEME_CLASS::actuallyUpdate(double hue, double multiplier)
 
             this->tabs.selected = {
                 QColor("#fff"),
-                {QColor("#555555"), QColor("#555555"), QColor("#555555")},
+                {QColor("#444444"), QColor("#444444"), QColor("#444444")},
                 {this->accent, this->accent, this->accent}};
         }
 
