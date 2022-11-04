@@ -24,11 +24,12 @@ namespace chatterino {
 //
 // Channel
 //
-Channel::Channel(const QString &name, Type type)
+Channel::Channel(const QString &name, Type type, bool watching)
     : completionModel(*this)
     , lastDate_(QDate::currentDate())
     , name_(name)
     , type_(type)
+    , watching_(watching)
 {
 }
 
@@ -60,6 +61,11 @@ const QString &Channel::getLocalizedName() const
 bool Channel::isTwitchChannel() const
 {
     return this->type_ >= Type::Twitch && this->type_ < Type::TwitchEnd;
+}
+
+bool Channel::isWatching() const
+{
+    return this->watching_;
 }
 
 bool Channel::isEmpty() const

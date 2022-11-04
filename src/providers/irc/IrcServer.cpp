@@ -154,7 +154,8 @@ void IrcServer::initializeConnection(IrcConnection *connection,
     }
 }
 
-std::shared_ptr<Channel> IrcServer::createChannel(const QString &channelName)
+std::shared_ptr<Channel> IrcServer::createChannel(const QString &channelName,
+                                                  bool isWatching)
 {
     return std::make_shared<IrcChannel>(channelName, this);
 }

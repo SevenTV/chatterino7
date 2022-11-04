@@ -421,6 +421,7 @@ public:
         "/external/imageUploader/deletionLink", ""};
 
     /// Misc
+    BoolSetting watchingTabLiveSound = {"/misc/watchingTabLiveSound", false};
     BoolSetting useBotLimits = {"/misc/botLimits", false};
     BoolSetting betaUpdates = {"/misc/beta", false};
     BoolSetting abnormalNonceDetection = {"/misc/abnormalNonceDetection",

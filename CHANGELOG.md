@@ -5,6 +5,7 @@
 - Major: Added support for Twitch's Chat Replies. [Wiki Page](https://wiki.chatterino.com/Features/#message-replies) (#3722, #3989, #4041, #4047, #4055)
 - Major: Added multi-channel searching to search dialog via keyboard shortcut. (Ctrl+Shift+F by default) (#3694, #3875)
 - Major: Added support for emotes and badges from [7TV](https://7tv.app). [Wiki Page](https://wiki.chatterino.com/Third_party_services/#7tv) (#4002, #4062)
+- Minor: New handler for native messages from browser extension (#5)
 - Minor: Added option to add random nonce to irc messages (#3)
 - Minor: Lowered emote refresh cooldown from 30s to 1s.
 - Minor: Added channel name to placeholder chat input text.

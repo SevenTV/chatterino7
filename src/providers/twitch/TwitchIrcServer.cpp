@@ -120,10 +120,10 @@ void TwitchIrcServer::initializeConnection(IrcConnection *connection,
 }
 
 std::shared_ptr<Channel> TwitchIrcServer::createChannel(
-    const QString &channelName)
+    const QString &channelName, bool isWatching)
 {
-    auto channel =
-        std::shared_ptr<TwitchChannel>(new TwitchChannel(channelName));
+    auto channel = std::shared_ptr<TwitchChannel>(
+        new TwitchChannel(channelName, isWatching));
     channel->initialize();
 
     channel->sendMessageSignal.connect(

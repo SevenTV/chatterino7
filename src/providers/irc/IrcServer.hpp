@@ -26,7 +26,8 @@ protected:
                                      ConnectionType type) override;
     void initializeConnection(IrcConnection *connection,
                               ConnectionType type) override;
-    std::shared_ptr<Channel> createChannel(const QString &channelName) override;
+    std::shared_ptr<Channel> createChannel(const QString &channelName,
+                                           bool isWatching = false) override;
     bool hasSeparateWriteConnection() const override;
 
     void onReadConnected(IrcConnection *connection) override;

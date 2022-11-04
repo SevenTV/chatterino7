@@ -79,7 +79,7 @@ public:
         int slowMode = 0;
     };
 
-    explicit TwitchChannel(const QString &channelName);
+    explicit TwitchChannel(const QString &channelName, bool isWatching = false);
 
     void initialize();
 

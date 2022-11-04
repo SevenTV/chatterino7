@@ -43,7 +43,7 @@ public:
         Misc
     };
 
-    explicit Channel(const QString &name, Type type);
+    explicit Channel(const QString &name, Type type, bool watching = false);
     virtual ~Channel();
 
     // SIGNALS
@@ -69,6 +69,7 @@ public:
     virtual const QString &getDisplayName() const;
     virtual const QString &getLocalizedName() const;
     bool isTwitchChannel() const;
+    bool isWatching() const;
     virtual bool isEmpty() const;
     LimitedQueueSnapshot<MessagePtr> getMessageSnapshot();
 
@@ -121,6 +122,7 @@ private:
     LimitedQueue<MessagePtr> messages_;
     Type type_;
     QTimer clearCompletionModelTimer_;
+    bool watching_;
 };
 
 using ChannelPtr = std::shared_ptr<Channel>;

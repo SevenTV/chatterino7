@@ -75,8 +75,8 @@ namespace {
 
 }  // namespace
 
-TwitchChannel::TwitchChannel(const QString &name)
-    : Channel(name, Channel::Type::Twitch)
+TwitchChannel::TwitchChannel(const QString &name, bool isWatching)
+    : Channel(name, Channel::Type::Twitch, isWatching)
     , ChannelChatters(*static_cast<Channel *>(this))
     , nameOptions{name, name}
     , subscriptionUrl_("https://www.twitch.tv/subs/" + name)
@@ -809,7 +809,9 @@ void TwitchChannel::setLive(bool newLiveStatus)
                 // Notify on all channels with a ping sound
                 if (getSettings()->notificationOnAnyChannel &&
                     !(isInStreamerMode() &&
-                      getSettings()->streamerModeSuppressLiveNotifications))
+                      getSettings()->streamerModeSuppressLiveNotifications) &&
+                    !(this->isWatching() &&
+                      !getSettings()->watchingTabLiveSound))
                 {
                     getApp()->notifications->playSound();
                 }

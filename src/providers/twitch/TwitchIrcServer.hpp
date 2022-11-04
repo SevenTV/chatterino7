@@ -68,7 +68,7 @@ protected:
     virtual void initializeConnection(IrcConnection *connection,
                                       ConnectionType type) override;
     virtual std::shared_ptr<Channel> createChannel(
-        const QString &channelName) override;
+        const QString &channelName, bool isWatching = false) override;
 
     virtual void privateMessageReceived(
         Communi::IrcPrivateMessage *message) override;

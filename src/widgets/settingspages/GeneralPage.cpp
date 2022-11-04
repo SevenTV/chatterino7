@@ -662,6 +662,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                        s.useCustomFfzVipBadges);
 
     layout.addSubtitle("Miscellaneous");
+    layout.addCheckbox("Watching tab live sound", s.watchingTabLiveSound);
     layout.addCheckbox("Fake messages as webchat", s.fakeWebChat);
     layout.addCheckbox("Use bot limits", s.useBotLimits);
     layout.addCheckbox(
