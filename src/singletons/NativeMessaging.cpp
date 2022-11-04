@@ -5,6 +5,7 @@
 #include "common/QLogging.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Paths.hpp"
+#include "singletons/Settings.hpp"
 #include "util/PostToThread.hpp"
 
 #include <QCoreApplication>
@@ -144,9 +145,39 @@ void NativeMessagingClient::writeToCout(const QByteArray &array)
 
 // SERVER
 
+NativeMessagingServer::NativeMessagingServer()
+{
+    this->thread = new ReceiverThread(&(this->lastPing));
+}
+
 void NativeMessagingServer::start()
 {
-    this->thread.start();
+    auto app = getApp();
+    this->thread->start();
+
+    this->lastPing = QTime::currentTime();
+    this->detachTimer_ = new QTimer();
+    QObject::connect(this->detachTimer_, &QTimer::timeout, [=] {
+        if (getSettings()->autoDetachLiveTab &&
+            (this->lastPing.addSecs(10) < QTime::currentTime()))
+        {
+            // detach time out reached
+            this->lastPing = QTime::currentTime();
+            app->twitch->watchingChannel.reset(
+                app->twitch->getChannelOrEmpty(""));
+        };
+    });
+    detachTimer_->start(5 * 1000);
+}
+
+NativeMessagingServer::ReceiverThread::ReceiverThread()
+{
+}
+
+NativeMessagingServer::ReceiverThread::ReceiverThread(QTime *plastPing)
+{
+    //&(plastPing) = QTime::currentTime();
+    this->plastPing = plastPing;
 }
 
 void NativeMessagingServer::ReceiverThread::run()
@@ -205,6 +236,7 @@ void NativeMessagingServer::ReceiverThread::handleMessage(
     if (action == "attach")
     {
         qCDebug(chatterinoNativeMessage) << "NM ATTACH:" << data;
+        *(this->plastPing) = QTime::currentTime();
         postToThread([=] {
             if (!data.isEmpty())
             {
@@ -212,6 +244,11 @@ void NativeMessagingServer::ReceiverThread::handleMessage(
                     app->twitch->getOrAddChannel(data, true));
             }
         });
+    }
+    else if (action == "ping")
+    {
+        qCDebug(chatterinoNativeMessage) << "NM PING";
+        *(this->plastPing) = QTime::currentTime();
     }
     else if (action == "detach")
     {

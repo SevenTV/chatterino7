@@ -2,6 +2,8 @@
 
 #include <QString>
 #include <QThread>
+#include <QTime>
+#include <QTimer>
 #include <boost/optional.hpp>
 #include <common/Atomic.hpp>
 
@@ -22,22 +24,28 @@ public:
     void writeToCout(const QByteArray &array);
 };
 
-class NativeMessagingServer final
+class NativeMessagingServer
 {
 public:
+    NativeMessagingServer();
     void start();
 
-private:
     class ReceiverThread : public QThread
     {
     public:
+        ReceiverThread();
+        ReceiverThread(QTime *plastPing);
         void run() override;
 
     private:
         void handleMessage(const QJsonObject &root);
+        QTime *plastPing;
     };
 
-    ReceiverThread thread;
+private:
+    QTimer *detachTimer_;
+    QTime lastPing;
+    ReceiverThread *thread;
 };
 
 }  // namespace chatterino

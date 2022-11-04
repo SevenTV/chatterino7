@@ -662,6 +662,8 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                        s.useCustomFfzVipBadges);
 
     layout.addSubtitle("Miscellaneous");
+    layout.addCheckbox("Auto detach watching tab (~10s timeout)",
+                       s.autoDetachLiveTab);
     layout.addCheckbox("Watching tab live sound", s.watchingTabLiveSound);
     layout.addCheckbox("Fake messages as webchat", s.fakeWebChat);
     layout.addCheckbox("Use bot limits", s.useBotLimits);
