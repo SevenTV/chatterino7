@@ -1,4 +1,4 @@
-just a fork of features i like from other forks :)
+just a fork of features i like from other forks + my own features :)
 
 https://github.com/MrAuro/chatterino2
 
