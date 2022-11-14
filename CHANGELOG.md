@@ -6,6 +6,7 @@
 - Major: Added multi-channel searching to search dialog via keyboard shortcut. (Ctrl+Shift+F by default) (#3694, #3875)
 - Major: Added support for emotes and badges from [7TV](https://7tv.app). [Wiki Page](https://wiki.chatterino.com/Third_party_services/#7tv) (#4002, #4062)
 - Minor: New handler for native messages from browser extension (#5)
+- Minor: Added back firefox support for extension (#7)
 - Minor: Added setting to auto-detach watching tab (#6)
 - Minor: Added option to add random nonce to irc messages (#3)
 - Minor: Lowered emote refresh cooldown from 30s to 1s.

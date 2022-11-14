@@ -30,7 +30,7 @@ namespace ipc = boost::interprocess;
 
 #include <iostream>
 
-#define EXTENSION_ID "iphlcjigblilalddfnkdjfghhnclkcek"
+#define EXTENSION_ID "nclpicnaofnfmofbnigilakhegfphdhm"
 #define MESSAGE_SIZE 1024
 
 namespace chatterino {
@@ -71,20 +71,19 @@ void registerNmHost(Paths &paths)
     }
 
     // firefox
-    // lmao fuck firefox
-    /*{
+    {
         QJsonDocument document;
 
         auto obj = getBaseDocument();
-        QJsonArray allowed_extensions = {"chatterino_native@chatterino.com"};
+        QJsonArray allowed_extensions = {"technorino_native@technorino.com"};
         obj.insert("allowed_extensions", allowed_extensions);
         document.setObject(obj);
 
         registerNmManifest(paths, "/native-messaging-manifest-firefox.json",
                            "HKCU\\Software\\Mozilla\\NativeMessagingHosts\\com."
-                           "chatterino.chatterino",
+                           "2547techno.technorino",
                            document);
-    }*/
+    }
 }
 
 void registerNmManifest(Paths &paths, const QString &manifestFilename,
