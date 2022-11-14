@@ -30,7 +30,7 @@ namespace ipc = boost::interprocess;
 
 #include <iostream>
 
-#define EXTENSION_ID "nclpicnaofnfmofbnigilakhegfphdhm"
+#define EXTENSION_ID "iphlcjigblilalddfnkdjfghhnclkcek"
 #define MESSAGE_SIZE 1024
 
 namespace chatterino {
