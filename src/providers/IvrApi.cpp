@@ -63,9 +63,10 @@ void IvrApi::getUserRoles(QString userName,
 {
     assert(!userName.isEmpty());
 
-    this->makeRequest(QString("twitch/resolve/%1").arg(userName), {})
+    this->makeRequest(QString("v2/twitch/user"),
+                      QUrlQuery(QString("login=%1").arg(userName)))
         .onSuccess([successCallback, failureCallback](auto result) -> Outcome {
-            auto root = result.parseJson();
+            auto root = result.parseJsonArray();
 
             successCallback(root);
 

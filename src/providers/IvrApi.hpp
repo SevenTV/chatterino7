@@ -38,11 +38,26 @@ struct IvrResolve {
     const bool isBot;
     const bool isStaff;
 
-    IvrResolve(QJsonObject root)
-        : isPartner(root.value("partner").toBool())
-        , isAffiliate(root.value("affiliate").toBool())
-        , isBot(root.value("bot").toBool())
-        , isStaff(root.value("roles").toObject().value("isStaff").toBool())
+    IvrResolve(QJsonArray arr)
+        : isPartner(arr.at(0)
+                        .toObject()
+                        .value("roles")
+                        .toObject()
+                        .value("isPartner")
+                        .toBool())
+        , isAffiliate(arr.at(0)
+                          .toObject()
+                          .value("roles")
+                          .toObject()
+                          .value("isAffiliate")
+                          .toBool())
+        , isBot(arr.at(0).toObject().value("verifiedBot").toBool())
+        , isStaff(arr.at(0)
+                      .toObject()
+                      .value("roles")
+                      .toObject()
+                      .value("isStaff")
+                      .toBool())
     {
     }
 };
