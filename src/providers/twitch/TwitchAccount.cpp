@@ -442,4 +442,36 @@ void TwitchAccount::autoModDeny(const QString msgID, ChannelPtr channel)
         });
 }
 
+const QString &TwitchAccount::getSeventvUserID() const
+{
+    return this->seventvUserID_;
+}
+
+void TwitchAccount::loadSeventvUserID()
+{
+    if (!this->seventvUserID_.isEmpty())
+    {
+        return;
+    }
+
+    // TODO: this is duplicate functionality
+    static const QString SEVENTV_USER_INFO_URL =
+        QStringLiteral("https://7tv.io/v3/users/twitch/%1");
+
+    NetworkRequest(SEVENTV_USER_INFO_URL.arg(this->getUserId()),
+                   NetworkRequestType::Get)
+        .timeout(20000)
+        .onSuccess([this](const auto &response) {
+            const auto json = response.parseJson();
+            const auto id = json["user"].toObject()["id"].toString();
+            if (!id.isEmpty())
+            {
+                this->seventvUserID_ = id;
+            }
+            return Success;
+        })
+        .concurrent()
+        .execute();
+}
+
 }  // namespace chatterino

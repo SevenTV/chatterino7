@@ -120,4 +120,11 @@ private:
     Atomic<std::shared_ptr<const EmoteMap>> global_;
 };
 
+/**
+ * Creates an image set from a 7TV emote or badge.
+ *
+ * @param emoteData { host: { files: [], url } }
+ */
+ImageSet makeSeventvImageSet(const QJsonObject &emoteData);
+
 }  // namespace chatterino

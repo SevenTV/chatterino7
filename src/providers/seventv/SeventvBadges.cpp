@@ -4,6 +4,7 @@
 #include "common/NetworkResult.hpp"
 #include "common/Outcome.hpp"
 #include "messages/Emote.hpp"
+#include "providers/seventv/SeventvEmotes.hpp"
 
 #include <QUrl>
 #include <QUrlQuery>
@@ -17,22 +18,55 @@ void SeventvBadges::initialize(Settings & /*settings*/, Paths & /*paths*/)
     this->loadSeventvBadges();
 }
 
-boost::optional<EmotePtr> SeventvBadges::getBadge(const UserId &id)
+boost::optional<EmotePtr> SeventvBadges::getBadge(const UserId &id) const
 {
-    std::shared_lock lock(this->mutex_);
+    const std::shared_lock lock(this->mutex_);
 
     auto it = this->badgeMap_.find(id.string);
     if (it != this->badgeMap_.end())
     {
-        return this->emotes_[it->second];
+        return it->second;
     }
     return boost::none;
 }
 
+void SeventvBadges::assignBadgeToUser(const QString &badgeID,
+                                      const UserId &userID)
+{
+    const std::shared_lock lock(this->mutex_);
+
+    const auto badgeIt = this->knownBadges_.find(badgeID);
+    if (badgeIt != this->knownBadges_.end())
+    {
+        this->badgeMap_[userID.string] = badgeIt->second;
+    }
+}
+
+void SeventvBadges::addBadge(const QJsonObject &badgeJson)
+{
+    const auto badgeID = badgeJson["id"].toString();
+
+    const std::shared_lock lock(this->mutex_);
+
+    if (this->knownBadges_.find(badgeID) != this->knownBadges_.end())
+    {
+        return;
+    }
+
+    auto emote = Emote{EmoteName{}, makeSeventvImageSet(badgeJson),
+                       Tooltip{badgeJson["tooltip"].toString()}, Url{}};
+
+    if (emote.images.getImage1()->isEmpty())
+    {
+        return;  // Bad images
+    }
+
+    this->knownBadges_[badgeID] =
+        std::make_shared<const Emote>(std::move(emote));
+}
+
 void SeventvBadges::loadSeventvBadges()
 {
-    // Cosmetics will work differently in v3, until this is ready
-    // we'll use this endpoint.
     static QUrl url("https://7tv.io/v2/cosmetics");
 
     static QUrlQuery urlQuery;
@@ -45,28 +79,27 @@ void SeventvBadges::loadSeventvBadges()
         .onSuccess([this](const NetworkResult &result) -> Outcome {
             auto root = result.parseJson();
 
-            std::shared_lock lock(this->mutex_);
+            const std::shared_lock lock(this->mutex_);
 
-            int index = 0;
             for (const auto &jsonBadge : root.value("badges").toArray())
             {
                 auto badge = jsonBadge.toObject();
-                auto urls = badge.value("urls").toArray();
+                auto badgeID = badge["id"].toString();
+                auto urls = badge["urls"].toArray();
                 auto emote =
                     Emote{EmoteName{},
-                          ImageSet{Url{urls.at(0).toArray().at(1).toString()},
-                                   Url{urls.at(1).toArray().at(1).toString()},
-                                   Url{urls.at(2).toArray().at(1).toString()}},
-                          Tooltip{badge.value("tooltip").toString()}, Url{}};
+                          ImageSet{Url{urls[0].toArray()[1].toString()},
+                                   Url{urls[1].toArray()[1].toString()},
+                                   Url{urls[2].toArray()[1].toString()}},
+                          Tooltip{badge["tooltip"].toString()}, Url{}};
 
-                this->emotes_.push_back(
-                    std::make_shared<const Emote>(std::move(emote)));
+                auto emotePtr = std::make_shared<const Emote>(std::move(emote));
+                this->knownBadges_[badgeID] = emotePtr;
 
-                for (const auto &user : badge.value("users").toArray())
+                for (const auto &user : badge["users"].toArray())
                 {
-                    this->badgeMap_[user.toString()] = index;
+                    this->badgeMap_[user.toString()] = emotePtr;
                 }
-                ++index;
             }
 
             return Success;

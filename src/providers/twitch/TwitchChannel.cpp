@@ -106,6 +106,7 @@ TwitchChannel::TwitchChannel(const QString &name)
         this->refreshBTTVChannelEmotes(false);
         this->refreshSevenTVChannelEmotes(false);
         this->joinBttvChannel();
+        this->listenSevenTVCosmetics();
     });
 
     this->connected.connect([this]() {
@@ -129,6 +130,13 @@ TwitchChannel::TwitchChannel(const QString &name)
         {
             getApp()->twitch->bttvLiveUpdates->partChannel(this->roomId());
         }
+
+        if (getApp()->twitch->seventvEventAPI)
+        {
+            // make an explicit copy here, since we're about to delete this data
+            getApp()->twitch->seventvEventAPI->unsubscribeTwitchChannel(
+                QString(this->roomId()));
+        }
     });
 
     this->messageRemovedFromStart.connect([this](MessagePtr &msg) {
@@ -149,7 +157,7 @@ TwitchChannel::TwitchChannel(const QString &name)
 
     this->chattersListTimer_.start(5 * 60 * 1000);
 
-    QObject::connect(&this->threadClearTimer_, &QTimer::timeout, [this] {
+    QObject::connect(&this->threadClearTimer_, &QTimer::timeout, [=] {
         // We periodically check for any dangling reply threads that missed
         // being cleaned up on messageRemovedFromStart. This could occur if
         // some other part of the program, like a user card, held a reference
@@ -425,6 +433,7 @@ void TwitchChannel::sendMessage(const QString &message)
 
     bool messageSent = false;
     this->sendMessageSignal.invoke(this->getName(), parsedMessage, messageSent);
+    this->updateSevenTVActivity();
 
     if (messageSent)
     {
@@ -1563,6 +1572,66 @@ boost::optional<CheerEmote> TwitchChannel::cheerEmote(const QString &string)
         }
     }
     return boost::none;
+}
+
+void TwitchChannel::updateSevenTVActivity()
+{
+    static const QString SEVENTV_ACTIVITY_URL =
+        QStringLiteral("https://7tv.io/v3/users/%1/presences");
+
+    const auto currentSeventvUserID =
+        getApp()->accounts->twitch.getCurrent()->getSeventvUserID();
+    if (currentSeventvUserID.isEmpty())
+    {
+        return;
+    }
+
+    if (this->nextSeventvActivity_.isValid() &&
+        QDateTime::currentDateTimeUtc() >= this->nextSeventvActivity_)
+    {
+        return;
+    }
+    // Make sure to not send activity again before receiving the response
+    this->nextSeventvActivity_.addSecs(300);
+
+    qCDebug(chatterinoSeventv) << "Sending activity in" << this->getName();
+
+    QJsonObject payload;
+    payload["kind"] = 1;
+
+    QJsonObject data;
+    data["id"] = this->roomId();
+    data["platform"] = "TWITCH";
+
+    payload["data"] = data;
+
+    NetworkRequest(SEVENTV_ACTIVITY_URL.arg(currentSeventvUserID),
+                   NetworkRequestType::Post)
+        .header("Content-Type", "application/json")
+        .payload(QJsonDocument(payload).toJson(QJsonDocument::Compact))
+        .onSuccess([chan = weakOf<Channel>(this)](const auto &response) {
+            const auto self =
+                std::dynamic_pointer_cast<TwitchChannel>(chan.lock());
+            if (!self)
+            {
+                return Success;
+            }
+            const auto json = response.parseJson();
+            self->nextSeventvActivity_ =
+                QDateTime::fromMSecsSinceEpoch(json["ttl"].toInt(), Qt::UTC);
+            return Success;
+        })
+        .concurrent()
+        .execute();
+}
+
+void TwitchChannel::listenSevenTVCosmetics()
+{
+    if (getApp()->twitch->seventvEventAPI)
+    {
+        getApp()->twitch->seventvEventAPI->subscribeTwitchChannel(
+            this->roomId());
+    }
 }
 
 }  // namespace chatterino

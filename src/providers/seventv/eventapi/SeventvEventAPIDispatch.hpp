@@ -1,6 +1,7 @@
 #pragma once
 
 #include "providers/seventv/eventapi/SeventvEventAPISubscription.hpp"
+#include "providers/seventv/SeventvCosmetics.hpp"
 
 #include <QJsonObject>
 #include <QString>
@@ -65,6 +66,30 @@ struct SeventvEventAPIUserConnectionUpdateDispatch {
     SeventvEventAPIUserConnectionUpdateDispatch(
         const SeventvEventAPIDispatch &dispatch, const QJsonObject &update,
         size_t connectionIndex);
+
+    bool validate() const;
+};
+
+struct SeventvEventAPICosmeticCreateDispatch {
+    QJsonObject data;
+    SeventvCosmeticKind kind;
+
+    SeventvEventAPICosmeticCreateDispatch(
+        const SeventvEventAPIDispatch &dispatch);
+
+    bool validate() const;
+};
+
+struct SeventvEventAPIEntitlementCreateDispatch {
+    /** id of the user */
+    QString userID;
+    QString userName;
+    /** id of the entitlement */
+    QString refID;
+    SeventvCosmeticKind kind;
+
+    SeventvEventAPIEntitlementCreateDispatch(
+        const SeventvEventAPIDispatch &dispatch);
 
     bool validate() const;
 };

@@ -94,4 +94,51 @@ bool SeventvEventAPIUserConnectionUpdateDispatch::validate() const
            !this->emoteSetID.isEmpty();
 }
 
+SeventvEventAPICosmeticCreateDispatch::SeventvEventAPICosmeticCreateDispatch(
+    const SeventvEventAPIDispatch &dispatch)
+    : data(dispatch.body["object"].toObject()["data"].toObject())
+    , kind(magic_enum::enum_cast<SeventvCosmeticKind>(dispatch.body["object"]
+                                                          .toObject()["kind"]
+                                                          .toString()
+                                                          .toStdString())
+               .value_or(SeventvCosmeticKind::INVALID))
+{
+}
+
+bool SeventvEventAPICosmeticCreateDispatch::validate() const
+{
+    return !this->data.empty() && this->kind != SeventvCosmeticKind::INVALID;
+}
+
+SeventvEventAPIEntitlementCreateDispatch::
+    SeventvEventAPIEntitlementCreateDispatch(
+        const SeventvEventAPIDispatch &dispatch)
+{
+    const auto obj = dispatch.body["object"].toObject();
+    this->userID = QString();
+    this->refID = obj["ref_id"].toString();
+    this->kind = magic_enum::enum_cast<SeventvCosmeticKind>(
+                     obj["kind"].toString().toStdString())
+                     .value_or(SeventvCosmeticKind::INVALID);
+
+    const auto userConnections =
+        obj["user"].toObject()["connections"].toArray();
+    for (const auto &connectionJson : userConnections)
+    {
+        const auto connection = connectionJson.toObject();
+        if (connection["platform"].toString() == "TWITCH")
+        {
+            this->userID = connection["id"].toString();
+            this->userName = connection["username"].toString();
+            break;
+        }
+    }
+}
+
+bool SeventvEventAPIEntitlementCreateDispatch::validate() const
+{
+    return !this->userID.isEmpty() && !this->userName.isEmpty() &&
+           !this->refID.isEmpty() && this->kind != SeventvCosmeticKind::INVALID;
+}
+
 }  // namespace chatterino

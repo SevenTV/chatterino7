@@ -220,6 +220,8 @@ private:
     void showLoginMessage();
     /** Joins (subscribes to) a Twitch channel for updates on BTTV. */
     void joinBttvChannel() const;
+    void updateSevenTVActivity();
+    void listenSevenTVCosmetics();
 
     void setLive(bool newLiveStatus);
     void setMod(bool value);
@@ -323,6 +325,8 @@ private:
      * 7TV's user representation.
      */
     size_t seventvUserTwitchConnectionIndex_;
+
+    QDateTime nextSeventvActivity_;
 
     /** The platform of the last live emote update ("7TV", "BTTV", "FFZ"). */
     QString lastLiveUpdateEmotePlatform_;

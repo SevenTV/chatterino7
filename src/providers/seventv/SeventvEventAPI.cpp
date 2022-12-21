@@ -3,6 +3,9 @@
 #include "providers/seventv/eventapi/SeventvEventAPIClient.hpp"
 #include "providers/seventv/eventapi/SeventvEventAPIDispatch.hpp"
 #include "providers/seventv/eventapi/SeventvEventAPIMessage.hpp"
+#include "providers/seventv/SeventvBadges.hpp"
+#include "providers/seventv/SeventvPaints.hpp"
+#include "util/PostToThread.hpp"
 
 #include <QJsonArray>
 
@@ -22,13 +25,25 @@ void SeventvEventAPI::subscribeUser(const QString &userID,
 {
     if (!userID.isEmpty() && this->subscribedUsers_.insert(userID).second)
     {
-        this->subscribe({userID, SeventvEventAPISubscriptionType::UpdateUser});
+        this->subscribe({SeventvEventAPIObjectIDCondition{userID},
+                         SeventvEventAPISubscriptionType::UpdateUser});
     }
     if (!emoteSetID.isEmpty() &&
         this->subscribedEmoteSets_.insert(emoteSetID).second)
     {
-        this->subscribe(
-            {emoteSetID, SeventvEventAPISubscriptionType::UpdateEmoteSet});
+        this->subscribe({SeventvEventAPIObjectIDCondition{userID},
+                         SeventvEventAPISubscriptionType::UpdateEmoteSet});
+    }
+}
+
+void SeventvEventAPI::subscribeTwitchChannel(const QString &id)
+{
+    if (this->subscribedTwitchChannels_.insert(id).second)
+    {
+        this->subscribe({SeventvEventAPIChannelCondition{id},
+                         SeventvEventAPISubscriptionType::AnyCosmetic});
+        this->subscribe({SeventvEventAPIChannelCondition{id},
+                         SeventvEventAPISubscriptionType::AnyEntitlement});
     }
 }
 
@@ -36,8 +51,8 @@ void SeventvEventAPI::unsubscribeEmoteSet(const QString &id)
 {
     if (this->subscribedEmoteSets_.erase(id) > 0)
     {
-        this->unsubscribe(
-            {id, SeventvEventAPISubscriptionType::UpdateEmoteSet});
+        this->unsubscribe({SeventvEventAPIObjectIDCondition{id},
+                           SeventvEventAPISubscriptionType::UpdateEmoteSet});
     }
 }
 
@@ -45,7 +60,19 @@ void SeventvEventAPI::unsubscribeUser(const QString &id)
 {
     if (this->subscribedUsers_.erase(id) > 0)
     {
-        this->unsubscribe({id, SeventvEventAPISubscriptionType::UpdateUser});
+        this->unsubscribe({SeventvEventAPIObjectIDCondition{id},
+                           SeventvEventAPISubscriptionType::UpdateUser});
+    }
+}
+
+void SeventvEventAPI::unsubscribeTwitchChannel(const QString &id)
+{
+    if (this->subscribedTwitchChannels_.erase(id) > 0)
+    {
+        this->unsubscribe({SeventvEventAPIChannelCondition{id},
+                           SeventvEventAPISubscriptionType::AnyCosmetic});
+        this->unsubscribe({SeventvEventAPIChannelCondition{id},
+                           SeventvEventAPISubscriptionType::AnyEntitlement});
     }
 }
 
@@ -121,6 +148,10 @@ void SeventvEventAPI::onMessage(
             }
         }
         break;
+        case SeventvEventAPIOpcode::Ack: {
+            // unhandled
+        }
+        break;
         default: {
             qCDebug(chatterinoSeventvEventAPI) << "Unhandled op: " << payload;
         }
@@ -146,7 +177,7 @@ void SeventvEventAPI::handleDispatch(const SeventvEventAPIDispatch &dispatch)
                     continue;
                 }
 
-                SeventvEventAPIEmoteAddDispatch added(
+                const SeventvEventAPIEmoteAddDispatch added(
                     dispatch, pushed["value"].toObject());
 
                 if (added.validate())
@@ -167,7 +198,7 @@ void SeventvEventAPI::handleDispatch(const SeventvEventAPIDispatch &dispatch)
                     continue;
                 }
 
-                SeventvEventAPIEmoteUpdateDispatch update(
+                const SeventvEventAPIEmoteUpdateDispatch update(
                     dispatch, updated["old_value"].toObject(),
                     updated["value"].toObject());
 
@@ -189,7 +220,7 @@ void SeventvEventAPI::handleDispatch(const SeventvEventAPIDispatch &dispatch)
                     continue;
                 }
 
-                SeventvEventAPIEmoteRemoveDispatch removed(
+                const SeventvEventAPIEmoteRemoveDispatch removed(
                     dispatch, pulled["old_value"].toObject());
 
                 if (removed.validate())
@@ -223,7 +254,7 @@ void SeventvEventAPI::handleDispatch(const SeventvEventAPIDispatch &dispatch)
                         continue;
                     }
 
-                    SeventvEventAPIUserConnectionUpdateDispatch update(
+                    const SeventvEventAPIUserConnectionUpdateDispatch update(
                         dispatch, value, (size_t)updated["index"].toInt());
 
                     if (update.validate())
@@ -239,9 +270,68 @@ void SeventvEventAPI::handleDispatch(const SeventvEventAPIDispatch &dispatch)
             }
         }
         break;
+        case SeventvEventAPISubscriptionType::CreateCosmetic: {
+            const SeventvEventAPICosmeticCreateDispatch cosmetic(dispatch);
+            if (cosmetic.validate())
+            {
+                postToThread([cosmetic]() {
+                    switch (cosmetic.kind)
+                    {
+                        case SeventvCosmeticKind::Badge: {
+                            getApp()->seventvBadges->addBadge(cosmetic.data);
+                        }
+                        break;
+                        case SeventvCosmeticKind::Paint: {
+                            getApp()->seventvPaints->addPaint(cosmetic.data);
+                        }
+                        break;
+                        default:
+                            break;
+                    }
+                });
+            }
+            else
+            {
+                qCDebug(chatterinoSeventvEventAPI)
+                    << "Invalid cosmetic dispatch" << dispatch.body;
+            }
+        }
+        break;
+        case SeventvEventAPISubscriptionType::CreateEntitlement: {
+            const SeventvEventAPIEntitlementCreateDispatch entitlement(
+                dispatch);
+            if (entitlement.validate())
+            {
+                postToThread([entitlement]() {
+                    switch (entitlement.kind)
+                    {
+                        case SeventvCosmeticKind::Badge: {
+                            getApp()->seventvBadges->assignBadgeToUser(
+                                entitlement.refID, UserId{entitlement.userID});
+                        }
+                        break;
+                        case SeventvCosmeticKind::Paint: {
+                            getApp()->seventvPaints->assignPaintToUser(
+                                entitlement.refID,
+                                UserName{entitlement.userName});
+                        }
+                        break;
+                        default:
+                            break;
+                    }
+                });
+            }
+            else
+            {
+                qCDebug(chatterinoSeventvEventAPI)
+                    << "Invalid entitlement dispatch" << dispatch.body;
+            }
+        }
+        break;
         default: {
             qCDebug(chatterinoSeventvEventAPI)
-                << "Unknown subscription type:" << (int)dispatch.type
+                << "Unknown subscription type:"
+                << magic_enum::enum_name(dispatch.type).data()
                 << "body:" << dispatch.body;
         }
         break;

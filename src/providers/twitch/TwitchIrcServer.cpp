@@ -606,13 +606,14 @@ void TwitchIrcServer::dropSeventvChannel(const QString &userID,
         }
     }
 
+    // make explicit copies here, since we're about to delete this data
     if (!foundUser)
     {
-        this->seventvEventAPI->unsubscribeUser(userID);
+        this->seventvEventAPI->unsubscribeUser(QString(userID));
     }
     if (!foundSet)
     {
-        this->seventvEventAPI->unsubscribeEmoteSet(emoteSetID);
+        this->seventvEventAPI->unsubscribeEmoteSet(QString(emoteSetID));
     }
 }
 

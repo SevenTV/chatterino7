@@ -5,6 +5,7 @@
 #include <QJsonObject>
 
 #include <tuple>
+#include <utility>
 
 namespace {
 
@@ -12,26 +13,19 @@ using namespace chatterino;
 
 const char *typeToString(SeventvEventAPISubscriptionType type)
 {
-    switch (type)
-    {
-        case SeventvEventAPISubscriptionType::UpdateEmoteSet:
-            return "emote_set.update";
-        case SeventvEventAPISubscriptionType::UpdateUser:
-            return "user.update";
-        default:
-            return "";
-    }
+    return magic_enum::enum_name(type).data();
 }
 
-QJsonObject createDataJson(const char *typeName, const QString &condition)
+QJsonObject createDataJson(const char *typeName,
+                           const SeventvEventAPICondition &condition)
 {
     QJsonObject data;
     data["type"] = typeName;
-    {
-        QJsonObject conditionObj;
-        conditionObj["object_id"] = condition;
-        data["condition"] = conditionObj;
-    }
+    data["condition"] = std::visit(
+        [](const auto &c) {
+            return c.encode();
+        },
+        condition);
     return data;
 }
 
@@ -58,6 +52,7 @@ QByteArray SeventvEventAPISubscription::encodeSubscribe() const
     QJsonObject root;
     root["op"] = (int)SeventvEventAPIOpcode::Subscribe;
     root["d"] = createDataJson(typeName, this->condition);
+    qDebug() << root;
     return QJsonDocument(root).toJson();
 }
 
@@ -72,9 +67,81 @@ QByteArray SeventvEventAPISubscription::encodeUnsubscribe() const
 
 QDebug &operator<<(QDebug &dbg, const SeventvEventAPISubscription &subscription)
 {
-    dbg << "SeventvEventAPISubscription{ condition:" << subscription.condition
-        << "type:" << (int)subscription.type << '}';
+    std::visit(
+        [&](const auto &cond) {
+            dbg << "SeventvEventAPISubscription{ condition:" << cond
+                << "type:" << magic_enum::enum_name(subscription.type).data()
+                << '}';
+        },
+        subscription.condition);
     return dbg;
+}
+
+SeventvEventAPIObjectIDCondition::SeventvEventAPIObjectIDCondition(
+    QString objectID)
+    : objectID(std::move(objectID))
+{
+}
+
+QJsonObject SeventvEventAPIObjectIDCondition::encode() const
+{
+    QJsonObject obj;
+    obj["object_id"] = this->objectID;
+
+    return obj;
+}
+
+bool SeventvEventAPIObjectIDCondition::operator==(
+    const SeventvEventAPIObjectIDCondition &rhs) const
+{
+    return this->objectID == rhs.objectID;
+}
+
+bool SeventvEventAPIObjectIDCondition::operator!=(
+    const SeventvEventAPIObjectIDCondition &rhs) const
+{
+    return !(*this == rhs);
+}
+
+QDebug &operator<<(QDebug &dbg,
+                   const SeventvEventAPIObjectIDCondition &condition)
+{
+    dbg << "{ objectID:" << condition.objectID << "}";
+    return dbg;
+}
+
+SeventvEventAPIChannelCondition::SeventvEventAPIChannelCondition(
+    QString twitchID)
+    : twitchID(std::move(twitchID))
+{
+}
+
+QJsonObject SeventvEventAPIChannelCondition::encode() const
+{
+    QJsonObject obj;
+    obj["ctx"] = "channel";
+    obj["platform"] = "TWITCH";
+    obj["id"] = this->twitchID;
+    return obj;
+}
+
+QDebug &operator<<(QDebug &dbg,
+                   const SeventvEventAPIChannelCondition &condition)
+{
+    dbg << "{ twitchID:" << condition.twitchID << '}';
+    return dbg;
+}
+
+bool SeventvEventAPIChannelCondition::operator==(
+    const SeventvEventAPIChannelCondition &rhs) const
+{
+    return this->twitchID == rhs.twitchID;
+}
+
+bool SeventvEventAPIChannelCondition::operator!=(
+    const SeventvEventAPIChannelCondition &rhs) const
+{
+    return !(*this == rhs);
 }
 
 }  // namespace chatterino
