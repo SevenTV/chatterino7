@@ -8,6 +8,7 @@
 #include <pajlada/signals/scoped-connection.hpp>
 #include <pajlada/signals/signal.hpp>
 #include <QMovie>
+#include <widgets/helper/EffectLabel.hpp>
 
 #include <chrono>
 
@@ -46,6 +47,7 @@ private:
 
     void loadAvatar(const HelixUser &user);
 
+    void loadSevenTVUser(const HelixUser &user);
     void loadSevenTVAvatar(const HelixUser &user);
     void setSevenTVAvatar(const QString &filename);
 
@@ -61,6 +63,7 @@ private:
     QString userName_;
     QString userId_;
     QString avatarUrl_;
+    QString stvUserId_ = "";
 
     // The channel the popup was opened from (e.g. /mentions or #forsen). Can be a special channel.
     ChannelPtr channel_;
@@ -96,6 +99,8 @@ private:
 
         Label *noMessagesLabel = nullptr;
         ChannelView *latestMessages = nullptr;
+
+        EffectLabel2 *stvUser = nullptr;
     } ui_;
 
     class TimeoutWidget : public BaseWidget
