@@ -4,6 +4,7 @@
 #include "common/NetworkResult.hpp"
 #include "common/Outcome.hpp"
 #include "messages/Emote.hpp"
+#include "messages/Image.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 
 #include <QUrl>

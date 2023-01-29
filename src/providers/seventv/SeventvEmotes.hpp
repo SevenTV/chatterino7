@@ -9,6 +9,7 @@
 
 namespace chatterino {
 
+class ImageSet;
 class Channel;
 struct SeventvEventAPIEmoteAddDispatch;
 struct SeventvEventAPIEmoteUpdateDispatch;

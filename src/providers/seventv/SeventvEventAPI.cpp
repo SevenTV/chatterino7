@@ -1,5 +1,6 @@
 #include "providers/seventv/SeventvEventAPI.hpp"
 
+#include "Application.hpp"
 #include "providers/seventv/eventapi/SeventvEventAPIClient.hpp"
 #include "providers/seventv/eventapi/SeventvEventAPIDispatch.hpp"
 #include "providers/seventv/eventapi/SeventvEventAPIMessage.hpp"
