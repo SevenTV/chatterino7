@@ -5,6 +5,11 @@
 // of std::hash for SeventvEventAPISubscription
 #include "providers/seventv/eventapi/Subscription.hpp"
 
+namespace chatterino {
+class SeventvEventAPI;
+
+}  // namespace chatterino
+
 namespace chatterino::seventv::eventapi {
 
 class Client : public BasicPubSubClient<Subscription>
@@ -28,7 +33,7 @@ private:
     // This will be set once on the welcome message.
     std::chrono::milliseconds heartbeatInterval_;
 
-    friend class SeventvEventAPI;
+    friend chatterino::SeventvEventAPI;
 };
 
-}  // namespace chatterino
+}  // namespace chatterino::seventv::eventapi
