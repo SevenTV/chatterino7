@@ -90,4 +90,4 @@ struct EntitlementCreateDeleteDispatch {
     bool validate() const;
 };
 
-}  // namespace chatterino
+}  // namespace chatterino::seventv::eventapi

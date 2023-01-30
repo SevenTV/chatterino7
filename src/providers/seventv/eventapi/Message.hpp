@@ -39,4 +39,4 @@ static boost::optional<Message> parseEventAPIBaseMessage(const QString &blob)
     return Message(jsonDoc.object());
 }
 
-}  // namespace chatterino
+}  // namespace chatterino::seventv::eventapi
