@@ -22,6 +22,7 @@ public:
 
     void addPaint(const QJsonObject &paintJson);
     void assignPaintToUser(const QString &paintID, const UserName &userName);
+    void clearPaintFromUser(const UserName &userName);
 
     std::optional<std::shared_ptr<Paint>> getPaint(
         const QString &userName) const;

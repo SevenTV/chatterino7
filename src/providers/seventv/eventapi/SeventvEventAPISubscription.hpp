@@ -7,10 +7,10 @@
 
 #include <variant>
 
-namespace chatterino {
+namespace chatterino::seventv::eventapi {
 
 // https://github.com/SevenTV/EventAPI/tree/ca4ff15cc42b89560fa661a76c5849047763d334#subscription-types
-enum class SeventvEventAPISubscriptionType {
+enum class SubscriptionType {
     UpdateEmoteSet,
     UpdateUser,
 
@@ -28,7 +28,7 @@ enum class SeventvEventAPISubscriptionType {
 };
 
 // https://github.com/SevenTV/EventAPI/tree/ca4ff15cc42b89560fa661a76c5849047763d334#opcodes
-enum class SeventvEventAPIOpcode {
+enum class Opcode {
     Dispatch = 0,
     Hello = 1,
     Heartbeat = 2,
@@ -43,76 +43,75 @@ enum class SeventvEventAPIOpcode {
     Signal = 37,
 };
 
-struct SeventvEventAPIObjectIDCondition {
-    SeventvEventAPIObjectIDCondition(QString objectID);
+struct ObjectIDCondition {
+    ObjectIDCondition(QString objectID);
 
     QString objectID;
 
     QJsonObject encode() const;
 
-    friend QDebug &operator<<(
-        QDebug &dbg, const SeventvEventAPIObjectIDCondition &subscription);
-    bool operator==(const SeventvEventAPIObjectIDCondition &rhs) const;
-    bool operator!=(const SeventvEventAPIObjectIDCondition &rhs) const;
+    friend QDebug &operator<<(QDebug &dbg,
+                              const ObjectIDCondition &subscription);
+    bool operator==(const ObjectIDCondition &rhs) const;
+    bool operator!=(const ObjectIDCondition &rhs) const;
 };
 
-struct SeventvEventAPIChannelCondition {
-    SeventvEventAPIChannelCondition(QString twitchID);
+struct ChannelCondition {
+    ChannelCondition(QString twitchID);
 
     QString twitchID;
 
     QJsonObject encode() const;
 
-    friend QDebug &operator<<(
-        QDebug &dbg, const SeventvEventAPIChannelCondition &subscription);
-    bool operator==(const SeventvEventAPIChannelCondition &rhs) const;
-    bool operator!=(const SeventvEventAPIChannelCondition &rhs) const;
+    friend QDebug &operator<<(QDebug &dbg,
+                              const ChannelCondition &subscription);
+    bool operator==(const ChannelCondition &rhs) const;
+    bool operator!=(const ChannelCondition &rhs) const;
 };
 
-using SeventvEventAPICondition = std::variant<SeventvEventAPIObjectIDCondition,
-                                              SeventvEventAPIChannelCondition>;
+using Condition = std::variant<ObjectIDCondition, ChannelCondition>;
 
-struct SeventvEventAPISubscription {
-    bool operator==(const SeventvEventAPISubscription &rhs) const;
-    bool operator!=(const SeventvEventAPISubscription &rhs) const;
-    SeventvEventAPICondition condition;
-    SeventvEventAPISubscriptionType type;
+struct Subscription {
+    bool operator==(const Subscription &rhs) const;
+    bool operator!=(const Subscription &rhs) const;
+    Condition condition;
+    SubscriptionType type;
 
     QByteArray encodeSubscribe() const;
     QByteArray encodeUnsubscribe() const;
 
-    friend QDebug &operator<<(QDebug &dbg,
-                              const SeventvEventAPISubscription &subscription);
+    friend QDebug &operator<<(QDebug &dbg, const Subscription &subscription);
 };
 
-}  // namespace chatterino
+}  // namespace chatterino::seventv::eventapi
 
 template <>
 constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<
-    chatterino::SeventvEventAPISubscriptionType>(
-    chatterino::SeventvEventAPISubscriptionType value) noexcept
+    chatterino::seventv::eventapi::SubscriptionType>(
+    chatterino::seventv::eventapi::SubscriptionType value) noexcept
 {
+    using chatterino::seventv::eventapi::SubscriptionType;
     switch (value)
     {
-        case chatterino::SeventvEventAPISubscriptionType::UpdateEmoteSet:
+        case SubscriptionType::UpdateEmoteSet:
             return "emote_set.update";
-        case chatterino::SeventvEventAPISubscriptionType::UpdateUser:
+        case SubscriptionType::UpdateUser:
             return "user.update";
-        case chatterino::SeventvEventAPISubscriptionType::AnyCosmetic:
+        case SubscriptionType::AnyCosmetic:
             return "cosmetic.*";
-        case chatterino::SeventvEventAPISubscriptionType::CreateCosmetic:
+        case SubscriptionType::CreateCosmetic:
             return "cosmetic.create";
-        case chatterino::SeventvEventAPISubscriptionType::UpdateCosmetic:
+        case SubscriptionType::UpdateCosmetic:
             return "cosmetic.update";
-        case chatterino::SeventvEventAPISubscriptionType::DeleteCosmetic:
+        case SubscriptionType::DeleteCosmetic:
             return "cosmetic.delete";
-        case chatterino::SeventvEventAPISubscriptionType::AnyEntitlement:
+        case SubscriptionType::AnyEntitlement:
             return "entitlement.*";
-        case chatterino::SeventvEventAPISubscriptionType::CreateEntitlement:
+        case SubscriptionType::CreateEntitlement:
             return "entitlement.create";
-        case chatterino::SeventvEventAPISubscriptionType::UpdateEntitlement:
+        case SubscriptionType::UpdateEntitlement:
             return "entitlement.update";
-        case chatterino::SeventvEventAPISubscriptionType::DeleteEntitlement:
+        case SubscriptionType::DeleteEntitlement:
             return "entitlement.delete";
 
         default:
@@ -123,29 +122,31 @@ constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<
 namespace std {
 
 template <>
-struct hash<chatterino::SeventvEventAPIObjectIDCondition> {
+struct hash<chatterino::seventv::eventapi::ObjectIDCondition> {
     size_t operator()(
-        const chatterino::SeventvEventAPIObjectIDCondition &c) const
+        const chatterino::seventv::eventapi::ObjectIDCondition &c) const
     {
         return (size_t)qHash(c.objectID);
     }
 };
 
 template <>
-struct hash<chatterino::SeventvEventAPIChannelCondition> {
+struct hash<chatterino::seventv::eventapi::ChannelCondition> {
     size_t operator()(
-        const chatterino::SeventvEventAPIChannelCondition &c) const
+        const chatterino::seventv::eventapi::ChannelCondition &c) const
     {
         return qHash(c.twitchID);
     }
 };
 
 template <>
-struct hash<chatterino::SeventvEventAPISubscription> {
-    size_t operator()(const chatterino::SeventvEventAPISubscription &sub) const
+struct hash<chatterino::seventv::eventapi::Subscription> {
+    size_t operator()(
+        const chatterino::seventv::eventapi::Subscription &sub) const
     {
         const size_t conditionHash =
-            std::hash<chatterino::SeventvEventAPICondition>{}(sub.condition);
+            std::hash<chatterino::seventv::eventapi::Condition>{}(
+                sub.condition);
         return (size_t)qHash(conditionHash, qHash((int)sub.type));
     }
 };

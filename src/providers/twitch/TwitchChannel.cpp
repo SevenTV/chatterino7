@@ -700,7 +700,7 @@ void TwitchChannel::removeBttvEmote(
 }
 
 void TwitchChannel::addSeventvEmote(
-    const SeventvEventAPIEmoteAddDispatch &dispatch)
+    const seventv::eventapi::EmoteAddDispatch &dispatch)
 {
     if (!SeventvEmotes::addEmote(this->seventvEmotes_, dispatch))
     {
@@ -712,7 +712,7 @@ void TwitchChannel::addSeventvEmote(
 }
 
 void TwitchChannel::updateSeventvEmote(
-    const SeventvEventAPIEmoteUpdateDispatch &dispatch)
+    const seventv::eventapi::EmoteUpdateDispatch &dispatch)
 {
     if (!SeventvEmotes::updateEmote(this->seventvEmotes_, dispatch))
     {
@@ -726,7 +726,7 @@ void TwitchChannel::updateSeventvEmote(
 }
 
 void TwitchChannel::removeSeventvEmote(
-    const SeventvEventAPIEmoteRemoveDispatch &dispatch)
+    const seventv::eventapi::EmoteRemoveDispatch &dispatch)
 {
     auto removed = SeventvEmotes::removeEmote(this->seventvEmotes_, dispatch);
     if (!removed)
@@ -739,7 +739,7 @@ void TwitchChannel::removeSeventvEmote(
 }
 
 void TwitchChannel::updateSeventvUser(
-    const SeventvEventAPIUserConnectionUpdateDispatch &dispatch)
+    const seventv::eventapi::UserConnectionUpdateDispatch &dispatch)
 {
     if (dispatch.connectionIndex != this->seventvUserTwitchConnectionIndex_)
     {
@@ -1587,7 +1587,7 @@ void TwitchChannel::updateSevenTVActivity()
     }
 
     if (this->nextSeventvActivity_.isValid() &&
-        QDateTime::currentDateTimeUtc() >= this->nextSeventvActivity_)
+        QDateTime::currentDateTimeUtc() < this->nextSeventvActivity_)
     {
         return;
     }
@@ -1618,7 +1618,7 @@ void TwitchChannel::updateSevenTVActivity()
             }
             const auto json = response.parseJson();
             self->nextSeventvActivity_ =
-                QDateTime::fromMSecsSinceEpoch(json["ttl"].toInt(), Qt::UTC);
+                QDateTime::currentDateTimeUtc().addSecs(10);
             return Success;
         })
         .concurrent()

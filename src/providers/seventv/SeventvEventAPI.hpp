@@ -8,14 +8,21 @@
 
 namespace chatterino {
 
-struct SeventvEventAPISubscription;
-struct SeventvEventAPIDispatch;
-struct SeventvEventAPIEmoteAddDispatch;
-struct SeventvEventAPIEmoteUpdateDispatch;
-struct SeventvEventAPIEmoteRemoveDispatch;
-struct SeventvEventAPIUserConnectionUpdateDispatch;
+namespace seventv::eventapi {
+    struct Subscription;
+    struct Dispatch;
+    struct EmoteAddDispatch;
+    struct EmoteUpdateDispatch;
+    struct EmoteRemoveDispatch;
+    struct UserConnectionUpdateDispatch;
+    struct CosmeticCreateDispatch;
+    struct EntitlementCreateDeleteDispatch;
 
-class SeventvEventAPI : public BasicPubSubManager<SeventvEventAPISubscription>
+}  // namespace seventv::eventapi
+
+using namespace seventv::eventapi;
+
+class SeventvEventAPI : public BasicPubSubManager<Subscription>
 {
     template <typename T>
     using Signal =
@@ -27,10 +34,10 @@ public:
                         std::chrono::milliseconds(25000));
 
     struct {
-        Signal<SeventvEventAPIEmoteAddDispatch> emoteAdded;
-        Signal<SeventvEventAPIEmoteUpdateDispatch> emoteUpdated;
-        Signal<SeventvEventAPIEmoteRemoveDispatch> emoteRemoved;
-        Signal<SeventvEventAPIUserConnectionUpdateDispatch> userUpdated;
+        Signal<EmoteAddDispatch> emoteAdded;
+        Signal<EmoteUpdateDispatch> emoteUpdated;
+        Signal<EmoteRemoveDispatch> emoteRemoved;
+        Signal<UserConnectionUpdateDispatch> userUpdated;
     } signals_;  // NOLINT(readability-identifier-naming)
 
     /**
@@ -57,16 +64,23 @@ public:
     void unsubscribeTwitchChannel(const QString &id);
 
 protected:
-    std::shared_ptr<BasicPubSubClient<SeventvEventAPISubscription>>
-        createClient(liveupdates::WebsocketClient &client,
-                     websocketpp::connection_hdl hdl) override;
+    std::shared_ptr<BasicPubSubClient<Subscription>> createClient(
+        liveupdates::WebsocketClient &client,
+        websocketpp::connection_hdl hdl) override;
     void onMessage(
         websocketpp::connection_hdl hdl,
-        BasicPubSubManager<SeventvEventAPISubscription>::WebsocketMessagePtr
-            msg) override;
+        BasicPubSubManager<Subscription>::WebsocketMessagePtr msg) override;
 
 private:
-    void handleDispatch(const SeventvEventAPIDispatch &dispatch);
+    void handleDispatch(const Dispatch &dispatch);
+
+    void onEmoteSetUpdate(const Dispatch &dispatch);
+    void onUserUpdated(const Dispatch &dispatch);
+    void onCosmeticCreate(const CosmeticCreateDispatch &cosmetic);
+    void onEntitlementCreate(
+        const EntitlementCreateDeleteDispatch &entitlement);
+    void onEntitlementDelete(
+        const EntitlementCreateDeleteDispatch &entitlement);
 
     /** emote-set ids */
     std::unordered_set<QString> subscribedEmoteSets_;

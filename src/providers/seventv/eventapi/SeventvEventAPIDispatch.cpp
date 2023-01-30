@@ -2,20 +2,19 @@
 
 #include <utility>
 
-namespace chatterino {
+namespace chatterino::seventv::eventapi {
 
-SeventvEventAPIDispatch::SeventvEventAPIDispatch(QJsonObject obj)
-    : type(magic_enum::enum_cast<SeventvEventAPISubscriptionType>(
+Dispatch::Dispatch(QJsonObject obj)
+    : type(magic_enum::enum_cast<SubscriptionType>(
                obj["type"].toString().toStdString())
-               .value_or(SeventvEventAPISubscriptionType::INVALID))
+               .value_or(SubscriptionType::INVALID))
     , body(obj["body"].toObject())
     , id(this->body["id"].toString())
     , actorName(this->body["actor"].toObject()["display_name"].toString())
 {
 }
 
-SeventvEventAPIEmoteAddDispatch::SeventvEventAPIEmoteAddDispatch(
-    const SeventvEventAPIDispatch &dispatch, QJsonObject emote)
+EmoteAddDispatch::EmoteAddDispatch(const Dispatch &dispatch, QJsonObject emote)
     : emoteSetID(dispatch.id)
     , actorName(dispatch.actorName)
     , emoteJson(std::move(emote))
@@ -23,7 +22,7 @@ SeventvEventAPIEmoteAddDispatch::SeventvEventAPIEmoteAddDispatch(
 {
 }
 
-bool SeventvEventAPIEmoteAddDispatch::validate() const
+bool EmoteAddDispatch::validate() const
 {
     bool validValues =
         !this->emoteSetID.isEmpty() && !this->emoteJson.isEmpty();
@@ -43,8 +42,8 @@ bool SeventvEventAPIEmoteAddDispatch::validate() const
            emoteData.contains("owner");
 }
 
-SeventvEventAPIEmoteRemoveDispatch::SeventvEventAPIEmoteRemoveDispatch(
-    const SeventvEventAPIDispatch &dispatch, QJsonObject emote)
+EmoteRemoveDispatch::EmoteRemoveDispatch(const Dispatch &dispatch,
+                                         QJsonObject emote)
     : emoteSetID(dispatch.id)
     , actorName(dispatch.actorName)
     , emoteName(emote["name"].toString())
@@ -52,15 +51,15 @@ SeventvEventAPIEmoteRemoveDispatch::SeventvEventAPIEmoteRemoveDispatch(
 {
 }
 
-bool SeventvEventAPIEmoteRemoveDispatch::validate() const
+bool EmoteRemoveDispatch::validate() const
 {
     return !this->emoteSetID.isEmpty() && !this->emoteName.isEmpty() &&
            !this->emoteID.isEmpty();
 }
 
-SeventvEventAPIEmoteUpdateDispatch::SeventvEventAPIEmoteUpdateDispatch(
-    const SeventvEventAPIDispatch &dispatch, QJsonObject oldValue,
-    QJsonObject value)
+EmoteUpdateDispatch::EmoteUpdateDispatch(const Dispatch &dispatch,
+                                         QJsonObject oldValue,
+                                         QJsonObject value)
     : emoteSetID(dispatch.id)
     , actorName(dispatch.actorName)
     , emoteID(value["id"].toString())
@@ -69,17 +68,15 @@ SeventvEventAPIEmoteUpdateDispatch::SeventvEventAPIEmoteUpdateDispatch(
 {
 }
 
-bool SeventvEventAPIEmoteUpdateDispatch::validate() const
+bool EmoteUpdateDispatch::validate() const
 {
     return !this->emoteSetID.isEmpty() && !this->emoteID.isEmpty() &&
            !this->oldEmoteName.isEmpty() && !this->emoteName.isEmpty() &&
            this->oldEmoteName != this->emoteName;
 }
 
-SeventvEventAPIUserConnectionUpdateDispatch::
-    SeventvEventAPIUserConnectionUpdateDispatch(
-        const SeventvEventAPIDispatch &dispatch, const QJsonObject &update,
-        size_t connectionIndex)
+UserConnectionUpdateDispatch::UserConnectionUpdateDispatch(
+    const Dispatch &dispatch, const QJsonObject &update, size_t connectionIndex)
     : userID(dispatch.id)
     , actorName(dispatch.actorName)
     , oldEmoteSetID(update["old_value"].toObject()["id"].toString())
@@ -88,38 +85,36 @@ SeventvEventAPIUserConnectionUpdateDispatch::
 {
 }
 
-bool SeventvEventAPIUserConnectionUpdateDispatch::validate() const
+bool UserConnectionUpdateDispatch::validate() const
 {
     return !this->userID.isEmpty() && !this->oldEmoteSetID.isEmpty() &&
            !this->emoteSetID.isEmpty();
 }
 
-SeventvEventAPICosmeticCreateDispatch::SeventvEventAPICosmeticCreateDispatch(
-    const SeventvEventAPIDispatch &dispatch)
+CosmeticCreateDispatch::CosmeticCreateDispatch(const Dispatch &dispatch)
     : data(dispatch.body["object"].toObject()["data"].toObject())
-    , kind(magic_enum::enum_cast<SeventvCosmeticKind>(dispatch.body["object"]
-                                                          .toObject()["kind"]
-                                                          .toString()
-                                                          .toStdString())
-               .value_or(SeventvCosmeticKind::INVALID))
+    , kind(magic_enum::enum_cast<CosmeticKind>(dispatch.body["object"]
+                                                   .toObject()["kind"]
+                                                   .toString()
+                                                   .toStdString())
+               .value_or(CosmeticKind::INVALID))
 {
 }
 
-bool SeventvEventAPICosmeticCreateDispatch::validate() const
+bool CosmeticCreateDispatch::validate() const
 {
-    return !this->data.empty() && this->kind != SeventvCosmeticKind::INVALID;
+    return !this->data.empty() && this->kind != CosmeticKind::INVALID;
 }
 
-SeventvEventAPIEntitlementCreateDispatch::
-    SeventvEventAPIEntitlementCreateDispatch(
-        const SeventvEventAPIDispatch &dispatch)
+EntitlementCreateDeleteDispatch::EntitlementCreateDeleteDispatch(
+    const Dispatch &dispatch)
 {
     const auto obj = dispatch.body["object"].toObject();
     this->userID = QString();
     this->refID = obj["ref_id"].toString();
-    this->kind = magic_enum::enum_cast<SeventvCosmeticKind>(
+    this->kind = magic_enum::enum_cast<CosmeticKind>(
                      obj["kind"].toString().toStdString())
-                     .value_or(SeventvCosmeticKind::INVALID);
+                     .value_or(CosmeticKind::INVALID);
 
     const auto userConnections =
         obj["user"].toObject()["connections"].toArray();
@@ -135,10 +130,10 @@ SeventvEventAPIEntitlementCreateDispatch::
     }
 }
 
-bool SeventvEventAPIEntitlementCreateDispatch::validate() const
+bool EntitlementCreateDeleteDispatch::validate() const
 {
     return !this->userID.isEmpty() && !this->userName.isEmpty() &&
-           !this->refID.isEmpty() && this->kind != SeventvCosmeticKind::INVALID;
+           !this->refID.isEmpty() && this->kind != CosmeticKind::INVALID;
 }
 
-}  // namespace chatterino
+}  // namespace chatterino::seventv::eventapi

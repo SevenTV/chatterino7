@@ -176,6 +176,13 @@ void SeventvPaints::assignPaintToUser(const QString &paintID,
     }
 }
 
+void SeventvPaints::clearPaintFromUser(const UserName &userName)
+{
+    const std::shared_lock lock(this->mutex_);
+
+    this->paintMap_.erase(userName.string);
+}
+
 void SeventvPaints::loadSeventvPaints()
 {
     static QUrl url("https://7tv.io/v2/cosmetics");

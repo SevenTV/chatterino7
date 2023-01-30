@@ -2,9 +2,9 @@
 
 #include <magic_enum.hpp>
 
-namespace chatterino {
+namespace chatterino::seventv {
 
-enum class SeventvCosmeticKind {
+enum class CosmeticKind {
     Badge,
     Paint,
 
@@ -15,14 +15,15 @@ enum class SeventvCosmeticKind {
 
 template <>
 constexpr magic_enum::customize::customize_t
-    magic_enum::customize::enum_name<chatterino::SeventvCosmeticKind>(
-        chatterino::SeventvCosmeticKind value) noexcept
+    magic_enum::customize::enum_name<chatterino::seventv::CosmeticKind>(
+        chatterino::seventv::CosmeticKind value) noexcept
 {
+    using chatterino::seventv::CosmeticKind;
     switch (value)
     {
-        case chatterino::SeventvCosmeticKind::Badge:
+        case CosmeticKind::Badge:
             return "BADGE";
-        case chatterino::SeventvCosmeticKind::Paint:
+        case CosmeticKind::Paint:
             return "PAINT";
 
         default:

@@ -5,15 +5,14 @@
 // of std::hash for SeventvEventAPISubscription
 #include "providers/seventv/eventapi/SeventvEventAPISubscription.hpp"
 
-namespace chatterino {
+namespace chatterino::seventv::eventapi {
 
-class SeventvEventAPIClient
-    : public BasicPubSubClient<SeventvEventAPISubscription>
+class Client : public BasicPubSubClient<Subscription>
 {
 public:
-    SeventvEventAPIClient(liveupdates::WebsocketClient &websocketClient,
-                          liveupdates::WebsocketHandle handle,
-                          std::chrono::milliseconds heartbeatInterval);
+    Client(liveupdates::WebsocketClient &websocketClient,
+           liveupdates::WebsocketHandle handle,
+           std::chrono::milliseconds heartbeatInterval);
 
     void setHeartbeatInterval(int intervalMs);
     void handleHeartbeat();

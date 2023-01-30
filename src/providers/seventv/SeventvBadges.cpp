@@ -43,6 +43,13 @@ void SeventvBadges::assignBadgeToUser(const QString &badgeID,
     }
 }
 
+void SeventvBadges::clearBadgeFromUser(const UserId &userID)
+{
+    const std::shared_lock lock(this->mutex_);
+
+    this->badgeMap_.erase(userID.string);
+}
+
 void SeventvBadges::addBadge(const QJsonObject &badgeJson)
 {
     const auto badgeID = badgeJson["id"].toString();
