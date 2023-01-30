@@ -3,6 +3,7 @@
 #include <magic_enum.hpp>
 #include <QByteArray>
 #include <QHash>
+#include <QJsonObject>
 #include <QString>
 
 #include <variant>
