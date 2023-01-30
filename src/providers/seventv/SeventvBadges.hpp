@@ -5,6 +5,7 @@
 #include "util/QStringHash.hpp"
 
 #include <boost/optional.hpp>
+#include <QJsonObject>
 
 #include <memory>
 #include <shared_mutex>
