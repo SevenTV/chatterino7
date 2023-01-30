@@ -1,6 +1,6 @@
 #pragma once
 
-#include "providers/seventv/eventapi/SeventvEventAPISubscription.hpp"
+#include "providers/seventv/eventapi/Subscription.hpp"
 #include "providers/seventv/SeventvCosmetics.hpp"
 
 #include <QJsonObject>
