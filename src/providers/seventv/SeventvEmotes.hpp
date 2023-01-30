@@ -5,6 +5,8 @@
 #include "common/Atomic.hpp"
 #include "common/FlagsEnum.hpp"
 
+#include <QJsonObject>
+
 #include <memory>
 
 namespace chatterino {
