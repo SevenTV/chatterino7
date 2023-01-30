@@ -132,4 +132,4 @@ bool ChannelCondition::operator!=(const ChannelCondition &rhs) const
     return !(*this == rhs);
 }
 
-}  // namespace chatterino
+}  // namespace chatterino::seventv::eventapi

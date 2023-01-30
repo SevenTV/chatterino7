@@ -8,4 +8,4 @@ Message::Message(QJsonObject _json)
 {
 }
 
-}  // namespace chatterino
+}  // namespace chatterino::seventv::eventapi
