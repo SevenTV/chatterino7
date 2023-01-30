@@ -36,7 +36,7 @@ void SeventvEventAPI::subscribeUser(const QString &userID,
         this->subscribedEmoteSets_.insert(emoteSetID).second)
     {
         this->subscribe(
-            {ObjectIDCondition{userID}, SubscriptionType::UpdateEmoteSet});
+            {ObjectIDCondition{emoteSetID}, SubscriptionType::UpdateEmoteSet});
     }
 }
 
