@@ -75,7 +75,7 @@ private:
     void handleDispatch(const Dispatch &dispatch);
 
     void onEmoteSetUpdate(const Dispatch &dispatch);
-    void onUserUpdated(const Dispatch &dispatch);
+    void onUserUpdate(const Dispatch &dispatch);
     void onCosmeticCreate(const CosmeticCreateDispatch &cosmetic);
     void onEntitlementCreate(
         const EntitlementCreateDeleteDispatch &entitlement);

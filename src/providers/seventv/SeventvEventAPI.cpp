@@ -296,7 +296,7 @@ void SeventvEventAPI::onEmoteSetUpdate(const Dispatch &dispatch)
     }
 }
 
-void SeventvEventAPI::onUserUpdated(const Dispatch &dispatch)
+void SeventvEventAPI::onUserUpdate(const Dispatch &dispatch)
 {
     // dispatchBody: {
     //   updated: Array<{ key, value: Array<{key, value}> }>
