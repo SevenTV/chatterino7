@@ -17,6 +17,8 @@ namespace chatterino {
 using namespace seventv;
 using namespace seventv::eventapi;
 
+using namespace seventv::eventapi;
+
 SeventvEventAPI::SeventvEventAPI(
     QString host, std::chrono::milliseconds defaultHeartbeatInterval)
     : BasicPubSubManager(std::move(host))
@@ -99,7 +101,7 @@ void SeventvEventAPI::onMessage(
 {
     const auto &payload = QString::fromStdString(msg->get_payload());
 
-    auto pMessage = parseEventAPIBaseMessage(payload);
+    auto pMessage = parseBaseMessage(payload);
 
     if (!pMessage)
     {
@@ -157,7 +159,7 @@ void SeventvEventAPI::onMessage(
         }
         break;
         default: {
-            qCDebug(chatterinoSeventvEventAPI) << "Unhandled op: " << payload;
+            qCDebug(chatterinoSeventvEventAPI) << "Unhandled op:" << payload;
         }
         break;
     }

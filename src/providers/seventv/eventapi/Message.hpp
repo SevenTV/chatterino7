@@ -27,7 +27,7 @@ boost::optional<InnerClass> Message::toInner()
     return InnerClass{this->data};
 }
 
-static boost::optional<Message> parseEventAPIBaseMessage(const QString &blob)
+static boost::optional<Message> parseBaseMessage(const QString &blob)
 {
     QJsonDocument jsonDoc(QJsonDocument::fromJson(blob.toUtf8()));
 

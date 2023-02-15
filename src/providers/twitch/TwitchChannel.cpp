@@ -122,23 +122,6 @@ TwitchChannel::TwitchChannel(const QString &name)
         this->loadRecentMessagesReconnect();
     });
 
-    this->destroyed.connect([this]() {
-        getApp()->twitch->dropSeventvChannel(this->seventvUserID_,
-                                             this->seventvEmoteSetID_);
-
-        if (getApp()->twitch->bttvLiveUpdates)
-        {
-            getApp()->twitch->bttvLiveUpdates->partChannel(this->roomId());
-        }
-
-        if (getApp()->twitch->seventvEventAPI)
-        {
-            // make an explicit copy here, since we're about to delete this data
-            getApp()->twitch->seventvEventAPI->unsubscribeTwitchChannel(
-                QString(this->roomId()));
-        }
-    });
-
     this->messageRemovedFromStart.connect([this](MessagePtr &msg) {
         if (msg->replyThread)
         {
@@ -175,6 +158,24 @@ TwitchChannel::TwitchChannel(const QString &name)
         this->addMessage(makeSystemMessage("asef"));
     }
 #endif
+}
+
+TwitchChannel::~TwitchChannel()
+{
+    getApp()->twitch->dropSeventvChannel(this->seventvUserID_,
+                                         this->seventvEmoteSetID_);
+
+    if (getApp()->twitch->bttvLiveUpdates)
+    {
+        getApp()->twitch->bttvLiveUpdates->partChannel(this->roomId());
+    }
+
+    if (getApp()->twitch->seventvEventAPI)
+    {
+        // make an explicit copy here, since we're about to delete this data
+        getApp()->twitch->seventvEventAPI->unsubscribeTwitchChannel(
+            this->roomId());
+    }
 }
 
 void TwitchChannel::initialize()
@@ -311,7 +312,21 @@ void TwitchChannel::addChannelPointReward(const ChannelPointReward &reward)
             << "[TwitchChannel" << this->getName()
             << "] Channel point reward added:" << reward.id << ","
             << reward.title << "," << reward.isUserInputRequired;
-        this->channelPointRewardAdded.invoke(reward);
+
+        // TODO: There's an underlying bug here. This bug should be fixed.
+        // This only attempts to prevent a crash when invoking the signal.
+        try
+        {
+            this->channelPointRewardAdded.invoke(reward);
+        }
+        catch (const std::bad_function_call &)
+        {
+            qCWarning(chatterinoTwitch).nospace()
+                << "[TwitchChannel " << this->getName()
+                << "] Caught std::bad_function_call when adding channel point "
+                   "reward ChannelPointReward{ id: "
+                << reward.id << ", title: " << reward.title << " }.";
+        }
     }
 }
 
@@ -363,10 +378,6 @@ QString TwitchChannel::prepareMessage(const QString &message) const
     auto app = getApp();
     QString parsedMessage = app->emotes->emojis.replaceShortCodes(message);
 
-    // This is to make sure that combined emoji go through properly, see
-    // https://github.com/Chatterino/chatterino2/issues/3384 and
-    // https://mm2pl.github.io/emoji_rfc.pdf for more details
-    parsedMessage.replace(ZERO_WIDTH_JOINER, ESCAPE_TAG);
     parsedMessage = parsedMessage.simplified();
 
     if (parsedMessage.isEmpty())

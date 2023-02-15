@@ -2,7 +2,7 @@
 
 #include "providers/liveupdates/BasicPubSubClient.hpp"
 // this needs to be included for the specialization
-// of std::hash for SeventvEventAPISubscription
+// of std::hash for Subscription
 #include "providers/seventv/eventapi/Subscription.hpp"
 
 namespace chatterino {
@@ -33,7 +33,7 @@ private:
     // This will be set once on the welcome message.
     std::chrono::milliseconds heartbeatInterval_;
 
-    friend chatterino::SeventvEventAPI;
+    friend SeventvEventAPI;
 };
 
 }  // namespace chatterino::seventv::eventapi

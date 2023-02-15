@@ -17,12 +17,10 @@ namespace seventv::eventapi {
     struct UserConnectionUpdateDispatch;
     struct CosmeticCreateDispatch;
     struct EntitlementCreateDeleteDispatch;
-
 }  // namespace seventv::eventapi
 
-using namespace seventv::eventapi;
-
-class SeventvEventAPI : public BasicPubSubManager<Subscription>
+class SeventvEventAPI
+    : public BasicPubSubManager<seventv::eventapi::Subscription>
 {
     template <typename T>
     using Signal =
@@ -34,10 +32,10 @@ public:
                         std::chrono::milliseconds(25000));
 
     struct {
-        Signal<EmoteAddDispatch> emoteAdded;
-        Signal<EmoteUpdateDispatch> emoteUpdated;
-        Signal<EmoteRemoveDispatch> emoteRemoved;
-        Signal<UserConnectionUpdateDispatch> userUpdated;
+        Signal<seventv::eventapi::EmoteAddDispatch> emoteAdded;
+        Signal<seventv::eventapi::EmoteUpdateDispatch> emoteUpdated;
+        Signal<seventv::eventapi::EmoteRemoveDispatch> emoteRemoved;
+        Signal<seventv::eventapi::UserConnectionUpdateDispatch> userUpdated;
     } signals_;  // NOLINT(readability-identifier-naming)
 
     /**
@@ -64,23 +62,25 @@ public:
     void unsubscribeTwitchChannel(const QString &id);
 
 protected:
-    std::shared_ptr<BasicPubSubClient<Subscription>> createClient(
-        liveupdates::WebsocketClient &client,
-        websocketpp::connection_hdl hdl) override;
+    std::shared_ptr<BasicPubSubClient<seventv::eventapi::Subscription>>
+        createClient(liveupdates::WebsocketClient &client,
+                     websocketpp::connection_hdl hdl) override;
     void onMessage(
         websocketpp::connection_hdl hdl,
-        BasicPubSubManager<Subscription>::WebsocketMessagePtr msg) override;
+        BasicPubSubManager<seventv::eventapi::Subscription>::WebsocketMessagePtr
+            msg) override;
 
 private:
-    void handleDispatch(const Dispatch &dispatch);
+    void handleDispatch(const seventv::eventapi::Dispatch &dispatch);
 
-    void onEmoteSetUpdate(const Dispatch &dispatch);
-    void onUserUpdate(const Dispatch &dispatch);
-    void onCosmeticCreate(const CosmeticCreateDispatch &cosmetic);
+    void onEmoteSetUpdate(const seventv::eventapi::Dispatch &dispatch);
+    void onUserUpdate(const seventv::eventapi::Dispatch &dispatch);
+    void onCosmeticCreate(
+        const seventv::eventapi::CosmeticCreateDispatch &cosmetic);
     void onEntitlementCreate(
-        const EntitlementCreateDeleteDispatch &entitlement);
+        const seventv::eventapi::EntitlementCreateDeleteDispatch &entitlement);
     void onEntitlementDelete(
-        const EntitlementCreateDeleteDispatch &entitlement);
+        const seventv::eventapi::EntitlementCreateDeleteDispatch &entitlement);
 
     /** emote-set ids */
     std::unordered_set<QString> subscribedEmoteSets_;
