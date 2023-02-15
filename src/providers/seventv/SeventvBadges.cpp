@@ -43,11 +43,16 @@ void SeventvBadges::assignBadgeToUser(const QString &badgeID,
     }
 }
 
-void SeventvBadges::clearBadgeFromUser(const UserId &userID)
+void SeventvBadges::clearBadgeFromUser(const UserId &userID,
+                                       const QString &badgeID)
 {
     const std::shared_lock lock(this->mutex_);
 
-    this->badgeMap_.erase(userID.string);
+    const auto it = this->badgeMap_.find(badgeID);
+    if (it != this->badgeMap_.end() && it->second->id.string == badgeID)
+    {
+        this->badgeMap_.erase(userID.string);
+    }
 }
 
 void SeventvBadges::addBadge(const QJsonObject &badgeJson)
@@ -61,8 +66,11 @@ void SeventvBadges::addBadge(const QJsonObject &badgeJson)
         return;
     }
 
-    auto emote = Emote{EmoteName{}, makeSeventvImageSet(badgeJson),
-                       Tooltip{badgeJson["tooltip"].toString()}, Url{}};
+    auto emote = Emote{.name = EmoteName{},
+                       .images = makeSeventvImageSet(badgeJson),
+                       .tooltip = Tooltip{badgeJson["tooltip"].toString()},
+                       .homePage = Url{},
+                       .id = EmoteId{badgeID}};
 
     if (emote.images.getImage1()->isEmpty())
     {

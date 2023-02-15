@@ -174,7 +174,7 @@ void SeventvEventAPI::handleDispatch(const Dispatch &dispatch)
         }
         break;
         case SubscriptionType::UpdateUser: {
-            this->onUserUpdated(dispatch);
+            this->onUserUpdate(dispatch);
         }
         break;
         case SubscriptionType::CreateCosmetic: {
@@ -383,7 +383,7 @@ void SeventvEventAPI::onEntitlementDelete(
         {
             case CosmeticKind::Badge: {
                 getApp()->seventvBadges->clearBadgeFromUser(
-                    UserId{entitlement.userID});
+                    UserId{entitlement.userID}, entitlement.refID);
             }
             break;
             case CosmeticKind::Paint: {
