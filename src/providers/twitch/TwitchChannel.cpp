@@ -39,6 +39,7 @@
 
 #include <IrcConnection>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QThread>
