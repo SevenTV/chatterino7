@@ -1,5 +1,7 @@
 #include "providers/seventv/eventapi/Dispatch.hpp"
 
+#include <QJsonArray>
+
 #include <utility>
 
 namespace chatterino::seventv::eventapi {

@@ -383,12 +383,12 @@ void SeventvEventAPI::onEntitlementDelete(
         {
             case CosmeticKind::Badge: {
                 getApp()->seventvBadges->clearBadgeFromUser(
-                    UserId{entitlement.userID}, entitlement.refID);
+                    entitlement.refID, UserId{entitlement.userID});
             }
             break;
             case CosmeticKind::Paint: {
                 getApp()->seventvPaints->clearPaintFromUser(
-                    UserName{entitlement.userName});
+                    entitlement.refID, UserName{entitlement.userName});
             }
             break;
             default:

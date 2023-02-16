@@ -25,7 +25,7 @@ public:
 
     void addBadge(const QJsonObject &badgeJson);
     void assignBadgeToUser(const QString &badgeID, const UserId &userID);
-    void clearBadgeFromUser(const UserId &userID, const QString &badgeID);
+    void clearBadgeFromUser(const QString &badgeID, const UserId &userID);
 
 private:
     void loadSeventvBadges();

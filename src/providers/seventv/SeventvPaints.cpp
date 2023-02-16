@@ -82,9 +82,10 @@ std::vector<PaintDropShadow> parseDropShadows(const QJsonArray &dropShadows)
     return parsedDropShadows;
 }
 
-std::optional<std::shared_ptr<Paint>> parsePaint(const QJsonObject paintJson)
+std::optional<std::shared_ptr<Paint>> parsePaint(const QJsonObject &paintJson)
 {
     const QString name = paintJson["name"].toString();
+    const QString id = paintJson["id"].toString();
 
     const auto color = parsePaintColor(paintJson["color"]);
     const bool repeat = paintJson["repeat"].toBool();
@@ -97,13 +98,13 @@ std::optional<std::shared_ptr<Paint>> parsePaint(const QJsonObject paintJson)
     const QString function = paintJson["function"].toString();
     if (function == "LINEAR_GRADIENT" || function == "linear-gradient")
     {
-        return std::make_shared<LinearGradientPaint>(name, color, stops, repeat,
-                                                     angle, shadows);
+        return std::make_shared<LinearGradientPaint>(name, id, color, stops,
+                                                     repeat, angle, shadows);
     }
 
     if (function == "RADIAL_GRADIENT" || function == "radial-gradient")
     {
-        return std::make_shared<RadialGradientPaint>(name, stops, repeat,
+        return std::make_shared<RadialGradientPaint>(name, id, stops, repeat,
                                                      shadows);
     }
 
@@ -116,7 +117,7 @@ std::optional<std::shared_ptr<Paint>> parsePaint(const QJsonObject paintJson)
             return std::nullopt;
         }
 
-        return std::make_shared<UrlPaint>(name, image, shadows);
+        return std::make_shared<UrlPaint>(name, id, image, shadows);
     }
 
     return std::nullopt;
@@ -176,11 +177,16 @@ void SeventvPaints::assignPaintToUser(const QString &paintID,
     }
 }
 
-void SeventvPaints::clearPaintFromUser(const UserName &userName)
+void SeventvPaints::clearPaintFromUser(const QString &paintID,
+                                       const UserName &userName)
 {
     const std::shared_lock lock(this->mutex_);
 
-    this->paintMap_.erase(userName.string);
+    const auto it = this->paintMap_.find(userName.string);
+    if (it != this->paintMap_.end() && it->second->id == paintID)
+    {
+        this->paintMap_.erase(userName.string);
+    }
 }
 
 void SeventvPaints::loadSeventvPaints()

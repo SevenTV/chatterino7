@@ -43,12 +43,12 @@ void SeventvBadges::assignBadgeToUser(const QString &badgeID,
     }
 }
 
-void SeventvBadges::clearBadgeFromUser(const UserId &userID,
-                                       const QString &badgeID)
+void SeventvBadges::clearBadgeFromUser(const QString &badgeID,
+                                       const UserId &userID)
 {
     const std::shared_lock lock(this->mutex_);
 
-    const auto it = this->badgeMap_.find(badgeID);
+    const auto it = this->badgeMap_.find(userID.string);
     if (it != this->badgeMap_.end() && it->second->id.string == badgeID)
     {
         this->badgeMap_.erase(userID.string);
@@ -66,11 +66,13 @@ void SeventvBadges::addBadge(const QJsonObject &badgeJson)
         return;
     }
 
-    auto emote = Emote{.name = EmoteName{},
-                       .images = makeSeventvImageSet(badgeJson),
-                       .tooltip = Tooltip{badgeJson["tooltip"].toString()},
-                       .homePage = Url{},
-                       .id = EmoteId{badgeID}};
+    auto emote = Emote{
+        .name = EmoteName{},
+        .images = makeSeventvImageSet(badgeJson),
+        .tooltip = Tooltip{badgeJson["tooltip"].toString()},
+        .homePage = Url{},
+        .id = EmoteId{badgeID},
+    };
 
     if (emote.images.getImage1()->isEmpty())
     {
@@ -102,12 +104,15 @@ void SeventvBadges::loadSeventvBadges()
                 auto badge = jsonBadge.toObject();
                 auto badgeID = badge["id"].toString();
                 auto urls = badge["urls"].toArray();
-                auto emote =
-                    Emote{EmoteName{},
-                          ImageSet{Url{urls[0].toArray()[1].toString()},
-                                   Url{urls[1].toArray()[1].toString()},
-                                   Url{urls[2].toArray()[1].toString()}},
-                          Tooltip{badge["tooltip"].toString()}, Url{}};
+                auto emote = Emote{
+                    .name = EmoteName{},
+                    .images = ImageSet{Url{urls[0].toArray()[1].toString()},
+                                       Url{urls[1].toArray()[1].toString()},
+                                       Url{urls[2].toArray()[1].toString()}},
+                    .tooltip = Tooltip{badge["tooltip"].toString()},
+                    .homePage = Url{},
+                    .id = EmoteId{badgeID},
+                };
 
                 auto emotePtr = std::make_shared<const Emote>(std::move(emote));
                 this->knownBadges_[badgeID] = emotePtr;

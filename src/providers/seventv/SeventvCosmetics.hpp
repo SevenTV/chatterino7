@@ -7,6 +7,7 @@ namespace chatterino::seventv {
 enum class CosmeticKind {
     Badge,
     Paint,
+    EmoteSet,
 
     INVALID,
 };
@@ -25,6 +26,8 @@ constexpr magic_enum::customize::customize_t
             return "BADGE";
         case CosmeticKind::Paint:
             return "PAINT";
+        case CosmeticKind::EmoteSet:
+            return "EMOTE_SET";
 
         default:
             return default_tag;
