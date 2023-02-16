@@ -1588,7 +1588,7 @@ boost::optional<CheerEmote> TwitchChannel::cheerEmote(const QString &string)
 
 void TwitchChannel::updateSevenTVActivity()
 {
-    static const QString SEVENTV_ACTIVITY_URL =
+    static const QString seventvActivityUrl =
         QStringLiteral("https://7tv.io/v3/users/%1/presences");
 
     const auto currentSeventvUserID =
@@ -1604,7 +1604,7 @@ void TwitchChannel::updateSevenTVActivity()
         return;
     }
     // Make sure to not send activity again before receiving the response
-    this->nextSeventvActivity_.addSecs(300);
+    this->nextSeventvActivity_ = this->nextSeventvActivity_.addSecs(300);
 
     qCDebug(chatterinoSeventv) << "Sending activity in" << this->getName();
 
@@ -1617,7 +1617,7 @@ void TwitchChannel::updateSevenTVActivity()
 
     payload["data"] = data;
 
-    NetworkRequest(SEVENTV_ACTIVITY_URL.arg(currentSeventvUserID),
+    NetworkRequest(seventvActivityUrl.arg(currentSeventvUserID),
                    NetworkRequestType::Post)
         .header("Content-Type", "application/json")
         .payload(QJsonDocument(payload).toJson(QJsonDocument::Compact))
