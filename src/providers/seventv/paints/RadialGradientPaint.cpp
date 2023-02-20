@@ -10,7 +10,7 @@ RadialGradientPaint::RadialGradientPaint(
     : Paint(std::move(id))
     , name_(std::move(name))
     , stops_(std::move(stops))
-    , repeat_(std::move(repeat))
+    , repeat_(repeat)
     , dropShadows_(std::move(dropShadows))
 {
 }

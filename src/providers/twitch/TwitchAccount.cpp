@@ -456,10 +456,10 @@ void TwitchAccount::loadSeventvUserID()
     }
 
     // TODO: this is duplicate functionality
-    static const QString SEVENTV_USER_INFO_URL =
+    static const QString seventvUserInfoUrl =
         QStringLiteral("https://7tv.io/v3/users/twitch/%1");
 
-    NetworkRequest(SEVENTV_USER_INFO_URL.arg(this->getUserId()),
+    NetworkRequest(seventvUserInfoUrl.arg(this->getUserId()),
                    NetworkRequestType::Get)
         .timeout(20000)
         .onSuccess([this](const auto &response) {

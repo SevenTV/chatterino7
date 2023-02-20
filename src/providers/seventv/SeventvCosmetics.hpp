@@ -12,7 +12,7 @@ enum class CosmeticKind {
     INVALID,
 };
 
-}
+}  // namespace chatterino::seventv
 
 template <>
 constexpr magic_enum::customize::customize_t

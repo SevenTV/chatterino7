@@ -63,8 +63,7 @@ struct ChannelCondition {
 
     QJsonObject encode() const;
 
-    friend QDebug &operator<<(QDebug &dbg,
-                              const ChannelCondition &subscription);
+    friend QDebug &operator<<(QDebug &dbg, const ChannelCondition &condition);
     bool operator==(const ChannelCondition &rhs) const;
     bool operator!=(const ChannelCondition &rhs) const;
 };
