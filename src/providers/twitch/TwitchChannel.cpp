@@ -173,7 +173,6 @@ TwitchChannel::~TwitchChannel()
 
     if (getApp()->twitch->seventvEventAPI)
     {
-        // make an explicit copy here, since we're about to delete this data
         getApp()->twitch->seventvEventAPI->unsubscribeTwitchChannel(
             this->roomId());
     }
