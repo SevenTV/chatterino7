@@ -107,7 +107,7 @@ CreateEmoteResult createEmote(const QJsonObject &activeEmote,
             ? createAliasedTooltip(emoteName.string, baseEmoteName.string,
                                    author.string, isGlobal)
             : createTooltip(emoteName.string, author.string, isGlobal);
-    auto imageSet = makeSeventvImageSet(emoteData);
+    auto imageSet = SeventvEmotes::createImageSet(emoteData);
 
     auto emote =
         Emote({emoteName, imageSet, tooltip,
@@ -443,7 +443,7 @@ void SeventvEmotes::getEmoteSet(
         .execute();
 }
 
-ImageSet makeSeventvImageSet(const QJsonObject &emoteData)
+ImageSet SeventvEmotes::createImageSet(const QJsonObject &emoteData)
 {
     auto host = emoteData["host"].toObject();
     // "//cdn.7tv[...]"
