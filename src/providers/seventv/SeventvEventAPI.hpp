@@ -92,9 +92,6 @@ private:
     /** Twitch channel ids */
     std::unordered_set<QString> subscribedTwitchChannels_;
     std::chrono::milliseconds heartbeatInterval_;
-
-    SeventvPaints *paints_;
-    SeventvBadges *badges_;
 };
 
 }  // namespace chatterino
