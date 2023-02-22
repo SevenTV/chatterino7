@@ -149,7 +149,7 @@ void SeventvPaints::addPaint(const QJsonObject &paintJson)
 {
     const auto paintID = paintJson["id"].toString();
 
-    const std::shared_lock lock(this->mutex_);
+    const std::unique_lock lock(this->mutex_);
 
     if (this->knownPaints_.find(paintID) != this->knownPaints_.end())
     {
@@ -168,7 +168,7 @@ void SeventvPaints::addPaint(const QJsonObject &paintJson)
 void SeventvPaints::assignPaintToUser(const QString &paintID,
                                       const UserName &userName)
 {
-    const std::shared_lock lock(this->mutex_);
+    const std::unique_lock lock(this->mutex_);
 
     const auto paintIt = this->knownPaints_.find(paintID);
     if (paintIt != this->knownPaints_.end())
@@ -180,7 +180,7 @@ void SeventvPaints::assignPaintToUser(const QString &paintID,
 void SeventvPaints::clearPaintFromUser(const QString &paintID,
                                        const UserName &userName)
 {
-    const std::shared_lock lock(this->mutex_);
+    const std::unique_lock lock(this->mutex_);
 
     const auto it = this->paintMap_.find(userName.string);
     if (it != this->paintMap_.end() && it->second->id == paintID)
@@ -203,7 +203,7 @@ void SeventvPaints::loadSeventvPaints()
         .onSuccess([this](const auto &result) -> Outcome {
             auto root = result.parseJson();
 
-            const std::shared_lock lock(this->mutex_);
+            const std::unique_lock lock(this->mutex_);
 
             for (const auto paintValueRef : root.value("paints").toArray())
             {

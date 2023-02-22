@@ -34,7 +34,7 @@ boost::optional<EmotePtr> SeventvBadges::getBadge(const UserId &id) const
 void SeventvBadges::assignBadgeToUser(const QString &badgeID,
                                       const UserId &userID)
 {
-    const std::shared_lock lock(this->mutex_);
+    const std::unique_lock lock(this->mutex_);
 
     const auto badgeIt = this->knownBadges_.find(badgeID);
     if (badgeIt != this->knownBadges_.end())
@@ -46,7 +46,7 @@ void SeventvBadges::assignBadgeToUser(const QString &badgeID,
 void SeventvBadges::clearBadgeFromUser(const QString &badgeID,
                                        const UserId &userID)
 {
-    const std::shared_lock lock(this->mutex_);
+    const std::unique_lock lock(this->mutex_);
 
     const auto it = this->badgeMap_.find(userID.string);
     if (it != this->badgeMap_.end() && it->second->id.string == badgeID)
@@ -59,7 +59,7 @@ void SeventvBadges::addBadge(const QJsonObject &badgeJson)
 {
     const auto badgeID = badgeJson["id"].toString();
 
-    const std::shared_lock lock(this->mutex_);
+    const std::unique_lock lock(this->mutex_);
 
     if (this->knownBadges_.find(badgeID) != this->knownBadges_.end())
     {
@@ -97,7 +97,7 @@ void SeventvBadges::loadSeventvBadges()
         .onSuccess([this](const NetworkResult &result) -> Outcome {
             auto root = result.parseJson();
 
-            const std::shared_lock lock(this->mutex_);
+            const std::unique_lock lock(this->mutex_);
 
             for (const auto &jsonBadge : root.value("badges").toArray())
             {

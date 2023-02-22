@@ -14,9 +14,8 @@
 #include <utility>
 
 namespace chatterino {
-using namespace seventv;
-using namespace seventv::eventapi;
 
+using namespace seventv;
 using namespace seventv::eventapi;
 
 SeventvEventAPI::SeventvEventAPI(
@@ -334,67 +333,69 @@ void SeventvEventAPI::onUserUpdate(const Dispatch &dispatch)
     }
 }
 
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void SeventvEventAPI::onCosmeticCreate(const CosmeticCreateDispatch &cosmetic)
 {
-    postToThread([cosmetic]() {
-        switch (cosmetic.kind)
-        {
-            case CosmeticKind::Badge: {
-                getApp()->seventvBadges->addBadge(cosmetic.data);
-            }
-            break;
-            case CosmeticKind::Paint: {
-                getApp()->seventvPaints->addPaint(cosmetic.data);
-            }
-            break;
-            default:
-                break;
+    // We're using Application::instance, because we're not in the GUI thread.
+    // `seventvBadges` and `seventvPaints` do their own locking.
+    switch (cosmetic.kind)
+    {
+        case CosmeticKind::Badge: {
+            Application::instance->seventvBadges->addBadge(cosmetic.data);
         }
-    });
+        break;
+        case CosmeticKind::Paint: {
+            Application::instance->seventvPaints->addPaint(cosmetic.data);
+        }
+        break;
+        default:
+            break;
+    }
 }
 
 void SeventvEventAPI::onEntitlementCreate(
     const EntitlementCreateDeleteDispatch &entitlement)
 {
-    postToThread([entitlement]() {
-        switch (entitlement.kind)
-        {
-            case CosmeticKind::Badge: {
-                getApp()->seventvBadges->assignBadgeToUser(
-                    entitlement.refID, UserId{entitlement.userID});
-            }
-            break;
-            case CosmeticKind::Paint: {
-                getApp()->seventvPaints->assignPaintToUser(
-                    entitlement.refID, UserName{entitlement.userName});
-            }
-            break;
-            default:
-                break;
+    // We're using Application::instance, because we're not in the GUI thread.
+    // `seventvBadges` and `seventvPaints` do their own locking.
+    switch (entitlement.kind)
+    {
+        case CosmeticKind::Badge: {
+            Application::instance->seventvBadges->assignBadgeToUser(
+                entitlement.refID, UserId{entitlement.userID});
         }
-    });
+        break;
+        case CosmeticKind::Paint: {
+            Application::instance->seventvPaints->assignPaintToUser(
+                entitlement.refID, UserName{entitlement.userName});
+        }
+        break;
+        default:
+            break;
+    }
 }
 
 void SeventvEventAPI::onEntitlementDelete(
     const EntitlementCreateDeleteDispatch &entitlement)
 {
-    postToThread([entitlement]() {
-        switch (entitlement.kind)
-        {
-            case CosmeticKind::Badge: {
-                getApp()->seventvBadges->clearBadgeFromUser(
-                    entitlement.refID, UserId{entitlement.userID});
-            }
-            break;
-            case CosmeticKind::Paint: {
-                getApp()->seventvPaints->clearPaintFromUser(
-                    entitlement.refID, UserName{entitlement.userName});
-            }
-            break;
-            default:
-                break;
+    // We're using Application::instance, because we're not in the GUI thread.
+    // `seventvBadges` and `seventvPaints` do their own locking.
+    switch (entitlement.kind)
+    {
+        case CosmeticKind::Badge: {
+            Application::instance->seventvBadges->clearBadgeFromUser(
+                entitlement.refID, UserId{entitlement.userID});
         }
-    });
+        break;
+        case CosmeticKind::Paint: {
+            Application::instance->seventvPaints->clearPaintFromUser(
+                entitlement.refID, UserName{entitlement.userName});
+        }
+        break;
+        default:
+            break;
+    }
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 }  // namespace chatterino

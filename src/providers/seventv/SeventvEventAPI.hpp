@@ -19,6 +19,9 @@ namespace seventv::eventapi {
     struct EntitlementCreateDeleteDispatch;
 }  // namespace seventv::eventapi
 
+class SeventvBadges;
+class SeventvPaints;
+
 class SeventvEventAPI
     : public BasicPubSubManager<seventv::eventapi::Subscription>
 {
@@ -89,6 +92,9 @@ private:
     /** Twitch channel ids */
     std::unordered_set<QString> subscribedTwitchChannels_;
     std::chrono::milliseconds heartbeatInterval_;
+
+    SeventvPaints *paints_;
+    SeventvBadges *badges_;
 };
 
 }  // namespace chatterino

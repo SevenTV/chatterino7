@@ -141,7 +141,7 @@ TwitchChannel::TwitchChannel(const QString &name)
 
     this->chattersListTimer_.start(5 * 60 * 1000);
 
-    QObject::connect(&this->threadClearTimer_, &QTimer::timeout, [=] {
+    QObject::connect(&this->threadClearTimer_, &QTimer::timeout, [this] {
         // We periodically check for any dangling reply threads that missed
         // being cleaned up on messageRemovedFromStart. This could occur if
         // some other part of the program, like a user card, held a reference
