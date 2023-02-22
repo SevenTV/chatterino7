@@ -335,6 +335,10 @@ private:
      */
     size_t seventvUserTwitchConnectionIndex_;
 
+    /**
+     * The next moment in time to signal activity in this channel to 7TV.
+     * Or: Up until this moment we don't need to send activity.
+     */
     QDateTime nextSeventvActivity_;
 
     /** The platform of the last live emote update ("7TV", "BTTV", "FFZ"). */
