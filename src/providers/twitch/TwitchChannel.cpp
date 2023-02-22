@@ -1598,6 +1598,11 @@ void TwitchChannel::updateSevenTVActivity()
         return;
     }
 
+    if (!getSettings()->enableSevenTVEventAPI)
+    {
+        return;
+    }
+
     if (this->nextSeventvActivity_.isValid() &&
         QDateTime::currentDateTimeUtc() < this->nextSeventvActivity_)
     {
