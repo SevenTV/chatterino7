@@ -84,6 +84,7 @@ private:
         const seventv::eventapi::EntitlementCreateDeleteDispatch &entitlement);
     void onEntitlementDelete(
         const seventv::eventapi::EntitlementCreateDeleteDispatch &entitlement);
+    void onEmoteSetCreate(const seventv::eventapi::Dispatch &dispatch);
 
     /** emote-set ids */
     std::unordered_set<QString> subscribedEmoteSets_;
