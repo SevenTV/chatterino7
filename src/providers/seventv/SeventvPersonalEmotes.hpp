@@ -27,6 +27,9 @@ public:
     void updateEmoteSet(const QString &id,
                         const seventv::eventapi::EmoteRemoveDispatch &dispatch);
 
+    void addEmoteSetForUser(const QString &emoteSetID, EmoteMap &&map,
+                            const QString &userTwitchID);
+
     bool hasEmoteSet(const QString &id) const;
 
     boost::optional<std::shared_ptr<const EmoteMap>> getEmoteSetForUser(

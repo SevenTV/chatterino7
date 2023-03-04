@@ -441,8 +441,14 @@ void SeventvEmotes::getEmoteSet(
             auto json = result.parseJson();
             auto parsedEmotes = json["emotes"].toArray();
 
-            auto emoteMap =
-                parseEmotes(parsedEmotes, SeventvEmoteSetKind::Channel);
+            auto kind = SeventvEmoteSetKind::Channel;
+            if (SeventvEmoteSetFlags(SeventvEmoteSetFlag(json["flags"].toInt()))
+                    .has(SeventvEmoteSetFlag::Personal))
+            {
+                kind = SeventvEmoteSetKind::Personal;
+            }
+
+            auto emoteMap = parseEmotes(parsedEmotes, kind);
 
             qCDebug(chatterinoSeventv) << "Loaded" << emoteMap.size()
                                        << "7TV Emotes from" << emoteSetId;

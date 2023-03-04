@@ -69,6 +69,14 @@ enum class SeventvEmoteSetKind : uint8_t {
     Channel,
 };
 
+enum class SeventvEmoteSetFlag : uint32_t {
+    Immutable = (1 << 0),
+    Privileged = (1 << 1),
+    Personal = (1 << 2),
+    Commercial = (1 << 3),
+};
+using SeventvEmoteSetFlags = FlagsEnum<SeventvEmoteSetFlag>;
+
 class SeventvEmotes final
 {
 public:
