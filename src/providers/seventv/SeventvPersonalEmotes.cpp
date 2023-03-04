@@ -33,6 +33,12 @@ void SeventvPersonalEmotes::updateEmoteSet(
     auto emoteSet = this->emoteSets_.find(id);
     if (emoteSet != this->emoteSets_.end())
     {
+        // Make sure this emote is actually new to avoid copying the map
+        if (emoteSet->second.get()->contains(
+                EmoteName{dispatch.emoteJson["name"].toString()}))
+        {
+            return;
+        }
         SeventvEmotes::addEmote(emoteSet->second, dispatch,
                                 SeventvEmoteSetKind::Personal);
     }
