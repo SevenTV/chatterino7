@@ -7,6 +7,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <utility>
 
 namespace chatterino {
 
@@ -15,15 +16,27 @@ void SeventvPersonalEmotes::createEmoteSet(const QString &id)
     std::unique_lock<std::shared_mutex> lock(this->mutex_);
     if (!this->emoteSets_.contains(id))
     {
-        this->emoteSets_.emplace(id, std::make_shared<EmoteMap>());
+        this->emoteSets_.emplace(id, std::make_shared<const EmoteMap>());
     }
 }
 
-void SeventvPersonalEmotes::assignUserToEmoteSet(const QString &emoteSetID,
-                                                 const QString &userTwitchID)
+boost::optional<std::shared_ptr<const EmoteMap>>
+    SeventvPersonalEmotes::assignUserToEmoteSet(const QString &emoteSetID,
+                                                const QString &userTwitchID)
 {
     std::unique_lock<std::shared_mutex> lock(this->mutex_);
-    this->userEmoteSets_.emplace(userTwitchID, emoteSetID);
+    if (!this->userEmoteSets_.contains(userTwitchID))
+    {
+        this->userEmoteSets_.emplace(userTwitchID, emoteSetID);
+
+        auto set = this->emoteSets_.find(emoteSetID);
+        if (set == this->emoteSets_.end())
+        {
+            return boost::none;
+        }
+        return set->second.get();  // copy the shared_ptr
+    }
+    return boost::none;
 }
 
 void SeventvPersonalEmotes::updateEmoteSet(

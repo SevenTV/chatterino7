@@ -268,13 +268,23 @@ private:
 class TextElement : public MessageElement
 {
 public:
+    struct Word {
+        QString text;
+        int width = -1;
+    };
+
     TextElement(const QString &text, MessageElementFlags flags,
+                const MessageColor &color = MessageColor::Text,
+                FontStyle style = FontStyle::ChatMedium);
+    TextElement(std::vector<Word> &&words, MessageElementFlags flags,
                 const MessageColor &color = MessageColor::Text,
                 FontStyle style = FontStyle::ChatMedium);
     ~TextElement() override = default;
 
     MessageColor color() const;
     FontStyle style() const;
+
+    const std::vector<Word> &words() const;
 
     void addToContainer(MessageLayoutContainer &container,
                         MessageElementFlags flags) override;
@@ -285,10 +295,6 @@ private:
     MessageColor color_;
     FontStyle style_;
 
-    struct Word {
-        QString text;
-        int width = -1;
-    };
     std::vector<Word> words_;
 };
 

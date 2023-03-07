@@ -379,8 +379,13 @@ void SeventvEventAPI::onEntitlementCreate(
         }
         break;
         case CosmeticKind::EmoteSet: {
-            Application::instance->seventvPersonalEmotes->assignUserToEmoteSet(
-                entitlement.refID, entitlement.userID);
+            if (auto set = Application::instance->seventvPersonalEmotes
+                               ->assignUserToEmoteSet(entitlement.refID,
+                                                      entitlement.userID))
+            {
+                this->signals_.personalEmoteSetAdded.invoke(
+                    {entitlement.userName, *set});
+            }
         }
         break;
         default:

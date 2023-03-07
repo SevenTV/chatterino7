@@ -17,8 +17,10 @@ class SeventvPersonalEmotes : public Singleton
 {
 public:
     void createEmoteSet(const QString &id);
-    void assignUserToEmoteSet(const QString &emoteSetID,
-                              const QString &userTwitchID);
+
+    // Returns the emote-map of this set if it's new.
+    boost::optional<std::shared_ptr<const EmoteMap>> assignUserToEmoteSet(
+        const QString &emoteSetID, const QString &userTwitchID);
 
     void updateEmoteSet(const QString &id,
                         const seventv::eventapi::EmoteAddDispatch &dispatch);
@@ -39,9 +41,14 @@ public:
                                               const EmoteName &emoteName) const;
 
 private:
+    // emoteSetID => emoteSet
     std::unordered_map<QString, Atomic<std::shared_ptr<const EmoteMap>>>
         emoteSets_;
+    // userID => emoteSetID
     std::unordered_map<QString, QString> userEmoteSets_;
+    // userID => userLogin
+    std::unordered_map<QString, QString> userLogins_;
+
     mutable std::shared_mutex mutex_;
 };
 

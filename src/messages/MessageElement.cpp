@@ -399,6 +399,15 @@ TextElement::TextElement(const QString &text, MessageElementFlags flags,
     }
 }
 
+TextElement::TextElement(std::vector<Word> &&words, MessageElementFlags flags,
+                         const MessageColor &color, FontStyle style)
+    : MessageElement(flags)
+    , color_(color)
+    , style_(style)
+    , words_(std::move(words))
+{
+}
+
 MessageColor TextElement::color() const
 {
     return this->color_;
@@ -407,6 +416,11 @@ MessageColor TextElement::color() const
 FontStyle TextElement::style() const
 {
     return this->style_;
+}
+
+const std::vector<TextElement::Word> &TextElement::words() const
+{
+    return this->words_;
 }
 
 void TextElement::addToContainer(MessageLayoutContainer &container,
