@@ -134,13 +134,22 @@ CreateEmoteResult createEmote(const QJsonObject &activeEmote,
     return {emote, emoteId, emoteName, !emote.images.getImage1()->isEmpty()};
 }
 
-bool checkEmoteVisibility(const QJsonObject &emoteData)
+bool checkEmoteVisibility(const QJsonObject &emoteData,
+                          SeventvEmoteSetKind kind)
 {
     if (!emoteData["listed"].toBool() &&
         !getSettings()->showUnlistedSevenTVEmotes)
     {
         return false;
     }
+
+    // Only add allowed emotes
+    if (kind == SeventvEmoteSetKind::Personal &&
+        !emoteData["state"].toArray().contains("PERSONAL"))
+    {
+        return false;
+    }
+
     auto flags =
         SeventvEmoteFlags(SeventvEmoteFlag(emoteData["flags"].toInt()));
     return !flags.has(SeventvEmoteFlag::ContentTwitchDisallowed);
@@ -155,7 +164,7 @@ EmoteMap parseEmotes(const QJsonArray &emoteSetEmotes, SeventvEmoteSetKind kind)
         auto activeEmote = activeEmoteJson.toObject();
         auto emoteData = activeEmote["data"].toObject();
 
-        if (emoteData.empty() || !checkEmoteVisibility(emoteData))
+        if (emoteData.empty() || !checkEmoteVisibility(emoteData, kind))
         {
             continue;
         }
@@ -363,7 +372,7 @@ boost::optional<EmotePtr> SeventvEmotes::addEmote(
 {
     // Check for visibility first, so we don't copy the map.
     auto emoteData = dispatch.emoteJson["data"].toObject();
-    if (emoteData.empty() || !checkEmoteVisibility(emoteData))
+    if (emoteData.empty() || !checkEmoteVisibility(emoteData, kind))
     {
         return boost::none;
     }
