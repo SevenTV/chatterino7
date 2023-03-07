@@ -437,7 +437,7 @@ void EmotePopup::loadChannel(ChannelPtr channel)
                 getApp()->seventvPersonalEmotes->getEmoteSetForUser(
                     getApp()->accounts->twitch.getCurrent()->getUserId()))
         {
-            addEmotes(*channelChannel, *map.get(), "7TV",
+            addEmotes(*subChannel, *map.get(), "7TV",
                       MessageElementFlag::SevenTVEmote);
         }
     }
