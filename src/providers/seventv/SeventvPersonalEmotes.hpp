@@ -49,8 +49,6 @@ private:
         emoteSets_;
     // userID => emoteSetID
     std::unordered_map<QString, QString> userEmoteSets_;
-    // userID => userLogin
-    std::unordered_map<QString, QString> userLogins_;
 
     bool enabled_ = true;
     pajlada::Signals::SignalHolder signalHolder_;
