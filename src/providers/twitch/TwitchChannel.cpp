@@ -1708,31 +1708,29 @@ void TwitchChannel::upsertPersonalSeventvEmotes(
                     };
 
                     // Search for a word that matches any emote.
-                    std::for_each(
-                        std::make_move_iterator(textElement->words().begin()),
-                        std::make_move_iterator(textElement->words().end()),
-                        [&](auto &&word) {
-                            auto emoteIt = emoteMap->find(EmoteName{word.text});
-                            if (emoteIt != emoteMap->cend())
+                    for (const auto &word : textElement->words())
+                    {
+                        auto emoteIt = emoteMap->find(EmoteName{word.text});
+                        if (emoteIt != emoteMap->cend())
+                        {
+                            MessageElementFlags emoteFlags(
+                                MessageElementFlag::SevenTVEmote);
+                            if (emoteIt->second->zeroWidth)
                             {
-                                MessageElementFlags emoteFlags(
-                                    MessageElementFlag::SevenTVEmote);
-                                if (emoteIt->second->zeroWidth)
-                                {
-                                    emoteFlags.set(
-                                        MessageElementFlag::ZeroWidthEmote);
-                                }
+                                emoteFlags.set(
+                                    MessageElementFlag::ZeroWidthEmote);
+                            }
 
-                                flush();
-                                elements.emplace_back(
-                                    std::make_unique<EmoteElement>(
-                                        emoteIt->second, emoteFlags));
-                            }
-                            else
-                            {
-                                words.emplace_back(word);
-                            }
-                        });
+                            flush();
+                            elements.emplace_back(
+                                std::make_unique<EmoteElement>(emoteIt->second,
+                                                               emoteFlags));
+                        }
+                        else
+                        {
+                            words.emplace_back(word);
+                        }
+                    }
                     flush();
                 }
                 else
