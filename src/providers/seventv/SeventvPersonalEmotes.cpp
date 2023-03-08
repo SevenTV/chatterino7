@@ -1,6 +1,7 @@
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 
 #include "providers/seventv/SeventvEmotes.hpp"
+#include "singletons/Settings.hpp"
 
 #include <boost/optional/optional.hpp>
 
@@ -10,6 +11,16 @@
 #include <utility>
 
 namespace chatterino {
+
+void SeventvPersonalEmotes::initialize(Settings &settings, Paths & /*paths*/)
+{
+    settings.enableSevenTVPersonalEmotes.connect(
+        [this]() {
+            std::unique_lock<std::shared_mutex> lock(this->mutex_);
+            this->enabled_ = Settings::instance().enableSevenTVPersonalEmotes;
+        },
+        this->signalHolder_);
+}
 
 void SeventvPersonalEmotes::createEmoteSet(const QString &id)
 {
@@ -97,6 +108,11 @@ boost::optional<std::shared_ptr<const EmoteMap>>
     SeventvPersonalEmotes::getEmoteSetForUser(const QString &userID) const
 {
     std::shared_lock<std::shared_mutex> lock(this->mutex_);
+    if (!this->enabled_)
+    {
+        return boost::none;
+    }
+
     auto id = this->userEmoteSets_.find(userID);
     if (id == this->userEmoteSets_.end())
     {

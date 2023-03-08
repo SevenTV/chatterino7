@@ -6,6 +6,7 @@
 #include "providers/seventv/eventapi/Dispatch.hpp"
 
 #include <boost/optional.hpp>
+#include <pajlada/signals/signalholder.hpp>
 
 #include <memory>
 #include <shared_mutex>
@@ -16,6 +17,8 @@ namespace chatterino {
 class SeventvPersonalEmotes : public Singleton
 {
 public:
+    void initialize(Settings &settings, Paths &paths) override;
+
     void createEmoteSet(const QString &id);
 
     // Returns the emote-map of this set if it's new.
@@ -48,6 +51,9 @@ private:
     std::unordered_map<QString, QString> userEmoteSets_;
     // userID => userLogin
     std::unordered_map<QString, QString> userLogins_;
+
+    bool enabled_ = true;
+    pajlada::Signals::SignalHolder signalHolder_;
 
     mutable std::shared_mutex mutex_;
 };

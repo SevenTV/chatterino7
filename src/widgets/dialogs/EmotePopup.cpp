@@ -431,15 +431,11 @@ void EmotePopup::loadChannel(ChannelPtr channel)
     }
 
     // personal
-    if (Settings::instance().enableSevenTVPersonalEmotes)
+    if (const auto map = getApp()->seventvPersonalEmotes->getEmoteSetForUser(
+            getApp()->accounts->twitch.getCurrent()->getUserId()))
     {
-        if (const auto map =
-                getApp()->seventvPersonalEmotes->getEmoteSetForUser(
-                    getApp()->accounts->twitch.getCurrent()->getUserId()))
-        {
-            addEmotes(*subChannel, *map.get(), "7TV",
-                      MessageElementFlag::SevenTVEmote);
-        }
+        addEmotes(*subChannel, *map.get(), "7TV",
+                  MessageElementFlag::SevenTVEmote);
     }
 
     this->globalEmotesView_->setChannel(globalChannel);
