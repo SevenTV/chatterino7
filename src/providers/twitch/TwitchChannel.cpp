@@ -1658,11 +1658,16 @@ void TwitchChannel::upsertPersonalSeventvEmotes(
 {
     assertInGuiThread();
     auto snapshot = this->getMessageSnapshot();
+    if (snapshot.size() == 0)
+    {
+        return;
+    }
 
     const auto findMessage = [&]() -> std::optional<MessagePtr> {
-        auto end = std::max<size_t>(0, snapshot.size() - 5);
+        auto end = std::max<ptrdiff_t>(0, (ptrdiff_t)snapshot.size() - 5);
 
-        for (size_t i = snapshot.size() - 1; i >= end; i--)
+        // explicitly using signed integers here to represent '-1'
+        for (ptrdiff_t i = (ptrdiff_t)snapshot.size() - 1; i >= end; i--)
         {
             const auto &message = snapshot[i];
             if (message->loginName == userLogin)
