@@ -162,11 +162,11 @@ bool checkEmoteVisibility(const QJsonObject &emoteData,
     }
 
     // Only add allowed emotes
-    if (kind == SeventvEmoteSetKind::Personal &&
-        !emoteData["state"].toArray().contains("PERSONAL"))
-    {
-        return false;
-    }
+    // if (kind == SeventvEmoteSetKind::Personal &&
+    //     !emoteData["state"].toArray().contains("PERSONAL"))
+    // {
+    //     return false;
+    // }
 
     auto flags =
         SeventvEmoteFlags(SeventvEmoteFlag(emoteData["flags"].toInt()));
