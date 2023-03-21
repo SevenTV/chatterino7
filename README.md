@@ -1,6 +1,35 @@
 ![alt text](https://fourtf.com/img/chatterino-icon-64.png)
-Chatterino 2 [![GitHub Actions Build (Windows, Ubuntu, MacOS)](https://github.com/Chatterino/chatterino2/workflows/Build/badge.svg?branch=master)](https://github.com/Chatterino/chatterino2/actions?query=workflow%3ABuild+branch%3Amaster) [![Cirrus CI Build (FreeBSD only)](https://api.cirrus-ci.com/github/Chatterino/chatterino2.svg?branch=master)](https://cirrus-ci.com/github/Chatterino/chatterino2/master) [![Chocolatey Package](https://img.shields.io/chocolatey/v/chatterino?include_prereleases)](https://chocolatey.org/packages/chatterino) [![Flatpak Package](https://img.shields.io/flathub/v/com.chatterino.chatterino)](https://flathub.org/apps/details/com.chatterino.chatterino)
+Chatterino 2 [![GitHub Actions Build (Windows, Ubuntu, MacOS)](https://github.com/SevenTV/chatterino7/workflows/Build/badge.svg?branch=master)](https://github.com/SevenTV/chatterino7/actions?query=workflow%3ABuild+branch%3Amaster) [![Chocolatey Package](https://img.shields.io/chocolatey/v/chatterino7?include_prereleases)](https://chocolatey.org/packages/chatterino7)
 ============
+## Chatterino7
+
+Chatterino7 is a fork of Chatterino 2 that says in line with Chatterino 2 but adds features from 7TV, that aren't supported by regular Chatterino.
+
+### Features of Chatterino7
+
+- 7TV Paints
+
+- 7TV Personal Emotes
+
+- 7TV Animated Profile Avatars
+
+- 4x Link Extensions(7TV and FFZ)
+
+### Screenshots
+
+![Example of 4x](https://kappa.lol/UpjGe)
+
+### Downloads
+
+Stable Builds can be downloaded [here](https://github.com/SevenTV/chatterino7/releases)
+Download Nightly Chatterino7 build over [here](https://github.com/SevenTV/chatterino7/releases/tag/nightly-build)
+Windows users can install Dankerino [from Chocolatey](https://chocolatey.org/packages/chatterino7).
+
+### Discord 
+
+If you have any issues or want to join the community you can join the link here: <https://discord.com/invite/7tv>
+
+## Original Chatterino 2 readme
 
 Chatterino 2 is a chat client for [Twitch.tv](https://twitch.tv).
 The Chatterino 2 wiki can be found [here](https://wiki.chatterino.com).
