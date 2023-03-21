@@ -3,7 +3,7 @@ Chatterino 2 [![GitHub Actions Build (Windows, Ubuntu, MacOS)](https://github.co
 ============
 ## Chatterino7
 
-Chatterino7 is a fork of Chatterino 2 that says in line with Chatterino 2 but adds features from 7TV, that aren't supported by regular Chatterino.
+Chatterino7 is a fork of Chatterino 2. This fork mainly contains features that aren't accepted into Chatterino 2, most notably 7TV subscriber features.
 
 ### Features of Chatterino7
 
