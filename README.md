@@ -7,7 +7,7 @@ Chatterino7 is a fork of Chatterino 2. This fork mainly contains features that a
 
 ### Features of Chatterino7
 
-- 7TV Paints
+- 7TV Name Paints
 
 - 7TV Personal Emotes
 
