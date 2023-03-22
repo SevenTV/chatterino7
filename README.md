@@ -27,9 +27,13 @@ To test new features, you can download the **nighly build** [here](https://githu
 
 Windows users can install Chatterino 7 [from Chocolatey](https://chocolatey.org/packages/chatterino7).
 
+### Issues
+
+If you have issues such as crashes or weird behaviour regarding 7TV features, report them [in the issue-section](https://github.com/SevenTV/chatterino7/issues). If you have issues with other features, please report them [in the upstream issue-section](https://github.com/Chatterino/chatterino2/issues).
+
 ### Discord 
 
-If you have any issues or want to join the community you can join the link here: <https://discord.com/invite/7tv>
+If you don't have a GitHub account and want to report issues or want to join the community you can join the official 7TV Discord using the link here: <https://discord.com/invite/7tv>.
 
 ## Original Chatterino 2 Readme
 
