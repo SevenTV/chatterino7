@@ -21,9 +21,11 @@ Chatterino7 is a fork of Chatterino 2. This fork mainly contains features that a
 
 ### Downloads
 
-Stable Builds can be downloaded [here](https://github.com/SevenTV/chatterino7/releases)
-Download Nightly Chatterino7 build over [here](https://github.com/SevenTV/chatterino7/releases/tag/nightly-build)
-Windows users can install Dankerino [from Chocolatey](https://chocolatey.org/packages/chatterino7).
+**Stable builds** can be downloaded from the [releases section](https://github.com/SevenTV/chatterino7/releases).
+
+To test new features, you can download the **nighly build** [here](https://github.com/SevenTV/chatterino7/releases/tag/nightly-build).
+
+Windows users can install Chatterino 7 [from Chocolatey](https://chocolatey.org/packages/chatterino7).
 
 ### Discord 
 
