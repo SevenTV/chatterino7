@@ -21,7 +21,7 @@ Chatterino7 is a fork of Chatterino 2. This fork mainly contains features that a
 
 ### Downloads
 
-**Stable builds** can be downloaded from the [releases section](https://github.com/SevenTV/chatterino7/releases).
+**Stable builds** can be downloaded from the [releases section](https://github.com/SevenTV/chatterino7/releases/latest).
 
 To test new features, you can download the **nighly build** [here](https://github.com/SevenTV/chatterino7/releases/tag/nightly-build).
 
