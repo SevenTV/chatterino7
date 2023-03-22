@@ -13,7 +13,7 @@ Chatterino7 is a fork of Chatterino 2. This fork mainly contains features that a
 
 - 7TV Animated Profile Avatars
 
-- 4x Link Extensions(7TV and FFZ)
+- 4x Images (7TV and FFZ)
 
 ### Screenshots
 
