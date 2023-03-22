@@ -31,7 +31,7 @@ Windows users can install Chatterino 7 [from Chocolatey](https://chocolatey.org/
 
 If you have any issues or want to join the community you can join the link here: <https://discord.com/invite/7tv>
 
-## Original Chatterino 2 readme
+## Original Chatterino 2 Readme
 
 Chatterino 2 is a chat client for [Twitch.tv](https://twitch.tv).
 The Chatterino 2 wiki can be found [here](https://wiki.chatterino.com).
