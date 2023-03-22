@@ -16,7 +16,9 @@ Chatterino7 is a fork of Chatterino 2. This fork mainly contains features that a
 
 ### Screenshots
 
-![Example of 4x](https://kappa.lol/UpjGe)
+![Example of Personal Emotes](https://user-images.githubusercontent.com/27637025/227032811-837c56eb-7724-431b-b00e-b944c9289dff.png)
+![Example of Paints](https://user-images.githubusercontent.com/27637025/227034147-cb1fcd76-dbae-4878-9551-96ffa64dd1a9.png)
+
 
 ### Downloads
 
