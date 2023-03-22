@@ -19,7 +19,6 @@ Chatterino7 is a fork of Chatterino 2. This fork mainly contains features that a
 ![Example of Personal Emotes](https://user-images.githubusercontent.com/27637025/227032811-837c56eb-7724-431b-b00e-b944c9289dff.png)
 ![Example of Paints](https://user-images.githubusercontent.com/27637025/227034147-cb1fcd76-dbae-4878-9551-96ffa64dd1a9.png)
 
-
 ### Downloads
 
 **Stable builds** can be downloaded from the [releases section](https://github.com/SevenTV/chatterino7/releases).
@@ -32,7 +31,7 @@ Windows users can install Chatterino7 [from Chocolatey](https://chocolatey.org/p
 
 If you have issues such as crashes or weird behaviour regarding 7TV features, report them [in the issue-section](https://github.com/SevenTV/chatterino7/issues). If you have issues with other features, please report them [in the upstream issue-section](https://github.com/Chatterino/chatterino2/issues).
 
-### Discord 
+### Discord
 
 If you don't have a GitHub account and want to report issues or want to join the community you can join the official 7TV Discord using the link here: <https://discord.com/invite/7tv>.
 
