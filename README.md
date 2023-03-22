@@ -1,5 +1,5 @@
 ![alt text](https://fourtf.com/img/chatterino-icon-64.png)
-Chatterino 2 [![GitHub Actions Build (Windows, Ubuntu, MacOS)](https://github.com/SevenTV/chatterino7/workflows/Build/badge.svg?branch=master)](https://github.com/SevenTV/chatterino7/actions?query=workflow%3ABuild+branch%3Amaster) [![Chocolatey Package](https://img.shields.io/chocolatey/v/chatterino7?include_prereleases)](https://chocolatey.org/packages/chatterino7)
+Chatterino 7 [![GitHub Actions Build (Windows, Ubuntu, MacOS)](https://github.com/SevenTV/chatterino7/workflows/Build/badge.svg?branch=chatterino7)](https://github.com/SevenTV/chatterino7/actions?query=workflow%3ABuild+branch%3Achatterino7) [![Chocolatey Package](https://img.shields.io/chocolatey/v/chatterino7?include_prereleases)](https://chocolatey.org/packages/chatterino7)
 ============
 ## Chatterino7
 
