@@ -461,7 +461,7 @@ void SeventvEmotes::getEmoteSet(
 
 ImageSet SeventvEmotes::createImageSet(const QJsonObject &emoteData)
 {
-    static bool supportsAvif = [] {
+    static const bool supportsAvif = [] {
         return QImageReader::supportedImageFormats().contains(
             QByteArrayLiteral("avif"));
     }();
