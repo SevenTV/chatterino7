@@ -40,7 +40,21 @@ const QString EMOTE_LINK_FORMAT("https://7tv.app/emotes/%1");
 
 // This is non-const, but only used on the GUI thread
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-bool ALLOW_AVIF_IMAGES;
+auto ALLOW_AVIF_IMAGES = []() {
+    static bool allow = true;
+    static bool registered = false;
+    if (!registered)
+    {
+        // We can't register this in the SeventvEmotes constructor,
+        // so we register the handler on demand.
+        getSettings()->allowAvifImages.connect([](bool setting) {
+            allow = setting && QImageReader::supportedImageFormats().contains(
+                                   QByteArrayLiteral("avif"));
+        });
+        registered = true;
+    }
+    return allow;
+};
 
 struct CreateEmoteResult {
     Emote emote;
@@ -216,11 +230,6 @@ using namespace literals;
 SeventvEmotes::SeventvEmotes()
     : global_(std::make_shared<EmoteMap>())
 {
-    getSettings()->allowAvifImages.connect([](bool allowed) {
-        ALLOW_AVIF_IMAGES =
-            allowed && QImageReader::supportedImageFormats().contains(
-                           QByteArrayLiteral("avif"));
-    });
 }
 
 std::shared_ptr<const EmoteMap> SeventvEmotes::globalEmotes() const
@@ -480,7 +489,7 @@ ImageSet SeventvEmotes::createImageSet(const QJsonObject &emoteData)
     size_t nextSize = 0;
 
     auto targetFormat = [&] {
-        if (!ALLOW_AVIF_IMAGES || files.empty())
+        if (!ALLOW_AVIF_IMAGES() || files.empty())
         {
             return u"WEBP"_s;
         }
