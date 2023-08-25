@@ -74,7 +74,7 @@ jobs:
 
       - name: Create nightly release
         if: ${{ contains(steps.build-installer.outputs.C2_INSTALLER_BASE_NAME, 'Nightly') && env.RELEASE_NIGHTLY_INSTALLER == 'ON' }}
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.13.0
         with:
           replacesArtifacts: true
           allowUpdates: true
@@ -176,7 +176,7 @@ jobs:
         id: get-tag
         run: echo "VALUE=$(git describe --exact-match --match 'v*')" >> "$GITHUB_OUTPUT"
       - name: Create release
-        uses: ncipollo/release-action@v1.12.0
+        uses: ncipollo/release-action@v1.13.0
         with:
           replacesArtifacts: true
           allowUpdates: true
