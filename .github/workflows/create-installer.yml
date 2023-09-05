@@ -24,7 +24,7 @@ jobs:
     env:
       VARIANT_SUFFIX: ${{ startsWith(matrix.qt-version, '6.') && '.EXPERIMENTAL-Qt6' || '' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # allows for tags access
 
@@ -94,7 +94,7 @@ jobs:
     outputs:
       IS_TAGGED: ${{ steps.is-rel.outputs.IS_TAGGED }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # allows for tags access
       - name: Check Release
@@ -110,7 +110,7 @@ jobs:
     needs: [create-installer, check-release]
     if: ${{ needs.check-release.outputs.IS_TAGGED == '0' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # allows for tags access
 
