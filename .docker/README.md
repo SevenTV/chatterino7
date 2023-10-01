@@ -30,7 +30,7 @@ To build, from the repo root
    `docker buildx build -t chatterino-ubuntu-22.04-package -f .docker/Dockerfile-ubuntu-22.04-package .`
 
 To extract the final package, you can run the following command:  
-`docker run -v $PWD:/opt/mount --rm -it chatterino-ubuntu-22.04-package bash -c "cp /src/build/Chatterino-x86_64.deb /opt/mount/"`
+`docker run -v $PWD:/opt/mount --rm -it chatterino-ubuntu-22.04-package bash -c "cp /src/build/Chatterino-x86_64.AppImage /opt/mount/"`
 
 NOTE: The AppImage from Ubuntu 22.04 is broken. Approach with caution
 

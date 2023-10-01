@@ -18,6 +18,13 @@ elif [ -n "$Qt6_DIR" ]; then
     _QT_DIR="$Qt6_DIR"
 fi
 
+if [ -n "$OPENSSL_DIR" ]; then
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENSSL_DIR/lib"
+    export PATH="$OPENSSL_DIR/bin:$PATH"
+else
+    echo "No OpenSSL environment variable set, assuming system-install OpenSSL"
+fi
+
 if [ -n "$_QT_DIR" ]; then
     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${_QT_DIR}/lib"
     export PATH="${_QT_DIR}/bin:$PATH"
