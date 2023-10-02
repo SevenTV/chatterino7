@@ -55,7 +55,7 @@ jobs:
             clang-tidy-review: false
           # macOS
           - os: macos-latest
-            qt-version: 5.15.2
+            qt-version: 6.5.0
             force-lto: false
             plugins: false
             skip-artifact: false
@@ -479,16 +479,16 @@ jobs:
           path: release-artifacts/
 
       - uses: actions/download-artifact@v3
-        name: macOS x86_64 Qt5.15.2 dmg
+        name: macOS x86_64 Qt6.5.0 dmg
         with:
-          name: chatterino-macos-Qt-5.15.2.dmg
+          name: chatterino-macos-Qt-6.5.0.dmg
           path: release-artifacts/
 
       - name: Rename artifacts
         run: |
           ls -l
           # Rename the macos build to indicate that it's for macOS 10.15 users
-          mv chatterino-macos-Qt-5.15.2.dmg Chatterino-macOS-10.15.dmg
+          mv chatterino-macos-Qt-6.5.0.dmg Chatterino-macOS-10.15.dmg
         working-directory: release-artifacts
         shell: bash
 
