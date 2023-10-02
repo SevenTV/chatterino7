@@ -402,9 +402,9 @@ jobs:
         run: |
           mkdir build
           cd build
-          conan install .. `
-              -s build_type=Release `
-              -b missing `
+          conan install .. \
+              -s build_type=Release \
+              -b missing \
               --output-folder=.
         shell: bash
 
