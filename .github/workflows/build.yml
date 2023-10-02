@@ -403,7 +403,7 @@ jobs:
               -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
               -DCHATTERINO_PLUGINS="$C2_PLUGINS" \
               -DBUILD_WITH_QT6="$C2_BUILD_WITH_QT6" \
-              -DCHATTERINO_NO_AVIF_PLUGIN=On \
+              -DCHATTERINO_STATIC_AVIF=Off \
               ..
           make -j"$(sysctl -n hw.logicalcpu)"
         shell: bash
@@ -418,6 +418,11 @@ jobs:
           ls -la build || true
           cd build
           ./../.CI/MacDeploy.sh
+
+          ls -la /usr/local/Cellar/brotli
+          install_name_tool -change /usr/local/Cellar/brotli/1.1.0/lib/libbrotlicommon.1.dylib @executable_path/../Frameworks/libbrotlicommon.1.dylib chatterino.app/Contents/Frameworks/libbrotlienc.1.dylib
+          install_name_tool -change /usr/local/Cellar/brotli/1.1.0/lib/libbrotlicommon.1.dylib @executable_path/../Frameworks/libbrotlicommon.1.dylib chatterino.app/Contents/Frameworks/libbrotlidec.1.dylib
+
           ./../.CI/CreateDMG.sh
         shell: bash
 
