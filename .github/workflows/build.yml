@@ -103,13 +103,13 @@ jobs:
         run: |
           echo "C2_BUILD_WITH_QT6=ON" >> "$GITHUB_ENV"
         shell: bash
-        
+
       - name: Set OpenSSL 1.1.1 directory
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.qt-version, '5.')
         run: |
-            echo "OPENSSL_1_1_1_DIR=/usr/local/ssl" >> "$GITHUB_ENV"
-        shell: bash 
-           
+          echo "OPENSSL_1_1_1_DIR=/usr/local/ssl" >> "$GITHUB_ENV"
+        shell: bash
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -314,13 +314,13 @@ jobs:
       - name: Build OpenSSL 1.1.1
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.qt-version, '5.')
         run: |
-            wget "https://www.openssl.org/source/openssl-$OPENSSL_1_1_1_VERSION.tar.gz"
-            tar xf "openssl-$OPENSSL_1_1_1_VERSION.tar.gz"
-            cd "openssl-$OPENSSL_1_1_1_VERSION"
-            ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
-            make -j"$(nproc)"
-            make install
-        shell: bash    
+          wget "https://www.openssl.org/source/openssl-$OPENSSL_1_1_1_VERSION.tar.gz"
+          tar xf "openssl-$OPENSSL_1_1_1_VERSION.tar.gz"
+          cd "openssl-$OPENSSL_1_1_1_VERSION"
+          ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
+          make -j"$(nproc)"
+          make install
+        shell: bash
 
       - name: Build (Ubuntu), Qt ${{ matrix.qt-version }}
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.qt-version, '5.')
@@ -340,7 +340,6 @@ jobs:
             ..
           make -j"$(nproc)"
         shell: bash
-        
 
       - name: Build (Ubuntu), Qt ${{ matrix.qt-version }}
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.qt-version, '6.')
