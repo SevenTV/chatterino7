@@ -314,6 +314,7 @@ jobs:
       - name: Build OpenSSL 1.1.1
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.qt-version, '5.')
         run: |
+          cd $RUNNER_WORKSPACE
           wget "https://www.openssl.org/source/openssl-$OPENSSL_1_1_1_VERSION.tar.gz"
           tar xf "openssl-$OPENSSL_1_1_1_VERSION.tar.gz"
           cd "openssl-$OPENSSL_1_1_1_VERSION"
