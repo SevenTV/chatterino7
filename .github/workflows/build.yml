@@ -287,6 +287,7 @@ jobs:
               libboost-system-dev \
               libboost-filesystem-dev \
               libpulse-dev \
+              libavif-dev \
               libxkbcommon-x11-0 \
               build-essential \
               libgl1-mesa-dev \
@@ -316,7 +317,7 @@ jobs:
             -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
             -DCHATTERINO_PLUGINS="$C2_PLUGINS" \
             -DBUILD_WITH_QT6="$C2_BUILD_WITH_QT6" \
-            -DCHATTERINO_NO_AVIF_PLUGIN=On \
+            -DCHATTERINO_STATIC_AVIF=Off \
             ..
           make -j"$(nproc)"
         shell: bash
@@ -340,14 +341,15 @@ jobs:
             -DBUILD_WITH_QT6=Off
             -DBUILD_TESTS=On
             -DBUILD_BENCHMARKS=On
-            -DCHATTERINO_NO_AVIF_PLUGIN=On
+            -DCHATTERINO_STATIC_AVIF=Off
           apt_packages: >-
             qttools5-dev, qt5-image-formats-plugins, libqt5svg5-dev, 
             libsecret-1-dev,
             libboost-dev, libboost-system-dev, libboost-filesystem-dev,
             libssl-dev,
             rapidjson-dev,
-            libbenchmark-dev
+            libbenchmark-dev,
+            libavif-dev
 
       - name: clang-tidy-review upload
         if: matrix.clang-tidy-review && github.event_name == 'pull_request'
