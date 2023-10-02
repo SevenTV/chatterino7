@@ -387,7 +387,7 @@ jobs:
       - name: Install dependencies (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install boost openssl rapidjson p7zip create-dmg cmake tree conan
+          brew install boost openssl p7zip create-dmg cmake tree conan
         shell: bash
 
       - name: Setup Conan (macOS)
