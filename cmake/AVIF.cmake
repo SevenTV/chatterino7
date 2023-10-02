@@ -7,7 +7,7 @@ if (libavif_FOUND)
     set_target_properties(kimageformats PROPERTIES AUTOMOC ON)
     target_link_libraries(kimageformats PRIVATE Qt${MAJOR_QT_VERSON}::Gui)
 
-    if (WIN32 OR NOT CHATTERINO_STATIC_AVIF)
+    if (WIN32 OR APPLE OR NOT CHATTERINO_STATIC_AVIF)
         target_link_libraries(kimageformats PRIVATE avif)
     else()
         # See https://github.com/desktop-app/cmake_helpers/blob/af968dc8eab6bde381ad62ef6a516bdfccb7d038/target_link_static_libraries.cmake
