@@ -393,6 +393,7 @@ jobs:
       - name: Build (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
+          mkdir build
           cd build
           cmake \
               -DCMAKE_BUILD_TYPE=Release \
