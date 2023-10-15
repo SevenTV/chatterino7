@@ -1,12 +1,15 @@
 #include "providers/seventv/paints/Paint.hpp"
 
 #include "Application.hpp"
+#include "common/Literals.hpp"
 #include "singletons/Theme.hpp"
 
 #include <QLabel>
 #include <QPainter>
 
 namespace chatterino {
+
+using namespace literals;
 
 QPixmap Paint::getPixmap(const QString &text, const QFont &font,
                          QColor userColor, QSize size, float scale) const
@@ -59,14 +62,12 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
 
         label.setPixmap(pixmap);
 
-        auto *dropShadow = scaledShadow.getGraphicsEffect();
-        label.setGraphicsEffect(dropShadow);
+        QGraphicsDropShadowEffect dropShadow;
+        scaledShadow.apply(dropShadow);
+        label.setGraphicsEffect(&dropShadow);
 
         pixmap = label.grab();
         pixmap.setDevicePixelRatio(1);
-
-        label.deleteLater();
-        delete dropShadow;
     }
 
     if (drawColon)
@@ -79,7 +80,7 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
         pixmapPainter.setFont(font);
 
         QRectF colonBoundingRect(nametagBoundingRect.right(), 0, 10000, 10000);
-        pixmapPainter.drawText(colonBoundingRect, ":",
+        pixmapPainter.drawText(colonBoundingRect, u":"_s,
                                QTextOption(Qt::AlignLeft | Qt::AlignTop));
         pixmapPainter.end();
     }

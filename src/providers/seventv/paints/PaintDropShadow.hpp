@@ -11,7 +11,7 @@ public:
 
     bool isValid() const;
     PaintDropShadow scaled(float scale) const;
-    QGraphicsDropShadowEffect *getGraphicsEffect() const;
+    void apply(QGraphicsDropShadowEffect &effect) const;
 
 private:
     const float xOffset_;

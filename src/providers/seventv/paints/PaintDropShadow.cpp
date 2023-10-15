@@ -22,16 +22,13 @@ PaintDropShadow PaintDropShadow::scaled(float scale) const
             this->radius_ * scale, this->color_};
 }
 
-QGraphicsDropShadowEffect *PaintDropShadow::getGraphicsEffect() const
+void PaintDropShadow::apply(QGraphicsDropShadowEffect &effect) const
 {
-    auto *effect = new QGraphicsDropShadowEffect();
-
-    effect->setXOffset(this->xOffset_);
-    effect->setYOffset(this->yOffset_);
-    effect->setBlurRadius(this->radius_);
-    effect->setColor(this->color_);
-
-    return effect;
+    // We can't move here
+    effect.setXOffset(this->xOffset_);
+    effect.setYOffset(this->yOffset_);
+    effect.setBlurRadius(this->radius_);
+    effect.setColor(this->color_);
 }
 
 }  // namespace chatterino
