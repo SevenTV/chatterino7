@@ -455,11 +455,13 @@ void TextLayoutElement::paint(QPainter &painter,
     if (drawPaint && seventvPaint.has_value())
     {
         if (seventvPaint.value()->animated())
+        {
             return;
+        }
 
-        const auto paint = seventvPaint.value();
+        const auto &paint = seventvPaint.value();
 
-        const auto paintPixmap =
+        auto paintPixmap =
             paint->getPixmap(this->getText(), font, this->color_,
                              this->getRect().size(), this->scale_);
 
