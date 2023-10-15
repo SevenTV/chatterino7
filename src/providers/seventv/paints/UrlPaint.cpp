@@ -41,7 +41,7 @@ QBrush UrlPaint::asBrush(const QColor userColor, const QRectF drawingRect) const
     return {userColor};
 }
 
-std::vector<PaintDropShadow> UrlPaint::getDropShadows() const
+const std::vector<PaintDropShadow> &UrlPaint::getDropShadows() const
 {
     return this->dropShadows_;
 }

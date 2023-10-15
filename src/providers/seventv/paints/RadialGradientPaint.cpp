@@ -47,7 +47,7 @@ bool RadialGradientPaint::animated() const
     return false;
 }
 
-std::vector<PaintDropShadow> RadialGradientPaint::getDropShadows() const
+const std::vector<PaintDropShadow> &RadialGradientPaint::getDropShadows() const
 {
     return this->dropShadows_;
 }

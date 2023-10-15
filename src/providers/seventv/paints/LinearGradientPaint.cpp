@@ -90,7 +90,7 @@ QBrush LinearGradientPaint::asBrush(const QColor userColor,
     return {gradient};
 }
 
-std::vector<PaintDropShadow> LinearGradientPaint::getDropShadows() const
+const std::vector<PaintDropShadow> &LinearGradientPaint::getDropShadows() const
 {
     return this->dropShadows_;
 }
