@@ -7,11 +7,10 @@ namespace chatterino {
 class PaintDropShadow
 {
 public:
-    PaintDropShadow(const float xOffset, const float yOffset,
-                    const float radius, const QColor color);
+    PaintDropShadow(float xOffset, float yOffset, float radius, QColor color);
 
     bool isValid() const;
-    PaintDropShadow scaled(const float scale) const;
+    PaintDropShadow scaled(float scale) const;
     QGraphicsDropShadowEffect *getGraphicsEffect() const;
 
 private:

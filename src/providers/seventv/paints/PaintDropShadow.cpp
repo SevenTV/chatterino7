@@ -1,9 +1,9 @@
-#include "PaintDropShadow.hpp"
+#include "providers/seventv/paints/PaintDropShadow.hpp"
 
 namespace chatterino {
 
-PaintDropShadow::PaintDropShadow(const float xOffset, const float yOffset,
-                                 const float radius, const QColor color)
+PaintDropShadow::PaintDropShadow(float xOffset, float yOffset, float radius,
+                                 QColor color)
     : xOffset_(xOffset)
     , yOffset_(yOffset)
     , radius_(radius)
@@ -16,15 +16,15 @@ bool PaintDropShadow::isValid() const
     return radius_ > 0;
 }
 
-PaintDropShadow PaintDropShadow::scaled(const float scale) const
+PaintDropShadow PaintDropShadow::scaled(float scale) const
 {
-    return PaintDropShadow(this->xOffset_ * scale, this->yOffset_ * scale,
-                           this->radius_ * scale, this->color_);
+    return {this->xOffset_ * scale, this->yOffset_ * scale,
+            this->radius_ * scale, this->color_};
 }
 
 QGraphicsDropShadowEffect *PaintDropShadow::getGraphicsEffect() const
 {
-    auto effect = new QGraphicsDropShadowEffect();
+    auto *effect = new QGraphicsDropShadowEffect();
 
     effect->setXOffset(this->xOffset_);
     effect->setYOffset(this->yOffset_);
