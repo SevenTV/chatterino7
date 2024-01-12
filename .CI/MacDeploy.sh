@@ -35,6 +35,11 @@ fi
 
 macdeployqt chatterino.app "${_macdeployqt_args[@]}"
 
+echo "Extracting kimageformats plugins"
+7z e -okimg kimg.zip
+cp kimg/libKF5Archive.5.dylib chatterino.app/Contents/Frameworks/
+cp kimg/kimg_avif.so chatterino.app/Contents/PlugIns/imageformats/
+
 if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
     # Validate that chatterino.app was codesigned correctly
     codesign -v chatterino.app

@@ -443,19 +443,13 @@ jobs:
           pwd
           ls -la build || true
           cd build
-          ./../.CI/MacDeploy.sh
-
-          echo "Downloading kimageformats plugins"
 
           brew reinstall openssl
+          echo "Downloading kimageformats plugins"
           curl -SsfLo kimg.zip "https://github.com/nerixyz/kimageformats-binaries/releases/download/cont/kimageformats-macos-latest-${{ matrix.qt-version}}.zip"
           ${{matrix.arch == 'arm64' && 'brew reinstall $(brew --cache --bottle-tag=arm64_monterey openssl)' || ''}}
 
-          echo "Extracting kimageformats plugins"
-          7z e -okimg kimg.zip
-          cp kimg/libKF5Archive.5.dylib chatterino.app/Contents/Frameworks/
-          cp kimg/kimg_avif.so chatterino.app/Contents/PlugIns/imageformats/
-
+          ./../.CI/MacDeploy.sh
           ./../.CI/CreateDMG.sh
         shell: bash
 
