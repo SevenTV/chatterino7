@@ -401,8 +401,8 @@ jobs:
       - name: Install dependencies (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
-          PACKAGES=(boost openssl rapidjson p7zip create-dmg cmake tree libavif)
-          for package in "${PACKAGES[@]}"
+          LIBS=(boost openssl rapidjson)
+          for package in "${LIBS[@]}"
           do
             brew fetch --force --bottle-tag=${{ matrix.arch }}_monterey $package
             formula=$(brew --cache --bottle-tag=${{ matrix.arch }}_monterey $package)
@@ -412,6 +412,7 @@ jobs:
               brew install $formula
             fi
           done
+          brew install p7zip create-dmg cmake tree
         shell: bash
 
       - name: Build (MacOS)
