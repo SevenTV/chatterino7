@@ -439,6 +439,7 @@ jobs:
         env:
           OUTPUT_DMG_PATH: chatterino-macos-Qt-${{ matrix.qt-version}}-${{ matrix.arch }}.dmg
         run: |
+          brew reinstall openssl
           ls -la
           pwd
           ls -la build || true
