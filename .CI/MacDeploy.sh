@@ -16,7 +16,7 @@ if [ -n "$Qt5_DIR" ]; then
 elif [ -n "$Qt6_DIR" ]; then
     echo "Using Qt DIR from Qt6_DIR: $Qt6_DIR"
     _QT_DIR="$Qt6_DIR"
-    _img_version="6.5.0"
+    _img_version="6.5.3"
 fi
 
 if [ -n "$_QT_DIR" ]; then
@@ -37,7 +37,7 @@ macdeployqt chatterino.app "${_macdeployqt_args[@]}"
 
 # Download kimageformats plugins
 
-curl -SsfLo kimg.zip "https://github.com/jurplel/kimageformats-binaries/releases/download/cont/kimageformats-macos-latest-$_img_version.zip"
+curl -SsfLo kimg.zip "https://github.com/nerixyz/kimageformats-binaries/releases/download/cont/kimageformats-macos-latest-$_img_version.zip"
 7z e -okimg kimg.zip
 cp kimg/libKF5Archive.5.dylib chatterino.app/Contents/Frameworks/
 cp kimg/kimg_avif.so chatterino.app/Contents/PlugIns/imageformats/
