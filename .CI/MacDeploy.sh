@@ -39,7 +39,7 @@ macdeployqt chatterino.app "${_macdeployqt_args[@]}"
 
 echo "Downloading kimageformats plugins"
 
-xh -o kimg.zip "https://github.com/nerixyz/kimageformats-binaries/releases/download/cont/kimageformats-macos-latest-$_img_version.zip"
+curl -SsfLo kimg.zip "https://github.com/nerixyz/kimageformats-binaries/releases/download/cont/kimageformats-macos-latest-$_img_version.zip"
 echo "Extracting kimageformats plugins"
 7z e -okimg kimg.zip
 cp kimg/libKF5Archive.5.dylib chatterino.app/Contents/Frameworks/

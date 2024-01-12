@@ -412,7 +412,7 @@ jobs:
               brew install $formula
             fi
           done
-          brew install p7zip create-dmg cmake tree xh
+          brew install p7zip create-dmg cmake tree
         shell: bash
 
       - name: Build (MacOS)
@@ -443,7 +443,9 @@ jobs:
           pwd
           ls -la build || true
           cd build
+          brew reinstall openssl
           ./../.CI/MacDeploy.sh
+          ${{matrix.arch == 'arm64' && 'brew reinstall $(brew --cache --bottle-tag=arm64_monterey openssl)' || ''}}
           ./../.CI/CreateDMG.sh
         shell: bash
 
