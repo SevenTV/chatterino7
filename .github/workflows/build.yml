@@ -412,7 +412,7 @@ jobs:
               brew install $formula
             fi
           done
-          brew install p7zip create-dmg cmake tree
+          brew install p7zip create-dmg cmake tree xh
         shell: bash
 
       - name: Build (MacOS)
@@ -439,7 +439,6 @@ jobs:
         env:
           OUTPUT_DMG_PATH: chatterino-macos-Qt-${{ matrix.qt-version}}-${{ matrix.arch }}.dmg
         run: |
-          brew reinstall openssl
           ls -la
           pwd
           ls -la build || true
