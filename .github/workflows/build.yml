@@ -406,7 +406,11 @@ jobs:
           do
             brew fetch --force --bottle-tag=${{ matrix.arch }}_monterey $package
             formula=$(brew --cache --bottle-tag=${{ matrix.arch }}_monterey $package)
-            brew install $formula
+            if [[ $package == "openssl" ]]; then
+              brew reinstall $formula
+            else
+              brew install $formula
+            fi
           done
         shell: bash
 
