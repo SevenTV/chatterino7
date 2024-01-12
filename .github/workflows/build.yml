@@ -55,7 +55,7 @@ jobs:
             skip-crashpad: false
           # macOS (ARM)
           - os: macos-12
-            qt-version: 6.5.3
+            qt-version: 6.5.0
             arch: arm64
             force-lto: false
             plugins: false
@@ -63,7 +63,7 @@ jobs:
             skip-crashpad: false
           # macOS (x86)
           - os: macos-12
-            qt-version: 6.5.3
+            qt-version: 6.5.0
             arch: x86_64
             force-lto: false
             plugins: false
@@ -495,23 +495,23 @@ jobs:
           path: release-artifacts/
 
       - uses: actions/download-artifact@v4
-        name: macOS x86_64 Qt6.5.3 x86 dmg
+        name: macOS x86_64 Qt6.5.0 x86 dmg
         with:
-          name: chatterino-macos-Qt-6.5.3-x86_64.dmg
+          name: chatterino-macos-Qt-6.5.0-x86_64.dmg
           path: release-artifacts/
 
       - uses: actions/download-artifact@v4
-        name: macOS x86_64 Qt6.5.3 ARM dmg
+        name: macOS x86_64 Qt6.5.0 ARM dmg
         with:
-          name: chatterino-macos-Qt-6.5.3-arm64.dmg
+          name: chatterino-macos-Qt-6.5.0-arm64.dmg
           path: release-artifacts/
 
       - name: Rename artifacts
         run: |
           ls -l
           # Rename the macos build to indicate that it's for macOS 12.0 users
-          mv chatterino-macos-Qt-6.5.3-x86_64.dmg Chatterino-macOS-12.0-x86_64.dmg
-          mv chatterino-macos-Qt-6.5.3-arm64.dmg Chatterino-macOS-12.0-arm64.dmg
+          mv chatterino-macos-Qt-6.5.0-x86_64.dmg Chatterino-macOS-12.0-x86_64.dmg
+          mv chatterino-macos-Qt-6.5.0-arm64.dmg Chatterino-macOS-12.0-arm64.dmg
         working-directory: release-artifacts
         shell: bash
 
