@@ -40,7 +40,7 @@ mkdir -p chatterino.app/Contents/PlugIns/imageformats
 cp kimg/libKF5Archive.5.dylib chatterino.app/Contents/Frameworks/
 cp kimg/kimg_avif.so chatterino.app/Contents/PlugIns/imageformats/
 
-macdeployqt chatterino.app "${_macdeployqt_args[@]}" -verbose=3
+macdeployqt chatterino.app "${_macdeployqt_args[@]}" -verbose=1
 
 if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
     # Validate that chatterino.app was codesigned correctly

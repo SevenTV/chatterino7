@@ -25,9 +25,6 @@ if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
     echo "Codesigning force deep inside the app"
     codesign -s "$MACOS_CODESIGN_CERTIFICATE" --deep --force chatterino.app
     echo "Done!"
-else
-    codesign --remove-signature chatterino.app
-    codesign -s - chatterino.app
 fi
 
 echo "Running dmgbuild.."
@@ -38,7 +35,4 @@ if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
     echo "Codesigning the dmg"
     codesign -s "$MACOS_CODESIGN_CERTIFICATE" --deep --force "$OUTPUT_DMG_PATH"
     echo "Done!"
-else
-    codesign --remove-signature "$OUTPUT_DMG_PATH"
-    codesign -s - "$OUTPUT_DMG_PATH"
 fi

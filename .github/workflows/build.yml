@@ -443,6 +443,8 @@ jobs:
           pwd
           ls -la build || true
           cd build
+          export MACOS_CODESIGN_CERTIFICATE="-"
+          echo "-> $MACOS_CODESIGN_CERTIFICATE"
 
           brew reinstall openssl
           echo "Downloading kimageformats plugins"
