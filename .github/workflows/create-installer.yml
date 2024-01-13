@@ -113,11 +113,11 @@ jobs:
         with:
           fetch-depth: 0 # allows for tags access
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: Chatterino7.Installer.exe
           path: build/
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: Chatterino7.Portable.zip
           path: build/
