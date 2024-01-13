@@ -35,6 +35,14 @@ fi
 
 echo "Extracting kimageformats plugins"
 7z e -okimg kimg.zip
+
+if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
+    echo "Codesigning libKF5Archive"
+    codesign -s "$MACOS_CODESIGN_CERTIFICATE" --force kimg/libKF5Archive.5.dylib
+    echo "Codesigning kimg_avif"
+    codesign -s "$MACOS_CODESIGN_CERTIFICATE" --force kimg/kimg_avif.so
+fi
+
 mkdir -p chatterino.app/Contents/Frameworks
 mkdir -p chatterino.app/Contents/PlugIns/imageformats
 cp kimg/libKF5Archive.5.dylib chatterino.app/Contents/Frameworks/
