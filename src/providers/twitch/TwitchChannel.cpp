@@ -1831,14 +1831,14 @@ void TwitchChannel::upsertPersonalSeventvEmotes(
     using MessageElementVec = std::vector<std::unique_ptr<MessageElement>>;
 
     /// Tries to find words in the @a textElement that are emotes in the @a emoteMap
-    /// i.e. newly added emotes and converts these to an emote element
+    /// (i.e. newly added emotes) and converts these to an emote element
     /// or, if they're zero-width, to a layered emote element.
     const auto upsertWords = [&](MessageElementVec &elements,
                                  TextElement *textElement) {
         std::vector<TextElement::Word> words;
 
         /// Appends a text element with the pending @a words
-        /// and clear the vector.
+        /// and clears the vector.
         ///
         /// @pre @a words must not be empty
         const auto flush = [&]() {
