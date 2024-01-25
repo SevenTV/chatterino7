@@ -177,7 +177,7 @@ std::optional<std::shared_ptr<const EmoteMap>>
     std::shared_lock<std::shared_mutex> lock(this->mutex_);
     if (!this->enabled_)
     {
-        return {};
+        return std::nullopt;
     }
 
     auto id = this->emoteSets_.find(emoteSetID);
