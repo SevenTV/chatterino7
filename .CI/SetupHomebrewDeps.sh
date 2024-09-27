@@ -82,11 +82,20 @@ echo "Installing x86_64 brew"
 sudo mkdir /opt/homebrew-x86_64
 sudo curl -L https://github.com/Homebrew/brew/tarball/master | sudo tar xz --strip 1 -C /opt/homebrew-x86_64
 
+sudo chown -R $USER /opt/homebrew-x86_64
+
 echo "Installing ARM dependencies"
 brew install "$@"
 
+alias brew_x86="arch -x86_64 /opt/homebrew-x86_64/bin/brew"
+
 echo "Installing x86_64 dependencies"
-arch -x86_64 /opt/homebrew-x86_64/bin/brew install "$@"
+for dep in "$@"
+do
+    brew_x86 fetch --force --bottle-tag=x86_64_monterey "$dep"
+    brew_x86 install $(brew --cache --bottle-tag=x86_64_monterey "$dep")
+done
+
 
 # Relink universal libraries
 echo "Relink boost libraries"
