@@ -44,7 +44,7 @@ c2-make-universal-dylib() {
 
     local _arm64_lib="${_arm64_homebrew}/${_input_lib}"
     local _x86_64_lib="${_x86_64_homebrew}/${_input_lib}"
-    local _override_lib="${_override_homebrew}/${_input_lib}"
+    local _override_lib=$(readlink "${_override_homebrew}/${_input_lib}")
 
     local _universal_lib="${_universal_lib}/${_input_lib_filename}"
 
