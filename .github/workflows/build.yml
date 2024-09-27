@@ -124,7 +124,7 @@ jobs:
             skip-crashpad: false
           # macOS (ARM)
           - os: macos-latest
-            qt-version: 6.7.3
+            qt-version: 6.7.1
             force-lto: false
             plugins: true
             skip-artifact: false
@@ -355,15 +355,10 @@ jobs:
         name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
 
-      - if: startsWith(matrix.os, 'macos')
-        name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
-
-      - if: failure() && startsWith(matrix.os, 'macos')
-        name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
+      # - if: failure() && startsWith(matrix.os, 'macos')
+      #   name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      #   timeout-minutes: 15
 
   create-release:
     needs: [build-ubuntu-docker, build]
