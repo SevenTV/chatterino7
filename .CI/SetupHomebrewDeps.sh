@@ -78,11 +78,14 @@ c2-make-universal-dylib() {
     ln -v -s "${_universal_lib}" "${_override_lib}"
 }
 
-echo "Installing x86_64 brew"
 sudo mkdir /opt/homebrew-x86_64
-sudo curl -L https://github.com/Homebrew/brew/tarball/master | sudo tar xz --strip 1 -C /opt/homebrew-x86_64
+sudo mkdir /opt/universal-lib
 
 sudo chown -R $USER /opt/homebrew-x86_64
+sudo chown -R $USER /opt/universal-lib
+
+echo "Installing x86_64 brew"
+sudo curl -L https://github.com/Homebrew/brew/tarball/master | sudo tar xz --strip 1 -C /opt/homebrew-x86_64
 
 echo "Installing ARM dependencies"
 brew install "$@"
@@ -94,12 +97,10 @@ do
     arch -x86_64 /opt/homebrew-x86_64/bin/brew install $(arch -x86_64 /opt/homebrew-x86_64/bin/brew --cache --bottle-tag=x86_64_monterey "$dep")
 done
 
-
-# Relink universal libraries
-echo "Relink boost libraries"
+echo "Relinking boost libraries"
 c2-make-universal-dylib lib/libboost_random-mt.dylib
 
-echo "Relink OpenSSL 3 libcrypto"
+echo "Relinking OpenSSL 3 libcrypto"
 c2-make-universal-dylib lib/libcrypto.dylib
-echo "Relink OpenSSL 3 libssl"
+echo "Relinking OpenSSL 3 libssl"
 c2-make-universal-dylib lib/libssl.dylib
