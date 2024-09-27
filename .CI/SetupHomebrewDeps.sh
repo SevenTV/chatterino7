@@ -81,11 +81,11 @@ c2-make-universal-dylib() {
 sudo mkdir /opt/homebrew-x86_64
 sudo mkdir /opt/universal-lib
 
-sudo chown -R $USER /opt/homebrew-x86_64
 sudo chown -R $USER /opt/universal-lib
 
 echo "Installing x86_64 brew"
 sudo curl -L https://github.com/Homebrew/brew/tarball/master | sudo tar xz --strip 1 -C /opt/homebrew-x86_64
+sudo chown -R $USER /opt/homebrew-x86_64
 
 echo "Installing ARM dependencies"
 brew install "$@"
