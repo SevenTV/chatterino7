@@ -79,7 +79,7 @@ c2-make-universal-dylib() {
 }
 
 echo "Installing x86_64 brew"
-sudo mkdir /opt/homebrew-x86_64
+mkdir /opt/homebrew-x86_64
 curl -L https://github.com/Homebrew/brew/tarball/master | tar xz --strip 1 -C /opt/homebrew-x86_64
 
 echo "Installing ARM dependencies"
