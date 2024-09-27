@@ -283,6 +283,11 @@ jobs:
           brew install boost openssl rapidjson p7zip create-dmg cmake tree
         shell: bash
 
+      - if: startsWith(matrix.os, 'macos')
+        name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
+
       - name: Build (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
@@ -328,11 +333,12 @@ jobs:
           name: chatterino-macos-Qt-${{ matrix.qt-version }}-universal.dmg
           path: build/chatterino-macos-Qt-${{ matrix.qt-version }}-universal.dmg
 
-      - name: Setup tmate session
+      - if: startsWith(matrix.os, 'macos')
+        name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 15
 
-      - if: failure()
+      - if: failure() && startsWith(matrix.os, 'macos')
         name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 15
