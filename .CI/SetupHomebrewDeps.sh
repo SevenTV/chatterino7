@@ -97,6 +97,14 @@ do
     arch -x86_64 /opt/homebrew-x86_64/bin/brew install $(arch -x86_64 /opt/homebrew-x86_64/bin/brew --cache --bottle-tag=x86_64_monterey "$dep")
 done
 
+echo "Unlink & link libraries"
+brew unlink "$@" || true
+brew link --overwrite "$@"
+
+echo "Unlink & link x86_64"
+arch -x86_64 /opt/homebrew-x86_64/bin/brew unlink "$@" || true
+arch -x86_64 /opt/homebrew-x86_64/bin/brew link --overwrite "$@"
+
 echo "Relinking boost libraries"
 c2-make-universal-dylib lib/libboost_random-mt.dylib
 
