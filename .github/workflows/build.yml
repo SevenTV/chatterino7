@@ -351,10 +351,6 @@ jobs:
           name: chatterino-macos-Qt-${{ matrix.qt-version }}-universal.dmg
           path: build/chatterino-macos-Qt-${{ matrix.qt-version }}-universal.dmg
 
-      - if: startsWith(matrix.os, 'macos')
-        name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
   create-release:
     needs: [build-ubuntu-docker, build]
     runs-on: ubuntu-latest
