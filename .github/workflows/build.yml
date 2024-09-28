@@ -355,11 +355,6 @@ jobs:
         name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
 
-      # - if: failure() && startsWith(matrix.os, 'macos')
-      #   name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   timeout-minutes: 15
-
   create-release:
     needs: [build-ubuntu-docker, build]
     runs-on: ubuntu-latest
