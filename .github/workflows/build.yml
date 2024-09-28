@@ -399,16 +399,16 @@ jobs:
 
       # macOS
       - uses: actions/download-artifact@v4
-        name: macOS Qt6.7.3 dmg
+        name: macOS Qt6.7.1 dmg
         with:
-          name: chatterino-macos-Qt-6.7.3-universal.dmg
+          name: chatterino-macos-Qt-6.7.1-universal.dmg
           path: release-artifacts/
 
       - name: Rename artifacts
         run: |
           ls -l
           # Rename the macos build to indicate that it's for macOS 12.0 users
-          mv chatterino-macos-Qt-6.7.3-x86_64.dmg Chatterino-macOS-12.0-universal.dmg
+          mv chatterino-macos-Qt-6.7.1-universal.dmg Chatterino-macOS-12.0-universal.dmg
         working-directory: release-artifacts
         shell: bash
 
