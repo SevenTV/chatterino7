@@ -329,6 +329,7 @@ jobs:
           install_name_tool -id @executable_path/../Frameworks/libssl.3.dylib chatterino.app/Contents/Frameworks/libssl.3.dylib
           install_name_tool -id @executable_path/../Frameworks/libcrypto.3.dylib chatterino.app/Contents/Frameworks/libcrypto.3.dylib
 
+          otool -L chatterino.app/Contents/Frameworks/libssl.3.dylib
           # Fix the search path for libcrypto in libssl
           otool -L chatterino.app/Contents/Frameworks/libssl.3.dylib \
             | grep libcrypto.3.dylib \
