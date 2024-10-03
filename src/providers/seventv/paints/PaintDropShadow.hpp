@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QColor>
+
 class QPixmapDropShadowFilter;
 
 namespace chatterino {
