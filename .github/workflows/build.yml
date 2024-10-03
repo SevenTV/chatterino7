@@ -350,15 +350,12 @@ jobs:
                 echo $og_entry; \
                 install_name_tool -change \
                   "$og_entry" \
-                  @executable_path/../Frameworks/$(echo $og_entry | sed -E 's/.*lib(ssl|crypto)/\1/') \
+                  @executable_path/../Frameworks/$(echo $og_entry | sed -E 's/.*(libssl|libcrypto)/\1/') \
                   chatterino.app/Contents/MacOS/chatterino; \
               done
 
           ./../.CI/CreateDMG.sh
         shell: bash
-      - name: Setup tmate session
-        if: startsWith(matrix.os, 'macos')
-        uses: mxschmitt/action-tmate@v3
 
       - name: Upload artifact (MacOS)
         if: startsWith(matrix.os, 'macos')
