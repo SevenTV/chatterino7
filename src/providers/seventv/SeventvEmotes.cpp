@@ -74,14 +74,12 @@ EmotePtr cachedOrMake(Emote &&emote, const EmoteId &id)
 }
 
 /**
-  * This decides whether an emote should be displayed
-  * as zero-width
+  * Gets the active emote flags
   */
-bool isZeroWidthActive(const QJsonObject &activeEmote)
+SeventvActiveEmoteFlags getActiveFlags(const QJsonObject &activeEmote)
 {
-    auto flags = SeventvActiveEmoteFlags(
-        SeventvActiveEmoteFlag(activeEmote.value("flags").toInt()));
-    return flags.has(SeventvActiveEmoteFlag::ZeroWidth);
+    return static_cast<SeventvActiveEmoteFlag>(
+        activeEmote.value("flags").toInt());
 }
 
 /**
@@ -135,7 +133,11 @@ CreateEmoteResult createEmote(const QJsonObject &activeEmote,
     auto author =
         EmoteAuthor{emoteData["owner"].toObject()["display_name"].toString()};
     auto baseEmoteName = EmoteName{emoteData["name"].toString()};
-    bool zeroWidth = isZeroWidthActive(activeEmote);
+    auto flags = getActiveFlags(activeEmote);
+    bool zeroWidth = flags.has(SeventvActiveEmoteFlag::ZeroWidth);
+    bool overrideGlobal =
+        flags.hasAll(SeventvActiveEmoteFlag::OverrideTwitchGlobal,
+                     SeventvActiveEmoteFlag::OverrideTwitchSubscriber);
     bool aliasedName = emoteName != baseEmoteName;
     auto tooltip =
         aliasedName
@@ -144,16 +146,17 @@ CreateEmoteResult createEmote(const QJsonObject &activeEmote,
             : createTooltip(emoteName.string, author.string, kind);
     auto imageSet = SeventvEmotes::createImageSet(emoteData, false);
 
-    auto emote = Emote({
-        emoteName,
-        imageSet,
-        tooltip,
-        Url{EMOTE_LINK_FORMAT.arg(emoteId.string)},
-        zeroWidth,
-        emoteId,
-        author,
-        makeConditionedOptional(aliasedName, baseEmoteName),
-    });
+    Emote emote{
+        .name = emoteName,
+        .images = imageSet,
+        .tooltip = tooltip,
+        .homePage = Url{EMOTE_LINK_FORMAT.arg(emoteId.string)},
+        .zeroWidth = zeroWidth,
+        .isGlobalOverride = overrideGlobal,
+        .id = emoteId,
+        .author = author,
+        .baseName = makeConditionedOptional(aliasedName, baseEmoteName),
+    };
 
     return {emote, emoteId, emoteName, !emote.images.getImage1()->isEmpty()};
 }
@@ -187,14 +190,21 @@ EmotePtr createUpdatedEmote(const EmotePtr &oldEmote,
                         dispatch.emoteName == oldEmote->baseName->string;
 
     auto baseName = oldEmote->baseName.value_or(oldEmote->name);
-    auto emote = std::make_shared<const Emote>(Emote(
-        {EmoteName{dispatch.emoteName}, oldEmote->images,
-         toNonAliased
-             ? createTooltip(dispatch.emoteName, oldEmote->author.string, kind)
-             : createAliasedTooltip(dispatch.emoteName, baseName.string,
-                                    oldEmote->author.string, kind),
-         oldEmote->homePage, oldEmote->zeroWidth, oldEmote->id,
-         oldEmote->author, makeConditionedOptional(!toNonAliased, baseName)}));
+    auto emote = std::make_shared<const Emote>(Emote({
+        .name = EmoteName{dispatch.emoteName},
+        .images = oldEmote->images,
+        .tooltip = toNonAliased ? createTooltip(dispatch.emoteName,
+                                                oldEmote->author.string, kind)
+                                : createAliasedTooltip(
+                                      dispatch.emoteName, baseName.string,
+                                      oldEmote->author.string, kind),
+        .homePage = oldEmote->homePage,
+        .zeroWidth = oldEmote->zeroWidth,
+        .isGlobalOverride = oldEmote->isGlobalOverride,
+        .id = oldEmote->id,
+        .author = oldEmote->author,
+        .baseName = makeConditionedOptional(!toNonAliased, baseName),
+    }));
     return emote;
 }
 

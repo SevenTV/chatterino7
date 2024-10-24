@@ -2133,24 +2133,6 @@ void MessageBuilder::addEmoji(const EmotePtr &emote)
 
 void MessageBuilder::addTextOrEmote(TextState &state, QString string)
 {
-    if (state.hasBits && this->tryAppendCheermote(state, string))
-    {
-        // This string was parsed as a cheermote
-        return;
-    }
-
-    // TODO: Implement ignored emotes
-    // Format of ignored emotes:
-    // Emote name: "forsenPuke" - if string in ignoredEmotes
-    // Will match emote regardless of source (i.e. bttv, ffz)
-    // Emote source + name: "bttv:nyanPls"
-    if (this->tryAppendEmote(state.twitchChannel, state.userID, {string}))
-    {
-        // Successfully appended an emote
-        return;
-    }
-
-    // Actually just text
     auto link = linkparser::parse(string);
     auto textColor = this->textColor_;
 
@@ -2639,6 +2621,13 @@ Outcome MessageBuilder::tryAppendEmote(TwitchChannel *twitchChannel,
         return Failure;
     }
 
+    this->appendEmote(*emote, flags, zeroWidth);
+    return Success;
+}
+
+void MessageBuilder::appendEmote(const EmotePtr &emote,
+                                 MessageElementFlags flags, bool zeroWidth)
+{
     if (zeroWidth && getSettings()->enableZeroWidthEmotes && !this->isEmpty())
     {
         // Attempt to merge current zero-width emote into any previous emotes
@@ -2651,26 +2640,25 @@ Outcome MessageBuilder::tryAppendEmote(TwitchChannel *twitchChannel,
             auto baseEmoteElement = this->releaseBack();
 
             std::vector<LayeredEmoteElement::Emote> layers = {
-                {baseEmote, baseEmoteElement->getFlags()}, {*emote, flags}};
+                {baseEmote, baseEmoteElement->getFlags()}, {emote, flags}};
             this->emplace<LayeredEmoteElement>(
                 std::move(layers), baseEmoteElement->getFlags() | flags,
                 this->textColor_);
-            return Success;
+            return;
         }
 
         auto *asLayered = dynamic_cast<LayeredEmoteElement *>(&this->back());
         if (asLayered)
         {
-            asLayered->addEmoteLayer({*emote, flags});
+            asLayered->addEmoteLayer({emote, flags});
             asLayered->addFlags(flags);
-            return Success;
+            return;
         }
 
         // No emote to merge with, just show as regular emote
     }
 
-    this->emplace<EmoteElement>(*emote, flags, this->textColor_);
-    return Success;
+    this->emplace<EmoteElement>(emote, flags, this->textColor_);
 }
 
 void MessageBuilder::addWords(
@@ -2696,10 +2684,18 @@ void MessageBuilder::addWords(
 
             if (currentTwitchEmote.start == cursor)
             {
-                // This emote exists right at the start of the word!
-                this->emplace<EmoteElement>(currentTwitchEmote.ptr,
-                                            MessageElementFlag::TwitchEmote,
-                                            this->textColor_);
+                auto [emote, flags, zeroWidth] = parseEmote(
+                    state.twitchChannel, state.userID, currentTwitchEmote.name);
+                if (emote && emote->get()->isGlobalOverride)
+                {
+                    this->appendEmote(*emote, flags, zeroWidth);
+                }
+                else
+                {
+                    this->emplace<EmoteElement>(currentTwitchEmote.ptr,
+                                                MessageElementFlag::TwitchEmote,
+                                                this->textColor_);
+                }
 
                 auto len = currentTwitchEmote.name.string.length();
                 cursor += len;
@@ -2750,7 +2746,25 @@ void MessageBuilder::addWords(
             continue;
         }
 
-        // split words
+        if (state.hasBits && this->tryAppendCheermote(state, word))
+        {
+            // This string was parsed as a cheermote
+            cursor += word.size() + 1;
+            continue;
+        }
+
+        // TODO: Implement ignored emotes
+        // Format of ignored emotes:
+        // Emote name: "forsenPuke" - if string in ignoredEmotes
+        // Will match emote regardless of source (i.e. bttv, ffz)
+        // Emote source + name: "bttv:nyanPls"
+        if (this->tryAppendEmote(state.twitchChannel, state.userID, {word}))
+        {
+            // Successfully appended an emote
+            cursor += word.size() + 1;
+            continue;
+        }
+
         for (auto variant : getApp()->getEmotes()->getEmojis()->parse(word))
         {
             boost::apply_visitor(variant::Overloaded{
