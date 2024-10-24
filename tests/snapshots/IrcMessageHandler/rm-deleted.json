@@ -179,39 +179,19 @@
                     ]
                 },
                 {
-                    "emote": {
-                        "author": "Chatterino",
-                        "homePage": "https://chatterino.com/7TVEmote",
-                        "id": "1",
-                        "images": {
-                            "1x": "https://chatterino.com/7TVEmote.png"
-                        },
-                        "name": "7TVEmote",
-                        "tooltip": "7TVEmote Tooltip"
-                    },
-                    "flags": "SevenTVEmoteImage|SevenTVEmoteText",
+                    "color": "Text",
+                    "flags": "Text",
                     "link": {
                         "type": "None",
                         "value": ""
                     },
-                    "text": {
-                        "color": "Text",
-                        "flags": "Misc",
-                        "link": {
-                            "type": "None",
-                            "value": ""
-                        },
-                        "style": "ChatMedium",
-                        "tooltip": "",
-                        "trailingSpace": true,
-                        "type": "TextElement",
-                        "words": [
-                            "7TVEmote"
-                        ]
-                    },
-                    "tooltip": "7TVEmote Tooltip",
+                    "style": "ChatMedium",
+                    "tooltip": "",
                     "trailingSpace": true,
-                    "type": "EmoteElement"
+                    "type": "TextElement",
+                    "words": [
+                        "7TVEmote"
+                    ]
                 },
                 {
                     "emote": {

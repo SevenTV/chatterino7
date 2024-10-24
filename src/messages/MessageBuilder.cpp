@@ -2133,24 +2133,6 @@ void MessageBuilder::addEmoji(const EmotePtr &emote)
 
 void MessageBuilder::addTextOrEmote(TextState &state, QString string)
 {
-    if (state.hasBits && this->tryAppendCheermote(state, string))
-    {
-        // This string was parsed as a cheermote
-        return;
-    }
-
-    // TODO: Implement ignored emotes
-    // Format of ignored emotes:
-    // Emote name: "forsenPuke" - if string in ignoredEmotes
-    // Will match emote regardless of source (i.e. bttv, ffz)
-    // Emote source + name: "bttv:nyanPls"
-    if (this->tryAppendEmote(state.twitchChannel, state.userID, {string}))
-    {
-        // Successfully appended an emote
-        return;
-    }
-
-    // Actually just text
     auto link = linkparser::parse(string);
     auto textColor = this->textColor_;
 
@@ -2764,7 +2746,25 @@ void MessageBuilder::addWords(
             continue;
         }
 
-        // split words
+        if (state.hasBits && this->tryAppendCheermote(state, word))
+        {
+            // This string was parsed as a cheermote
+            cursor += word.size() + 1;
+            continue;
+        }
+
+        // TODO: Implement ignored emotes
+        // Format of ignored emotes:
+        // Emote name: "forsenPuke" - if string in ignoredEmotes
+        // Will match emote regardless of source (i.e. bttv, ffz)
+        // Emote source + name: "bttv:nyanPls"
+        if (this->tryAppendEmote(state.twitchChannel, state.userID, {word}))
+        {
+            // Successfully appended an emote
+            cursor += word.size() + 1;
+            continue;
+        }
+
         for (auto variant : getApp()->getEmotes()->getEmojis()->parse(word))
         {
             boost::apply_visitor(variant::Overloaded{
