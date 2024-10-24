@@ -269,6 +269,8 @@ private:
     Outcome tryAppendCheermote(TextState &state, const QString &string);
     Outcome tryAppendEmote(TwitchChannel *twitchChannel, const QString &userID,
                            const EmoteName &name);
+    void appendEmote(const EmotePtr &emote, MessageElementFlags flags,
+                     bool zeroWidth);
 
     bool isEmpty() const;
     MessageElement &back();

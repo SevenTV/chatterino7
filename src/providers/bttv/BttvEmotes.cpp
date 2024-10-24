@@ -109,6 +109,7 @@ CreateEmoteResult createChannelEmote(const QString &channelDisplayName,
                                              : author.string)},
         Url{EMOTE_LINK_FORMAT.arg(id.string)},
         false,
+        false,
         id,
     });
 

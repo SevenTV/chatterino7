@@ -19,6 +19,7 @@ struct Emote {
     Tooltip tooltip;
     Url homePage;
     bool zeroWidth{};
+    bool isGlobalOverride = false;
     EmoteId id;
     EmoteAuthor author;
     /**
