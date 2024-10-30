@@ -11,6 +11,7 @@
 #include "singletons/Settings.hpp"
 #include "singletons/Updates.hpp"
 #include "util/CombinePath.hpp"
+#include "util/SanityCheckImages.hpp"
 #include "widgets/dialogs/LastRunCrashDialog.hpp"
 
 #include <QApplication>
@@ -240,6 +241,8 @@ void runGui(QApplication &a, const Paths &paths, Settings &settings,
         showLastCrashDialog(args, paths);
     }
 #endif
+
+    sanityCheckImages();
 
     updates.deleteOldFiles();
 

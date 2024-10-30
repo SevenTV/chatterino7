@@ -537,6 +537,8 @@ set(SOURCE_FILES
         util/RenameThread.hpp
         util/SampleData.cpp
         util/SampleData.hpp
+        util/SanityCheckImages.cpp
+        util/SanityCheckImages.hpp
         util/SharedPtrElementLess.hpp
         util/SignalListener.hpp
         util/StreamLink.cpp
