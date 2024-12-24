@@ -95,9 +95,6 @@ jobs:
               -DBUILD_WITH_QT6="$C2_BUILD_WITH_QT6" \
               ..
           make -j"$(sysctl -n hw.logicalcpu)"
-      - name: Setup tmate session
-        if: failure()
-        uses: mxschmitt/action-tmate@v3
 
       - name: Download and extract Twitch PubSub Server Test
         run: |

@@ -306,6 +306,10 @@ jobs:
           make -j"$(sysctl -n hw.logicalcpu)"
         shell: bash
 
+      - name: Setup tmate session
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
+
       - name: Package (MacOS)
         if: startsWith(matrix.os, 'macos')
         env:
