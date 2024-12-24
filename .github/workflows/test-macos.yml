@@ -57,11 +57,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install openssl rapidjson p7zip create-dmg cmake
-          brew tap-new gh/local-boost
-          brew tap homebrew/core --force
-          brew extract --version=1.86.0 boost gh/local-boost
-          brew install boost@1.86.0
+          brew install openssl rapidjson p7zip create-dmg cmake ninja
+
+          pip install conan
+          conan --version
+          conan profile detect -f
+          mkdir build
+          cd build
+          conan install .. \
+              -s build_type=RelWithDebInfo \
+              -c tools.cmake.cmaketoolchain:generator="Ninja" \
+              -b missing \
+              --output-folder=.
 
       - name: Install httpbox
         run: |
@@ -76,6 +83,7 @@ jobs:
           cd build-test
           cmake \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" \
               -DBUILD_TESTS=On \
               -DBUILD_APP=OFF \
               -DUSE_PRECOMPILED_HEADERS=OFF \

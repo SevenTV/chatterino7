@@ -184,32 +184,31 @@ jobs:
           key: ${{ runner.os }}-conan-user-${{ hashFiles('**/conanfile.py') }}${{ env.C2_CONAN_CACHE_SUFFIX }}
           path: ~/.conan2/
 
-      - name: Install Conan (Windows)
-        if: startsWith(matrix.os, 'windows')
+      - name: Install Conan (Windows/macOS)
+        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'macos')
         run: |
           python3 -c "import site; import sys; print(f'{site.USER_BASE}\\Python{sys.version_info.major}{sys.version_info.minor}\\Scripts')" >> "$GITHUB_PATH"
           pip3 install --user "conan==${{ env.CONAN_VERSION }}"
-        shell: powershell
+        shell: bash
 
-      - name: Setup Conan (Windows)
-        if: startsWith(matrix.os, 'windows')
+      - name: Setup Conan (Windows/macOs)
+        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'macos')
         run: |
           conan --version
           conan profile detect -f
-        shell: powershell
+        shell: bash
 
-      - name: Install dependencies (Windows)
-        if: startsWith(matrix.os, 'windows')
+      - name: Install dependencies (Windows/macOS)
+        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'macos')
         run: |
           mkdir build
           cd build
-          conan install .. `
-              -s build_type=RelWithDebInfo `
-              -c tools.cmake.cmaketoolchain:generator="NMake Makefiles" `
-              -b missing `
-              --output-folder=. `
-              -o with_openssl3="$Env:C2_USE_OPENSSL3"
-        shell: powershell
+          conan install .. \
+              -s build_type=RelWithDebInfo \
+              -c tools.cmake.cmaketoolchain:generator="Ninja" \
+              -b missing \
+              --output-folder=.
+        shell: bash
 
       - name: Build (Windows)
         if: startsWith(matrix.os, 'windows')
@@ -278,11 +277,8 @@ jobs:
       - name: Install dependencies (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew tap-new gh/local-boost
-          brew tap homebrew/core --force
-          brew extract --version=1.86.0 boost gh/local-boost
           # binary dependencies
-          ./.CI/SetupHomebrewDeps.sh boost@1.86.0 openssl@3
+          ./.CI/SetupHomebrewDeps.sh openssl@3
           # build and header-only dependencies
           brew install rapidjson p7zip create-dmg cmake tree
         shell: bash
@@ -290,10 +286,11 @@ jobs:
       - name: Build (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
-          mkdir build
+          mkdir -p build
           cd build
           cmake \
               -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" \
               -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
               -DUSE_PRECOMPILED_HEADERS=OFF \
               -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
