@@ -12,6 +12,7 @@ env:
   QT_QPA_PLATFORM: minimal
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
+  CONAN_VERSION: 2.11.0
 
 concurrency:
   group: test-macos-${{ github.ref }}
@@ -63,7 +64,7 @@ jobs:
         run: |
           brew install openssl rapidjson p7zip create-dmg cmake ninja
 
-          pip install conan
+          pip install conan==${{env.CONAN_VERSION}}
           conan --version
           conan profile detect -f
           mkdir build-test
