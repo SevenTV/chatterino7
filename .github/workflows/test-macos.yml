@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13]
+        os: [macos-latest]
         qt-version: [6.7.1]
         plugins: [true]
       fail-fast: false
