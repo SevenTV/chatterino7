@@ -184,11 +184,15 @@ jobs:
           key: ${{ runner.os }}-conan-user-${{ hashFiles('**/conanfile.py') }}${{ env.C2_CONAN_CACHE_SUFFIX }}
           path: ~/.conan2/
 
+      - uses: actions/setup-python@v5
+        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'macos')
+        with:
+          python-version: "3.13"
+
       - name: Install Conan (Windows/macOS)
         if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'macos')
         run: |
-          python3 -c "import site; import sys; print(f'{site.USER_BASE}\\Python{sys.version_info.major}{sys.version_info.minor}\\Scripts')" >> "$GITHUB_PATH"
-          pip3 install --user "conan==${{ env.CONAN_VERSION }}"
+          pip install conan
         shell: bash
 
       - name: Setup Conan (Windows/macOs)

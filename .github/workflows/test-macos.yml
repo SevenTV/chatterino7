@@ -55,6 +55,10 @@ jobs:
           modules: ${{ env.QT_MODULES }}
           version: ${{ matrix.qt-version }}
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
       - name: Install dependencies
         run: |
           brew install openssl rapidjson p7zip create-dmg cmake ninja
