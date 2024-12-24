@@ -41,6 +41,7 @@ class Chatterino(ConanFile):
         tc.blocks.remove("generic_system")
         tc.blocks.remove("user_toolchain")
         tc.blocks.remove("output_dirs")
+        tc.blocks.remove("apple_system")
         tc.generate()
 
         def copy_bin(dep, selector, subdir):

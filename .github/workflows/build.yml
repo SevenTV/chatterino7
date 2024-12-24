@@ -208,8 +208,7 @@ jobs:
           mkdir build
           cd build
           conan install .. \
-              -s build_type=RelWithDebInfo \
-              ${{startsWith(matrix.os, 'macos') && '-s="arch=armv8|x86_64"' || ''}} \
+              -s build_type=${{startsWith(matrix.os, 'macos') && 'Release' || 'RelWithDebInfo'}} \
               -c tools.cmake.cmaketoolchain:generator="Ninja" \
               -b missing \
               --output-folder=.
