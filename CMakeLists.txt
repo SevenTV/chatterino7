@@ -132,6 +132,7 @@ find_package(Sanitizers QUIET)
 
 # Find boost on the system
 find_package(Boost REQUIRED OPTIONAL_COMPONENTS headers)
+message(STATUS "BOOST_LIBS=${Boost_LIBRARIES}")
 
 # Find OpenSSL on the system
 find_package(OpenSSL REQUIRED)
