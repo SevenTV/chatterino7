@@ -4,8 +4,6 @@ find_path(RapidJSON_INCLUDE_DIR rapidjson/rapidjson.h HINTS ${CMAKE_SOURCE_DIR}/
 
 find_package_handle_standard_args(RapidJSON DEFAULT_MSG RapidJSON_INCLUDE_DIR)
 
-message(STATUS "f=${RapidJSON_FOUND} - i=${RapidJSON_INCLUDE_DIR}")
-
 if (RapidJSON_FOUND)
     add_library(RapidJSON::RapidJSON INTERFACE IMPORTED)
     set_target_properties(RapidJSON::RapidJSON PROPERTIES
