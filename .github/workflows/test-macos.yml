@@ -66,8 +66,8 @@ jobs:
           pip install conan
           conan --version
           conan profile detect -f
-          mkdir build
-          cd build
+          mkdir build-test
+          cd build-test
           conan install .. \
               -s build_type=RelWithDebInfo \
               -c tools.cmake.cmaketoolchain:generator="Ninja" \
@@ -83,7 +83,7 @@ jobs:
 
       - name: Build
         run: |
-          mkdir build-test
+          mkdir -p build-test
           cd build-test
           cmake \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
