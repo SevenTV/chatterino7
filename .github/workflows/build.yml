@@ -206,7 +206,7 @@ jobs:
               -c tools.cmake.cmaketoolchain:generator="Ninja" \
               -b missing \
               --output-folder=. \
-              -o with_openssl3="$Env:C2_USE_OPENSSL3"
+              -o with_openssl3="$C2_USE_OPENSSL3"
         shell: bash
 
       - name: Build (Windows)
