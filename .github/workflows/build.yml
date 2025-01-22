@@ -352,9 +352,6 @@ jobs:
 
           ./../.CI/CreateDMG.sh
         shell: bash
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
 
       - name: Upload artifact (MacOS)
         if: startsWith(matrix.os, 'macos')
