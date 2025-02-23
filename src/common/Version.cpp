@@ -155,7 +155,7 @@ void Version::generateBuildString()
     // Add commit information
     s +=
         QString(
-            R"( (commit <a href="https://github.com/Chatterino/chatterino2/commit/%1">%1</a>)")
+            R"( (commit <a href="https://github.com/SevenTV/chatterino7/commit/%1">%1</a>)")
             .arg(this->commitHash());
     if (this->isModified())
     {
