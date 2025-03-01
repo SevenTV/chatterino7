@@ -15,6 +15,10 @@ public:
     virtual QBrush asBrush(QColor userColor, QRectF drawingRect) const = 0;
     virtual const std::vector<PaintDropShadow> &getDropShadows() const = 0;
     virtual bool animated() const = 0;
+    virtual int durationOffset() const noexcept
+    {
+        return 0;
+    };
 
     QPixmap getPixmap(const QString &text, const QFont &font, QColor userColor,
                       QSize size, float scale, float dpr) const;

@@ -186,6 +186,11 @@ std::optional<QPixmap> Frames::first() const
     return this->items_.front().image;
 }
 
+int Frames::durationOffset() const noexcept
+{
+    return this->durationOffset_;
+}
+
 QList<Frame> readFrames(QImageReader &reader, const Url &url)
 {
     QList<Frame> frames;
@@ -436,6 +441,11 @@ bool Image::animated() const
     assertInGuiThread();
 
     return this->frames_->animated();
+}
+
+int Image::durationOffset() const noexcept
+{
+    return this->frames_->durationOffset();
 }
 
 int Image::width() const

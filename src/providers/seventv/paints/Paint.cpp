@@ -9,6 +9,40 @@
 #include <QLabel>
 #include <QPainter>
 
+namespace {
+struct CacheEntry {
+    size_t hash = 0;
+    int offset = 0;
+    QPixmap pix;
+};
+
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+constinit std::array<std::optional<CacheEntry>, 8> CACHE;
+
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+bool getFromCache(size_t hash, int offset, QPixmap *pix)
+{
+    auto &it = CACHE[hash % CACHE.size()];
+    if (!it || it->hash != hash || it->offset != offset)
+    {
+        return false;
+    }
+    *pix = it->pix;
+    return true;
+}
+
+void putToCache(size_t hash, int offset, const QPixmap &pix)
+{
+    CACHE[hash % CACHE.size()] = CacheEntry{
+        .hash = hash,
+        .offset = offset,
+        .pix = pix,
+    };
+}
+// NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
+
+}  // namespace
+
 namespace chatterino {
 
 using namespace literals;
@@ -17,7 +51,15 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
                          QColor userColor, QSize size, float scale,
                          float dpr) const
 {
-    QPixmap pixmap(size * dpr);
+    int durationOffset = this->durationOffset();
+    size_t hash =
+        qHashMulti(0, this->id, text, font, userColor.rgba(), size, scale, dpr);
+    QPixmap pixmap;
+    if (getFromCache(hash, durationOffset, &pixmap))
+    {
+        return pixmap;
+    }
+    pixmap = QPixmap(size * dpr);
     pixmap.setDevicePixelRatio(dpr);
     pixmap.fill(Qt::transparent);
 
@@ -88,6 +130,8 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
                                QTextOption(Qt::AlignLeft | Qt::AlignTop));
         pixmapPainter.end();
     }
+
+    putToCache(hash, durationOffset, pixmap);
 
     return pixmap;
 }

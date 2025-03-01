@@ -20,6 +20,11 @@ bool UrlPaint::animated() const
     return image_->animated();
 }
 
+int UrlPaint::durationOffset() const noexcept
+{
+    return this->image_->durationOffset();
+}
+
 QBrush UrlPaint::asBrush(const QColor userColor, const QRectF drawingRect) const
 {
     if (auto paintPixmap = this->image_->pixmapOrLoad())

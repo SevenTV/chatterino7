@@ -49,6 +49,7 @@ public:
     void advance();
     std::optional<QPixmap> current() const;
     std::optional<QPixmap> first() const;
+    int durationOffset() const noexcept;
 
 private:
     int64_t memoryUsage() const;
@@ -99,6 +100,7 @@ public:
     int width() const;
     int height() const;
     bool animated() const;
+    int durationOffset() const noexcept;
 
     bool operator==(const Image &image) = delete;
     bool operator!=(const Image &image) = delete;
