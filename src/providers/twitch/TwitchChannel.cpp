@@ -2368,8 +2368,8 @@ void TwitchChannel::upsertPersonalSeventvEmotes(
                 elements.pop_back();
 
                 std::vector<LayeredEmoteElement::Emote> layers{
-                    {baseEmote, baseEmoteElement->getFlags()},
-                    {emote, MessageElementFlag::SevenTVEmote},
+                    {.ptr = baseEmote, .flags = baseEmoteElement->getFlags()},
+                    {.ptr = emote, .flags = MessageElementFlag::SevenTVEmote},
                 };
                 elements.emplace_back(std::make_unique<LayeredEmoteElement>(
                     std::move(layers),
@@ -2384,7 +2384,7 @@ void TwitchChannel::upsertPersonalSeventvEmotes(
             if (asLayered)
             {
                 asLayered->addEmoteLayer(
-                    {emote, MessageElementFlag::SevenTVEmote});
+                    {.ptr = emote, .flags = MessageElementFlag::SevenTVEmote});
                 asLayered->addFlags(MessageElementFlag::SevenTVEmote);
                 return true;
             }
@@ -2426,38 +2426,34 @@ void TwitchChannel::upsertPersonalSeventvEmotes(
         }
     };
 
-    auto cloned = message.value()->cloneWith([&](Message &message) {
-        // We create a new vector of elements,
-        // if we encounter a `TextElement` that contains any emote,
-        // we insert an `EmoteElement` (or `LayeredEmoteElement`) at the position.
-        MessageElementVec elements;
-        elements.reserve(message.elements.size());
+    auto cloned = message.value()->clone();
+    // We create a new vector of elements,
+    // if we encounter a `TextElement` that contains any emote,
+    // we insert an `EmoteElement` (or `LayeredEmoteElement`) at the position.
+    MessageElementVec elements;
+    elements.reserve(cloned->elements.size());
 
-        std::for_each(
-            std::make_move_iterator(message.elements.begin()),
-            std::make_move_iterator(message.elements.end()),
-            [&](auto &&element) {
-                auto *elementPtr = element.get();
-                auto *textElement = dynamic_cast<TextElement *>(elementPtr);
-                auto *linkElement = dynamic_cast<LinkElement *>(elementPtr);
-                auto *mentionElement =
-                    dynamic_cast<MentionElement *>(elementPtr);
+    std::for_each(
+        std::make_move_iterator(cloned->elements.begin()),
+        std::make_move_iterator(cloned->elements.end()), [&](auto &&element) {
+            MessageElement *elementPtr = element.get();
+            auto *textElement = dynamic_cast<TextElement *>(elementPtr);
+            auto *linkElement = dynamic_cast<LinkElement *>(elementPtr);
+            auto *mentionElement = dynamic_cast<MentionElement *>(elementPtr);
 
-                // Check if this contains the message text
-                if (textElement && !linkElement && !mentionElement &&
-                    textElement->getFlags().has(MessageElementFlag::Text))
-                {
-                    upsertWords(elements, textElement);
-                }
-                else
-                {
-                    elements.emplace_back(
-                        std::forward<decltype(element)>(element));
-                }
-            });
+            // Check if this contains the message text
+            if (textElement && !linkElement && !mentionElement &&
+                textElement->getFlags().has(MessageElementFlag::Text))
+            {
+                upsertWords(elements, textElement);
+            }
+            else
+            {
+                elements.emplace_back(std::forward<decltype(element)>(element));
+            }
+        });
 
-        message.elements = std::move(elements);
-    });
+    cloned->elements = std::move(elements);
 
     this->replaceMessage(message.value(), cloned);
 }

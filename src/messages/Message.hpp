@@ -94,13 +94,11 @@ struct Message {
     std::shared_ptr<ChannelPointReward> reward = nullptr;
 
     /**
-     * Clones this message. Before contructing the shared pointer, 
-     * `fn` is called with a reference to the new message.
+     * Clones this message.
      *
      * @return An identical message, independent from this one.
      */
-    std::shared_ptr<const Message> cloneWith(
-        const std::function<void(Message &)> &fn) const;
+    std::shared_ptr<Message> clone() const;
 
     QJsonObject toJson() const;
 };

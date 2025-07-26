@@ -14,6 +14,9 @@
 #include <QJsonObject>
 #include <QJsonValue>
 
+#include <algorithm>
+
+
 namespace chatterino {
 
 using namespace literals;
@@ -90,8 +93,7 @@ ScrollbarHighlight Message::getScrollBarHighlight() const
     return {};
 }
 
-std::shared_ptr<const Message> Message::cloneWith(
-    const std::function<void(Message &)> &fn) const
+std::shared_ptr<Message> Message::clone() const
 {
     auto cloned = std::make_shared<Message>();
     cloned->flags = this->flags;
@@ -112,13 +114,11 @@ std::shared_ptr<const Message> Message::cloneWith(
     cloned->replyThread = this->replyThread;
     cloned->count = this->count;
     cloned->reward = this->reward;
-    std::transform(this->elements.cbegin(), this->elements.cend(),
-                   std::back_inserter(cloned->elements),
-                   [](const auto &element) {
-                       return element->clone();
-                   });
-    fn(*cloned);
-    return std::move(cloned);
+    std::ranges::transform(this->elements, std::back_inserter(cloned->elements),
+                           [](const auto &element) {
+                               return element->clone();
+                           });
+    return cloned;
 }
 
 QJsonObject Message::toJson() const
