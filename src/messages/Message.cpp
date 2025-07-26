@@ -16,7 +16,6 @@
 
 #include <algorithm>
 
-
 namespace chatterino {
 
 using namespace literals;
