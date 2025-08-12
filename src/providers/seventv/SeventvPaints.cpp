@@ -208,8 +208,11 @@ void SeventvPaints::clearPaintFromUser(const QString &paintID,
     const auto it = this->paintMap_.find(userName.string);
     if (it != this->paintMap_.end() && it->second->id == paintID)
     {
-        this->paintMap_.erase(userName.string);
+        this->paintMap_.erase(it);
         DebugCount::decrease(u"7TV Paint Assignments"_s);
+        postToThread([] {
+            getApp()->getWindows()->invalidateChannelViewBuffers();
+        });
     }
 }
 
