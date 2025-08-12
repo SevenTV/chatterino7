@@ -9,6 +9,8 @@ x86_64_homebrew_dir="/opt/homebrew-x86_64"
  # Directory where we place the finished universal library
 universal_lib_dir="/opt/universal-lib"
 
+export HOMEBREW_DEVELOPER=1
+
 # args: path-to-library (in homebrew dir)
 c2-make-universal-dylib() {
     local _input_lib="$1"
@@ -60,7 +62,7 @@ sudo mkdir "$universal_lib_dir"
 sudo chown -R $USER "$universal_lib_dir"
 
 echo "Installing x86_64 brew"
-sudo curl -L https://github.com/Homebrew/brew/tarball/5ed723e25ec6ef09f55c1f84f618b88bac82e6d1 | sudo tar xz --strip 1 -C "$x86_64_homebrew_dir"
+sudo curl -L https://github.com/Homebrew/brew/tarball/master | sudo tar xz --strip 1 -C "$x86_64_homebrew_dir"
 sudo chown -R $USER "$x86_64_homebrew_dir"
 
 echo "Installing ARM dependencies"
@@ -71,7 +73,6 @@ for dep in "$@"
 do
     arch -x86_64 "$x86_64_homebrew_dir/bin/brew" fetch --force --bottle-tag=x86_64_ventura "$dep"
     arch -x86_64 "$x86_64_homebrew_dir/bin/brew" install $(arch -x86_64 "$x86_64_homebrew_dir/bin/brew" --cache --bottle-tag=x86_64_ventura "$dep")
-    # arch -x86_64 "$x86_64_homebrew_dir/bin/brew" install "$dep"
 done
 
 echo "Relinking boost libraries"
