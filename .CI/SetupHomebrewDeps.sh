@@ -60,7 +60,7 @@ sudo mkdir "$universal_lib_dir"
 sudo chown -R $USER "$universal_lib_dir"
 
 echo "Installing x86_64 brew"
-sudo curl -L https://github.com/Homebrew/brew/tarball/4.6.3 | sudo tar xz --strip 1 -C "$x86_64_homebrew_dir"
+sudo curl -L https://github.com/Homebrew/brew/tarball/5ed723e25ec6ef09f55c1f84f618b88bac82e6d1 | sudo tar xz --strip 1 -C "$x86_64_homebrew_dir"
 sudo chown -R $USER "$x86_64_homebrew_dir"
 
 echo "Installing ARM dependencies"
