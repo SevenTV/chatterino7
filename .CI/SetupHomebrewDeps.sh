@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 # Prefix for where to find the ARM64 library
 arm64_homebrew_dir="/opt/homebrew"
