@@ -56,9 +56,9 @@ QGradientStops parsePaintStops(const QJsonArray &stops)
         // Setting a different color at the same position twice just overwrites
         // the previous color. So we have to shift the second point slightly
         // ahead, simulating an actual hard edge
-        if (position == lastStop)
+        if (position <= lastStop)
         {
-            position += 0.0000001;
+            position = lastStop + 0.0000001;
         }
 
         lastStop = position;
