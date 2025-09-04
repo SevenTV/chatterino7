@@ -185,7 +185,7 @@ jobs:
           path: ~/.conan2/
 
       - name: Setup Python (Windows)
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         if: startsWith(matrix.os, 'windows')
         with:
           python-version: "3.13"
@@ -418,7 +418,7 @@ jobs:
         shell: bash
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
