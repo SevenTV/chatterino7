@@ -3,6 +3,7 @@
 ## Unversioned
 
 - Dev: Bumped Qt to 6.9.3 on Windows and macOS due to CVE-2025-10728 and CVE-2025-10729 (74077350da2d4cfff2ede0ce0ebb11654253b440)
+- Dev: Updated the macOS Homebrew bottles on x86_64 to Sonoma as Ventura was EOL'd 2025-Sep-15 (#336)
 
 ## 7.5.4
 
