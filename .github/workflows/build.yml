@@ -103,7 +103,7 @@ jobs:
 
       - name: Upload artifact - AppImage (Ubuntu)
         if: matrix.build-appimage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: Chatterino-x86_64-Qt-${{ matrix.qt-version }}.AppImage
           path: build/Chatterino-x86_64.AppImage
