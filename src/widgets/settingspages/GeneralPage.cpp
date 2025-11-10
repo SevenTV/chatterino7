@@ -1299,9 +1299,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
     SettingWidget::checkbox("Display 7TV Paint Shadows",
                             s.displaySevenTVPaintShadows)
         ->addTo(layout);
-    SettingWidget::checkbox("Updated Paint Shadows",
-                            s.updatedSevenTVPaintShadows)
-        ->addTo(layout);
 
     SettingWidget::checkbox("Lowercase domains (anti-phishing)",
                             s.lowercaseDomains)

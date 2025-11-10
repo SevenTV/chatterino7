@@ -224,8 +224,6 @@ public:
     BoolSetting displaySevenTVPaints = {"/misc/displaySevenTVPaints", true};
     BoolSetting displaySevenTVPaintShadows = {
         "/misc/displaySevenTVPaintShadows", true};
-    BoolSetting updatedSevenTVPaintShadows = {
-        "/misc/updatedSevenTVPaintShadows", true};
     BoolSetting boldUsernames = {"/appearance/messages/boldUsernames", true};
     BoolSetting colorUsernames = {"/appearance/messages/colorUsernames", true};
     BoolSetting findAllUsernames = {"/appearance/messages/findAllUsernames",

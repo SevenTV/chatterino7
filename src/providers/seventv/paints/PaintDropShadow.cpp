@@ -1,5 +1,4 @@
 #include "providers/seventv/paints/PaintDropShadow.hpp"
-#include "singletons/Settings.hpp"
 
 #include <private/qpixmapfilter_p.h>
 
@@ -28,7 +27,9 @@ PaintDropShadow PaintDropShadow::scaled(float scale) const
 void PaintDropShadow::apply(QPixmapDropShadowFilter &effect) const
 {
     effect.setOffset({this->xOffset_, this->yOffset_});
-    effect.setBlurRadius(this->radius_ * (getSettings()->updatedSevenTVPaintShadows ? 3 : 1));
+    // multiplied by 3 to match the native appearance
+    // best value found through manual testing
+    effect.setBlurRadius(this->radius_ * 3);
     effect.setColor(this->color_);
 }
 
