@@ -133,14 +133,9 @@ jobs:
           fetch-depth: 0 # tag access
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          bundle: chatterino7.flatpak
+          bundle: chatterino.flatpak
           manifest-path: .CI/com.chatterino.chatterino.yml
           cache-key: flatpak-builder-${{ github.sha }}
-      - name: Upload artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: chatterino7.flatpak
-          path: chatterino7.flatpak
 
   build:
     name: "Build ${{ matrix.os }}, Qt ${{ matrix.qt-version }} (LTO:${{ matrix.force-lto }}, crashpad:${{ matrix.skip-crashpad && 'off' || 'on' }})"
@@ -426,7 +421,7 @@ jobs:
       - uses: actions/download-artifact@v6
         name: Flatpak
         with:
-          name: chatterino7.flatpak
+          name: chatterino-x86_64.flatpak
           path: release-artifacts/
 
       # macOS

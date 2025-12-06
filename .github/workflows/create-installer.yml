@@ -126,7 +126,7 @@ jobs:
         with:
           workflow: build.yml
           name_is_regexp: true
-          name: '((^[Cc]hatterino)(-[^wW].+|7\.flatpak)$)|(^.+\.7z$)'
+          name: '((^[Cc]hatterino)-[^wW].+$)|(^.+\.7z$)'
           path: build/
 
       - name: Fix Directories
