@@ -121,6 +121,24 @@ jobs:
           name: Chatterino-${{ matrix.os }}-Qt-${{ matrix.qt-version }}.deb
           path: build/Chatterino-${{ matrix.os }}-x86_64.deb
 
+  build-flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.8
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v6
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: chatterino7.flatpak
+          manifest-path: .CI/com.chatterino.chatterino.yml
+          cache-key: flatpak-builder-${{ github.sha }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: chatterino.flatpak
+          path: chatterino.flatpak
+
   build:
     name: "Build ${{ matrix.os }}, Qt ${{ matrix.qt-version }} (LTO:${{ matrix.force-lto }}, crashpad:${{ matrix.skip-crashpad && 'off' || 'on' }})"
     runs-on: ${{ matrix.os }}
@@ -361,7 +379,7 @@ jobs:
           path: build/chatterino-macos-Qt-${{ matrix.qt-version }}-universal.dmg
 
   create-release:
-    needs: [build-ubuntu-docker, build]
+    needs: [build-ubuntu-docker, build-flatpak, build]
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref == 'refs/heads/chatterino7')
 
@@ -400,6 +418,12 @@ jobs:
         name: Ubuntu 24.04 deb
         with:
           name: Chatterino-ubuntu-24.04-Qt-6.7.2.deb
+          path: release-artifacts/
+
+      - uses: actions/download-artifact@v6
+        name: Flatpak
+        with:
+          name: chatterino.flatpak
           path: release-artifacts/
 
       # macOS
