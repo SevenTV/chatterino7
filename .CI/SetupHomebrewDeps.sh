@@ -9,7 +9,7 @@ x86_64_homebrew_dir="/opt/homebrew-x86_64"
  # Directory where we place the finished universal library
 universal_lib_dir="/opt/universal-lib"
 
-export HOMEBREW_DEVELOPER=1
+# export HOMEBREW_DEVELOPER=1
 
 # args: path-to-library (in homebrew dir)
 c2-make-universal-dylib() {
@@ -66,9 +66,11 @@ sudo curl -L https://github.com/Homebrew/brew/tarball/master | sudo tar xz --str
 sudo chown -R $USER "$x86_64_homebrew_dir"
 
 echo "Installing ARM dependencies"
+brew update
 brew install "$@"
 
 echo "Installing x86_64 dependencies"
+arch -x86_64 "$x86_64_homebrew_dir/bin/brew" update
 for dep in "$@"
 do
     arch -x86_64 "$x86_64_homebrew_dir/bin/brew" fetch --force --bottle-tag=x86_64_sonoma "$dep"
