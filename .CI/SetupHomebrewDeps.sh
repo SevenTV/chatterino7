@@ -63,7 +63,6 @@ sudo chown -R $USER "$universal_lib_dir"
 
 echo "Installing x86_64 brew"
 arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-# sudo chown -R $USER "$x86_64_homebrew_dir"
 
 echo "Installing ARM dependencies"
 brew update
@@ -73,8 +72,6 @@ echo "Installing x86_64 dependencies"
 arch -x86_64 "$x86_64_homebrew_dir/bin/brew" update
 for dep in "$@"
 do
-    # arch -x86_64 "$x86_64_homebrew_dir/bin/brew" fetch --force --bottle-tag=x86_64_sonoma "$dep"
-    # arch -x86_64 "$x86_64_homebrew_dir/bin/brew" install $(arch -x86_64 "$x86_64_homebrew_dir/bin/brew" --cache --bottle-tag=x86_64_sonoma "$dep")
     arch -x86_64 "$x86_64_homebrew_dir/bin/brew" install "$dep"
 done
 
