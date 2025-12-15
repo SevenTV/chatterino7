@@ -56,7 +56,7 @@ c2-make-universal-dylib() {
     ln -v -s "${_universal_lib}" "${_override_lib}"
 }
 
-sudo mkdir "$x86_64_homebrew_dir"
+# sudo mkdir "$x86_64_homebrew_dir"
 sudo mkdir "$universal_lib_dir"
 
 sudo chown -R $USER "$universal_lib_dir"
