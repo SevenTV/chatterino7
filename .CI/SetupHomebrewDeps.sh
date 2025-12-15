@@ -5,7 +5,7 @@ set -ex
 # Prefix for where to find the ARM64 library
 arm64_homebrew_dir="/opt/homebrew"
 # Prefix for where to find the x86 library
-x86_64_homebrew_dir="/opt/homebrew-x86_64"
+x86_64_homebrew_dir="/usr/local"
  # Directory where we place the finished universal library
 universal_lib_dir="/opt/universal-lib"
 
@@ -62,8 +62,8 @@ sudo mkdir "$universal_lib_dir"
 sudo chown -R $USER "$universal_lib_dir"
 
 echo "Installing x86_64 brew"
-sudo curl -L https://github.com/Homebrew/brew/tarball/master | sudo tar xz --strip 1 -C "$x86_64_homebrew_dir"
-sudo chown -R $USER "$x86_64_homebrew_dir"
+arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# sudo chown -R $USER "$x86_64_homebrew_dir"
 
 echo "Installing ARM dependencies"
 brew update
