@@ -387,45 +387,45 @@ jobs:
           fetch-depth: 0 # allows for tags access
 
       # Windows
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         name: Windows Qt6.9.3
         with:
           name: chatterino-windows-x86-64-Qt-6.9.3.zip
           path: release-artifacts/
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         name: Windows Qt6.9.3 symbols
         with:
           name: chatterino-windows-x86-64-Qt-6.9.3-symbols.pdb.7z
           path: release-artifacts/
 
       # Linux
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         name: Linux AppImage
         with:
           name: Chatterino-x86_64-Qt-6.7.2.AppImage
           path: release-artifacts/
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         name: Ubuntu 22.04 deb
         with:
           name: Chatterino-ubuntu-22.04-Qt-6.7.2.deb
           path: release-artifacts/
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         name: Ubuntu 24.04 deb
         with:
           name: Chatterino-ubuntu-24.04-Qt-6.7.2.deb
           path: release-artifacts/
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         name: Flatpak
         with:
           name: chatterino-x86_64.flatpak
           path: release-artifacts/
 
       # macOS
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         name: macOS Qt6.9.3 dmg
         with:
           name: chatterino-macos-Qt-6.9.3-universal.dmg

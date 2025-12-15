@@ -112,11 +112,11 @@ jobs:
         with:
           fetch-depth: 0 # allows for tags access
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: Chatterino7${{ needs.check-release.outputs.IS_TAGGED != '0' && '.Nightly' || '' }}.Installer.exe
           path: build/
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: Chatterino7${{ needs.check-release.outputs.IS_TAGGED != '0' && '.Nightly' || '' }}.Portable.zip
           path: build/
