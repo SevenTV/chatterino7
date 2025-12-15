@@ -73,8 +73,9 @@ echo "Installing x86_64 dependencies"
 arch -x86_64 "$x86_64_homebrew_dir/bin/brew" update
 for dep in "$@"
 do
-    arch -x86_64 "$x86_64_homebrew_dir/bin/brew" fetch --force --bottle-tag=x86_64_sonoma "$dep"
-    arch -x86_64 "$x86_64_homebrew_dir/bin/brew" install $(arch -x86_64 "$x86_64_homebrew_dir/bin/brew" --cache --bottle-tag=x86_64_sonoma "$dep")
+    # arch -x86_64 "$x86_64_homebrew_dir/bin/brew" fetch --force --bottle-tag=x86_64_sonoma "$dep"
+    # arch -x86_64 "$x86_64_homebrew_dir/bin/brew" install $(arch -x86_64 "$x86_64_homebrew_dir/bin/brew" --cache --bottle-tag=x86_64_sonoma "$dep")
+    arch -x86_64 "$x86_64_homebrew_dir/bin/brew" install "$dep"
 done
 
 echo "Relinking boost libraries"
