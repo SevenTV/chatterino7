@@ -82,6 +82,9 @@ private:
 
         detail::AutoCheckedRadioButton *automod;
         QLabel *automodLabel;
+
+        detail::AutoCheckedRadioButton *kick;
+        QLineEdit *kickName;
     } ui_{};
 
     EventFilter tabFilter_;

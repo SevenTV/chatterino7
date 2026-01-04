@@ -188,55 +188,6 @@ void actuallyTriggerHighlights(const QString &channelName, bool playSound,
     }
 }
 
-QString stylizeUsername(const QString &username, const Message &message)
-{
-    const QString &localizedName = message.localizedName;
-    bool hasLocalizedName = !localizedName.isEmpty();
-
-    // The full string that will be rendered in the chat widget
-    QString usernameText;
-
-    switch (getSettings()->usernameDisplayMode.getValue())
-    {
-        case UsernameDisplayMode::Username: {
-            usernameText = username;
-        }
-        break;
-
-        case UsernameDisplayMode::LocalizedName: {
-            if (hasLocalizedName)
-            {
-                usernameText = localizedName;
-            }
-            else
-            {
-                usernameText = username;
-            }
-        }
-        break;
-
-        default:
-        case UsernameDisplayMode::UsernameAndLocalizedName: {
-            if (hasLocalizedName)
-            {
-                usernameText = username + "(" + localizedName + ")";
-            }
-            else
-            {
-                usernameText = username;
-            }
-        }
-        break;
-    }
-
-    if (auto nicknameText = getSettings()->matchNickname(usernameText))
-    {
-        usernameText = *nicknameText;
-    }
-
-    return usernameText;
-}
-
 std::optional<EmotePtr> getTwitchBadge(const Badge &badge,
                                        const TwitchChannel *twitchChannel)
 {
@@ -1017,7 +968,7 @@ void MessageBuilder::append(std::unique_ptr<MessageElement> element)
 }
 
 void MessageBuilder::addLink(const linkparser::Parsed &parsedLink,
-                             const QString &source)
+                             QStringView source)
 {
     QString lowercaseLinkString;
     QString origLink = parsedLink.link.toString();
@@ -1788,7 +1739,12 @@ void MessageBuilder::addTextOrEmote(TextState &state, QString string)
         // Successfully appended an emote
         return;
     }
+    this->addWordFromUserMessage(string, state.twitchChannel);
+}
 
+void MessageBuilder::addWordFromUserMessage(QStringView string,
+                                            TwitchChannel *twitchChannel)
+{
     // Actually just text
     auto link = linkparser::parse(string);
     auto textColor = this->textColor_;
@@ -1808,10 +1764,9 @@ void MessageBuilder::addTextOrEmote(TextState &state, QString string)
             QString username = match.captured(1);
             auto originalTextColor = textColor;
 
-            if (state.twitchChannel != nullptr)
+            if (twitchChannel != nullptr)
             {
-                if (auto userColor =
-                        state.twitchChannel->getUserColor(username);
+                if (auto userColor = twitchChannel->getUserColor(username);
                     userColor.isValid())
                 {
                     textColor = userColor;
@@ -1819,14 +1774,15 @@ void MessageBuilder::addTextOrEmote(TextState &state, QString string)
             }
 
             auto prefixedUsername = '@' + username;
-            auto remainder = string.remove(prefixedUsername);
+            auto remainder = string.sliced(prefixedUsername.size());
             this->emplace<MentionElement>(prefixedUsername, username,
                                           originalTextColor, textColor)
                 ->setTrailingSpace(remainder.isEmpty());
 
             if (!remainder.isEmpty())
             {
-                this->emplace<TextElement>(remainder, MessageElementFlag::Text,
+                this->emplace<TextElement>(remainder.toString(),
+                                           MessageElementFlag::Text,
                                            originalTextColor);
             }
 
@@ -1834,30 +1790,31 @@ void MessageBuilder::addTextOrEmote(TextState &state, QString string)
         }
     }
 
-    if (state.twitchChannel != nullptr && getSettings()->findAllUsernames)
+    if (twitchChannel != nullptr && getSettings()->findAllUsernames)
     {
         auto match = allUsernamesMentionRegex.match(string);
         QString username = match.captured(1);
 
         if (match.hasMatch() &&
-            state.twitchChannel->accessChatters()->contains(username))
+            twitchChannel->accessChatters()->contains(username))
         {
             auto originalTextColor = textColor;
 
-            if (auto userColor = state.twitchChannel->getUserColor(username);
+            if (auto userColor = twitchChannel->getUserColor(username);
                 userColor.isValid())
             {
                 textColor = userColor;
             }
 
-            auto remainder = string.remove(username);
+            auto remainder = string.sliced(username.size());
             this->emplace<MentionElement>(username, username, originalTextColor,
                                           textColor)
                 ->setTrailingSpace(remainder.isEmpty());
 
             if (!remainder.isEmpty())
             {
-                this->emplace<TextElement>(remainder, MessageElementFlag::Text,
+                this->emplace<TextElement>(remainder.toString(),
+                                           MessageElementFlag::Text,
                                            originalTextColor);
             }
 
@@ -1865,7 +1822,7 @@ void MessageBuilder::addTextOrEmote(TextState &state, QString string)
         }
     }
 
-    this->appendOrEmplaceText(string, textColor);
+    this->appendOrEmplaceText(string.toString(), textColor);
 }
 
 bool MessageBuilder::isEmpty() const
@@ -2278,6 +2235,12 @@ Outcome MessageBuilder::tryAppendEmote(TwitchChannel *twitchChannel,
         return Failure;
     }
 
+    this->appendEmote(emote);
+    return Success;
+}
+
+void MessageBuilder::appendEmote(const EmotePtr &emote)
+{
     if (emote->zeroWidth && getSettings()->enableZeroWidthEmotes &&
         !this->isEmpty())
     {
@@ -2298,7 +2261,7 @@ Outcome MessageBuilder::tryAppendEmote(TwitchChannel *twitchChannel,
                 std::move(layers),
                 baseEmoteElement->getFlags() | MessageElementFlag::Emote,
                 this->textColor_);
-            return Success;
+            return;
         }
 
         auto *asLayered = dynamic_cast<LayeredEmoteElement *>(&this->back());
@@ -2306,7 +2269,7 @@ Outcome MessageBuilder::tryAppendEmote(TwitchChannel *twitchChannel,
         {
             asLayered->addEmoteLayer({emote, MessageElementFlag::Emote});
             asLayered->addFlags(MessageElementFlag::Emote);
-            return Success;
+            return;
         }
 
         // No emote to merge with, just show as regular emote
@@ -2314,7 +2277,6 @@ Outcome MessageBuilder::tryAppendEmote(TwitchChannel *twitchChannel,
 
     this->emplace<EmoteElement>(emote, MessageElementFlag::Emote,
                                 this->textColor_);
-    return Success;
 }
 
 void MessageBuilder::addWords(
@@ -2372,16 +2334,15 @@ void MessageBuilder::addWords(
             for (auto variant :
                  getApp()->getEmotes()->getEmojis()->parse(preText))
             {
-                boost::apply_visitor(variant::Overloaded{
-                                         [&](const EmotePtr &emote) {
-                                             this->addEmoji(emote);
-                                         },
-                                         [&](QString text) {
-                                             this->addTextOrEmote(
-                                                 state, std::move(text));
-                                         },
-                                     },
-                                     variant);
+                std::visit(variant::Overloaded{
+                               [&](const EmotePtr &emote) {
+                                   this->addEmoji(emote);
+                               },
+                               [&](QStringView text) {
+                                   this->addTextOrEmote(state, text.toString());
+                               },
+                           },
+                           variant);
             }
 
             cursor += preText.size();
@@ -2397,16 +2358,15 @@ void MessageBuilder::addWords(
         // split words
         for (auto variant : getApp()->getEmotes()->getEmojis()->parse(word))
         {
-            boost::apply_visitor(variant::Overloaded{
-                                     [&](const EmotePtr &emote) {
-                                         this->addEmoji(emote);
-                                     },
-                                     [&](QString text) {
-                                         this->addTextOrEmote(state,
-                                                              std::move(text));
-                                     },
-                                 },
-                                 variant);
+            std::visit(variant::Overloaded{
+                           [&](const EmotePtr &emote) {
+                               this->addEmoji(emote);
+                           },
+                           [&](QStringView text) {
+                               this->addTextOrEmote(state, text.toString());
+                           },
+                       },
+                       variant);
         }
 
         cursor += word.size() + 1;
@@ -2607,6 +2567,56 @@ Outcome MessageBuilder::tryAppendCheermote(TextState &state,
     }
 
     return Success;
+}
+
+QString MessageBuilder::stylizeUsername(const QString &username,
+                                        const Message &message)
+{
+    const QString &localizedName = message.localizedName;
+    bool hasLocalizedName = !localizedName.isEmpty();
+
+    // The full string that will be rendered in the chat widget
+    QString usernameText;
+
+    switch (getSettings()->usernameDisplayMode.getValue())
+    {
+        case UsernameDisplayMode::Username: {
+            usernameText = username;
+        }
+        break;
+
+        case UsernameDisplayMode::LocalizedName: {
+            if (hasLocalizedName)
+            {
+                usernameText = localizedName;
+            }
+            else
+            {
+                usernameText = username;
+            }
+        }
+        break;
+
+        default:
+        case UsernameDisplayMode::UsernameAndLocalizedName: {
+            if (hasLocalizedName)
+            {
+                usernameText = username + "(" + localizedName + ")";
+            }
+            else
+            {
+                usernameText = username;
+            }
+        }
+        break;
+    }
+
+    if (auto nicknameText = getSettings()->matchNickname(usernameText))
+    {
+        usernameText = *nicknameText;
+    }
+
+    return usernameText;
 }
 
 }  // namespace chatterino

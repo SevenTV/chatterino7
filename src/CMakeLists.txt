@@ -392,6 +392,17 @@ set(SOURCE_FILES
         providers/irc/IrcConnection2.cpp
         providers/irc/IrcConnection2.hpp
 
+        providers/kick/KickApi.cpp
+        providers/kick/KickApi.hpp
+        providers/kick/KickChannel.cpp
+        providers/kick/KickChannel.hpp
+        providers/kick/KickChatServer.cpp
+        providers/kick/KickChatServer.hpp
+        providers/kick/KickLiveUpdates.cpp
+        providers/kick/KickLiveUpdates.hpp
+        providers/kick/KickMessageBuilder.cpp
+        providers/kick/KickMessageBuilder.hpp
+
         providers/links/LinkInfo.cpp
         providers/links/LinkInfo.hpp
         providers/links/LinkResolver.cpp
@@ -546,6 +557,8 @@ set(SOURCE_FILES
         util/AttachToConsole.hpp
         util/BadgeRegistry.cpp
         util/BadgeRegistry.hpp
+        util/BoostJsonWrap.cpp
+        util/BoostJsonWrap.hpp
         util/CancellationToken.hpp
         util/ChannelHelpers.hpp
         util/Clipboard.cpp

@@ -48,6 +48,7 @@ public:
         TwitchAutomod,
         /// TwitchEnd
         TwitchEnd,
+        Kick,
         /// Misc
         Misc,
     };

@@ -117,6 +117,13 @@ void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
     {
         descriptor.spellCheckOverride = spellOverride.toBool();
     }
+    if (descriptor.type_ == u"kick")
+    {
+        descriptor.kickChannelID =
+            static_cast<uint64_t>(data["channelID"].toInt());
+        descriptor.kickUserID = static_cast<uint64_t>(data["userID"].toInt());
+        descriptor.kickRoomID = static_cast<uint64_t>(data["roomID"].toInt());
+    }
 }
 
 TabDescriptor TabDescriptor::loadFromJSON(const QJsonObject &tabObj)

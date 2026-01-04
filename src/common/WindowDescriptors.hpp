@@ -48,6 +48,10 @@ struct SplitDescriptor {
 
     QList<QUuid> filters_;
 
+    uint64_t kickChannelID = 0;
+    uint64_t kickUserID = 0;
+    uint64_t kickRoomID = 0;
+
     static void loadFromJSON(SplitDescriptor &descriptor,
                              const QJsonObject &root, const QJsonObject &data);
 };

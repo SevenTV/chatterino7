@@ -2,6 +2,7 @@
 
 #include "Application.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
+#include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
@@ -154,6 +155,33 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
 
     ui.automod->installEventFilter(&this->tabFilter_);
 
+    // Kick
+    ui.kick = new AutoCheckedRadioButton("Kick (experimental)");
+    layout->addWidget(ui.kick);
+
+    auto *kickLabel = new QLabel("Join a Kick channel by its name (yes, "
+                                 "very experimental right now)");
+    kickLabel->setVisible(false);
+    layout->addWidget(kickLabel);
+
+    ui.kickName = new QLineEdit();
+    ui.kickName->setVisible(false);
+    layout->addWidget(ui.kickName);
+
+    QObject::connect(ui.kick, &AutoCheckedRadioButton::toggled, this,
+                     [this, kickLabel](bool enabled) {
+                         auto &ui = this->ui_;
+                         ui.kickName->setVisible(enabled);
+                         kickLabel->setVisible(enabled);
+
+                         if (enabled)
+                         {
+                             ui.kickName->setFocus();
+                             ui.kickName->selectAll();
+                         }
+                     });
+
+    layout->addSpacing(10);
     layout->addStretch(1);
 
     auto *buttonBox =
@@ -224,6 +252,11 @@ void SelectChannelDialog::setSelectedChannel(
             this->ui_.automod->setFocus();
         }
         break;
+        case Channel::Type::Kick: {
+            this->ui_.kickName->setText(channel->getName());
+            this->ui_.kick->setChecked(true);
+        }
+        break;
         default: {
             this->ui_.channel->setChecked(true);
         }
@@ -270,6 +303,12 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
         return getApp()->getTwitch()->getAutomodChannel();
     }
 
+    if (this->ui_.kick->isChecked())
+    {
+        return getApp()->getKickChatServer()->getOrCreate(
+            this->ui_.kickName->text().trimmed());
+    }
+
     return this->selectedChannel_;
 }
 
@@ -304,7 +343,7 @@ bool SelectChannelDialog::EventFilter::eventFilter(QObject *watched,
                 return true;
             }
 
-            if (widget == ui.automod)
+            if (widget == ui.kickName)
             {
                 // Special case for when current selection is "AutoMod" (the last entry in the list), next wrap is Channel, but we need to select its edit box
                 ui.channel->setFocus();
@@ -332,7 +371,7 @@ bool SelectChannelDialog::EventFilter::eventFilter(QObject *watched,
             if (widget == ui.channelName)
             {
                 // Special case for when current selection is the "Channel" entry's edit box since the Edit box actually has the focus
-                ui.automod->setFocus();
+                ui.kick->setFocus();
                 return true;
             }
 

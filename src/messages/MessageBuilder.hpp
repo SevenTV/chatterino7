@@ -139,7 +139,7 @@ public:
     std::weak_ptr<const Message> weakOf();
 
     void append(std::unique_ptr<MessageElement> element);
-    void addLink(const linkparser::Parsed &parsedLink, const QString &source);
+    void addLink(const linkparser::Parsed &parsedLink, QStringView source);
 
     template <typename T, typename... Args>
     T *emplace(Args &&...args)
@@ -162,6 +162,11 @@ public:
     // Returns the TextElement that was emplaced.
     TextElement *emplaceSystemTextAndUpdate(const QString &text,
                                             QString &toUpdate);
+
+    void addWordFromUserMessage(QStringView string,
+                                TwitchChannel *channel = nullptr);
+
+    void appendEmote(const EmotePtr &emote);
 
     static void triggerHighlights(const Channel *channel,
                                   const HighlightAlert &alert);
@@ -252,6 +257,9 @@ public:
     static MessagePtrMut makeClearChatMessage(const QDateTime &now,
                                               const QString &actor,
                                               uint32_t count = 1);
+
+    static QString stylizeUsername(const QString &username,
+                                   const Message &message);
 
 private:
     struct TextState {

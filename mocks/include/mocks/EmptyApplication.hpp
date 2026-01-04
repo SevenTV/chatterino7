@@ -306,6 +306,14 @@ public:
         return nullptr;
     }
 
+    KickChatServer *getKickChatServer() override
+    {
+        assert(false &&
+               "EmptyApplication::getKickChatServer was called without "
+               "being initialized");
+        return nullptr;
+    }
+
     QTemporaryDir settingsDir;
     Paths paths_;
     Args args_;

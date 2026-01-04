@@ -5,6 +5,8 @@
 #include "common/QLogging.hpp"
 #include "debug/AssertInGuiThread.hpp"
 #include "messages/MessageElement.hpp"
+#include "providers/kick/KickChannel.hpp"
+#include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Paths.hpp"
 #include "singletons/Settings.hpp"
@@ -751,6 +753,18 @@ void WindowManager::encodeChannel(IndirectChannel channel, QJsonObject &obj)
             obj.insert("name", channel.get()->getName());
         }
         break;
+        case Channel::Type::Kick: {
+            obj.insert("type", "kick");
+            obj.insert("name", channel.get()->getName());
+            auto *kc = dynamic_cast<KickChannel *>(channel.get().get());
+            if (kc)
+            {
+                obj.insert("roomID", static_cast<qint64>(kc->roomID()));
+                obj.insert("userID", static_cast<qint64>(kc->userID()));
+                obj.insert("channelID", static_cast<qint64>(kc->channelID()));
+            }
+        }
+        break;
 
         default:
             break;
@@ -800,6 +814,15 @@ IndirectChannel WindowManager::decodeChannel(const SplitDescriptor &descriptor)
     {
         return getApp()->getTwitch()->getChannelOrEmpty(
             descriptor.channelName_);
+    }
+    else if (descriptor.type_ == "kick")
+    {
+        return getApp()->getKickChatServer()->getOrCreate(
+            descriptor.channelName_, KickChannel::UserInit{
+                                         .roomID = descriptor.kickRoomID,
+                                         .userID = descriptor.kickUserID,
+                                         .channelID = descriptor.kickChannelID,
+                                     });
     }
 
     return Channel::getEmpty();
