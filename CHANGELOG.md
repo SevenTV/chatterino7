@@ -22,6 +22,7 @@
 - Minor: Added support for BetterTTV Pro subscriber badges. (#6625)
 - Minor: Added `debug.traceback` for plugins. (#6652)
 - Minor: Added title and duration options for `/clip` command. (#6669)
+- Minor: Added the ability to filter on messages by the author's external badges (example: `author.external_badges contains "chatterino:Top Donator"` or `author.external_badges contains "frankerfacez:bot"`). (#6709)
 - Minor: Added Markdown support to user notes. (#6490)
 - Minor: Moderators and VIPs in shared chats now show their channel badges. (#6653)
 - Bugfix: Moderation checks now include the lead moderator badge. (#6642)
@@ -74,13 +75,14 @@
 - Dev: Unwrapped `LimitedQueueSnapshot` to `std::vector`. (#6606)
 - Dev: Simplified uses of `getMessageSnapshot`. (#6607)
 - Dev: Disabled `llvm-prefer-static-over-anonymous-namespace` in clang-tidy. (#6610)
-- Dev: Started work on spell checking. (#6446)
+- Dev: Added experimental spell checker support. (#6446, #6703)
 - Dev: Added Clazy linting in CI. (#6623)
 - Dev: Added custom clang-tidy module linting in CI. (#6626)
 - Dev: CMake option `USE_ALTERNATE_LINKER` now errors if the given linker can't be found. (#6692)
 - Dev: Enable C++ 23. (#6693)
 - Dev: Prefer `std::expected` over `nonstd::expected_lite`. (#6693)
 - Dev: Moved Twitch PubSub to liveupdates. (#6638)
+- Dev: Refactored types used for emoji parsing. (#6714)
 
 ## 2.5.4
 

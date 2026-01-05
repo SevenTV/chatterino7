@@ -1,6 +1,9 @@
 #include "providers/seventv/paints/PaintDropShadow.hpp"
 
+#include "singletons/Settings.hpp"
+
 #include <private/qpixmapfilter_p.h>
+
 
 namespace chatterino {
 
@@ -27,9 +30,14 @@ PaintDropShadow PaintDropShadow::scaled(float scale) const
 void PaintDropShadow::apply(QPixmapDropShadowFilter &effect) const
 {
     effect.setOffset({this->xOffset_, this->yOffset_});
-    // Multiplied by 3 to match the appearance from the extension.
-    // Best value found through manual testing.
-    effect.setBlurRadius(this->radius_ * 3);
+    auto radius = this->radius_;
+    if (getSettings()->largeSevenTVPaintShadows)
+    {
+        // Multiplied by 3 to match the appearance from the extension.
+        // Best value found through manual testing.
+        radius *= 3;
+    }
+    effect.setBlurRadius(radius);
     effect.setColor(this->color_);
 }
 
