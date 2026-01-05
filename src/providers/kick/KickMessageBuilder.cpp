@@ -33,19 +33,20 @@ EmotePtr lookupEmote(QStringView word)
 
     // FIXME: lookup channel emotes
 
-    emote = globalFfzEmotes->emote(wordStr).value_or({});
+    emote = globalFfzEmotes->emote(wordStr).value_or(std::move(emote));
     if (emote)
     {
         return emote;
     }
 
-    emote = globalBttvEmotes->emote(wordStr).value_or({});
+    emote = globalBttvEmotes->emote(wordStr).value_or(std::move(emote));
     if (emote)
     {
         return emote;
     }
 
-    emote = globalSeventvEmotes->globalEmote(wordStr).value_or({});
+    emote =
+        globalSeventvEmotes->globalEmote(wordStr).value_or(std::move(emote));
     if (emote)
     {
         return emote;
