@@ -4,7 +4,6 @@
 
 #include <private/qpixmapfilter_p.h>
 
-
 namespace chatterino {
 
 PaintDropShadow::PaintDropShadow(float xOffset, float yOffset, float radius,
