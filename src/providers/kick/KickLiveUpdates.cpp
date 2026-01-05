@@ -185,12 +185,13 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
     }
     else if (event == "pusher:connection_established")
     {
-        this->heartbeatInterval_ = std::chrono::milliseconds{
-            std::clamp(data["activity_timeout"].toInt64(
-                           std::numeric_limits<int64_t>::max() / 1000) *
-                           1000,
-                       1000LL, this->heartbeatInterval_.count()),
-        };
+        std::chrono::seconds activityTimeout{
+            data["activity_timeout"].toInt64()};
+        if (activityTimeout.count() > 2 &&
+            activityTimeout < this->heartbeatInterval_)
+        {
+            this->heartbeatInterval_ = activityTimeout;
+        }
     }
 }
 
