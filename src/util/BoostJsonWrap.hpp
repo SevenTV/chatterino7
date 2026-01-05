@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/json/value.hpp>
+#include <QString>
 
 namespace chatterino {
 
@@ -127,11 +128,11 @@ public:
 
         constexpr BoostJsonValue operator*() const
         {
-            return {it};
+            return {this->it};
         }
 
         constexpr auto operator<=>(const const_iterator &other) const = default;
-        constexpr BoostJsonValue operator[](qsizetype j) const
+        constexpr BoostJsonValue operator[](difference_type j) const
         {
             return *(*this + j);
         }
@@ -157,31 +158,31 @@ public:
             this->it--;
             return n;
         }
-        constexpr const_iterator &operator+=(std::ptrdiff_t j)
+        constexpr const_iterator &operator+=(difference_type j)
         {
             this->it += j;
             return *this;
         }
-        constexpr const_iterator &operator-=(std::ptrdiff_t j)
+        constexpr const_iterator &operator-=(difference_type j)
         {
             this->it -= j;
             return *this;
         }
-        constexpr const_iterator operator+(qsizetype j) const
+        constexpr const_iterator operator+(difference_type j) const
         {
             const_iterator r = *this;
             return r += j;
         }
-        constexpr const_iterator operator-(qsizetype j) const
+        constexpr const_iterator operator-(difference_type j) const
         {
             return operator+(-j);
         }
-        constexpr qsizetype operator-(const_iterator j) const
+        constexpr difference_type operator-(const_iterator j) const
         {
             return this->it - j.it;
         }
 
-        friend constexpr const_iterator operator+(qsizetype j,
+        friend constexpr const_iterator operator+(difference_type j,
                                                   const const_iterator &it)
         {
             return it.it + j;

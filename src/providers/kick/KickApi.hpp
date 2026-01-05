@@ -1,6 +1,12 @@
 #pragma once
 
 #include "util/Expected.hpp"
+
+#include <QString>
+
+#include <cstdint>
+#include <functional>
+
 namespace chatterino {
 
 class BoostJsonObject;

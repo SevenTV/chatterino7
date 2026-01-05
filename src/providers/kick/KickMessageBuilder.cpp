@@ -316,7 +316,7 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
 
     MessageBuilder builder;
     builder->channelName = kickChannel->getName();
-    builder->id = data["id"].toQString();
+    builder->id = id;
     builder->serverReceivedTime =
         QDateTime::fromString(createdAt, Qt::DateFormat::ISODate);
     builder->parseTime = QTime::currentTime();

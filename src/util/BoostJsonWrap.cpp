@@ -1,6 +1,7 @@
 #include "util/BoostJsonWrap.hpp"
 
 #include <boost/json/string.hpp>
+#include <QString>
 
 namespace chatterino {
 
