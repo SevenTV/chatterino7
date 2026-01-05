@@ -153,7 +153,10 @@ void parseContent(MessageBuilder &builder, QString &messageText,
 {
     for (auto word : content.tokenize(u' ', Qt::SkipEmptyParts))
     {
-        messageText.append(' ');
+        if (!messageText.isEmpty())
+        {
+            messageText.append(' ');
+        }
 
         while (!word.empty())
         {
@@ -165,6 +168,31 @@ void parseContent(MessageBuilder &builder, QString &messageText,
             }
         }
     }
+}
+
+QString displayedUsername(const Message &message)
+{
+    QString usernameText;
+    switch (getSettings()->usernameDisplayMode.getValue())
+    {
+        case UsernameDisplayMode::Username:
+            usernameText = message.loginName;
+
+            break;
+
+        case UsernameDisplayMode::LocalizedName:
+        case UsernameDisplayMode::UsernameAndLocalizedName:
+        default:
+            usernameText = message.displayName;
+            break;
+    }
+
+    if (auto nicknameText = getSettings()->matchNickname(usernameText))
+    {
+        usernameText = *nicknameText;
+    }
+
+    return usernameText;
 }
 
 void checkThreadSubscription(const QString &senderLogin,
@@ -216,8 +244,7 @@ void appendReply(MessageBuilder &builder, KickChannel *channel,
     QString usernameText = originalSender;
     if (threadRoot)
     {
-        usernameText =
-            MessageBuilder::stylizeUsername(threadRoot->loginName, *threadRoot);
+        usernameText = displayedUsername(*threadRoot);
     }
 
     builder.emplace<ReplyCurveElement>();
@@ -275,29 +302,13 @@ void appendChannelName(MessageBuilder &builder, const Channel *channel)
         ->setLink(link);
 }
 
-void appendUsername(MessageBuilder &builder, QString &messageText,
-                    BoostJsonObject senderObj, BoostJsonObject identityObj)
+void appendUsername(MessageBuilder &builder, BoostJsonObject senderObj,
+                    BoostJsonObject identityObj)
 {
     auto slug = builder->loginName;
-    auto username = senderObj["username"].toQString();
-    auto displayedName = slug;
+    builder->displayName = senderObj["username"].toQString();
 
-    if (QString::compare(slug, username, Qt::CaseInsensitive) == 0)
-    {
-        displayedName = username;
-
-        builder->displayName = username;
-    }
-    else
-    {
-        builder->displayName = slug;
-        builder->localizedName = username;
-    }
-
-    QString usernameText =
-        MessageBuilder::stylizeUsername(displayedName, builder.message()) + ':';
-
-    messageText.append(usernameText);
+    QString usernameText = displayedUsername(builder.message()) + ':';
 
     auto userColor = QColor::fromString(identityObj["color"].toStringView());
     builder->usernameColor = userColor;
@@ -336,11 +347,13 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
 
     appendChannelName(builder, kickChannel);
     // FIXME: append badges
+    appendUsername(builder, sender, identity);
     QString messageText;
-    appendUsername(builder, messageText, sender, identity);
     parseContent(builder, messageText, content);
 
-    builder->searchText = builder->localizedName % ' ' % messageText;
+    builder->searchText =
+        builder->loginName % ' ' % builder->displayName % u": " % messageText;
+    builder->messageText = messageText;
 
     return builder.release();
 }

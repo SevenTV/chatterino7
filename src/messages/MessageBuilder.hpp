@@ -260,9 +260,6 @@ public:
                                               const QString &actor,
                                               uint32_t count = 1);
 
-    static QString stylizeUsername(const QString &username,
-                                   const Message &message);
-
 private:
     struct TextState {
         TwitchChannel *twitchChannel = nullptr;

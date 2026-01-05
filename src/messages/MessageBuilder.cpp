@@ -188,6 +188,55 @@ void actuallyTriggerHighlights(const QString &channelName, bool playSound,
     }
 }
 
+QString stylizeUsername(const QString &username, const Message &message)
+{
+    const QString &localizedName = message.localizedName;
+    bool hasLocalizedName = !localizedName.isEmpty();
+
+    // The full string that will be rendered in the chat widget
+    QString usernameText;
+
+    switch (getSettings()->usernameDisplayMode.getValue())
+    {
+        case UsernameDisplayMode::Username: {
+            usernameText = username;
+        }
+        break;
+
+        case UsernameDisplayMode::LocalizedName: {
+            if (hasLocalizedName)
+            {
+                usernameText = localizedName;
+            }
+            else
+            {
+                usernameText = username;
+            }
+        }
+        break;
+
+        default:
+        case UsernameDisplayMode::UsernameAndLocalizedName: {
+            if (hasLocalizedName)
+            {
+                usernameText = username + "(" + localizedName + ")";
+            }
+            else
+            {
+                usernameText = username;
+            }
+        }
+        break;
+    }
+
+    if (auto nicknameText = getSettings()->matchNickname(usernameText))
+    {
+        usernameText = *nicknameText;
+    }
+
+    return usernameText;
+}
+
 std::optional<EmotePtr> getTwitchBadge(const Badge &badge,
                                        const TwitchChannel *twitchChannel)
 {
@@ -2567,56 +2616,6 @@ Outcome MessageBuilder::tryAppendCheermote(TextState &state,
     }
 
     return Success;
-}
-
-QString MessageBuilder::stylizeUsername(const QString &username,
-                                        const Message &message)
-{
-    const QString &localizedName = message.localizedName;
-    bool hasLocalizedName = !localizedName.isEmpty();
-
-    // The full string that will be rendered in the chat widget
-    QString usernameText;
-
-    switch (getSettings()->usernameDisplayMode.getValue())
-    {
-        case UsernameDisplayMode::Username: {
-            usernameText = username;
-        }
-        break;
-
-        case UsernameDisplayMode::LocalizedName: {
-            if (hasLocalizedName)
-            {
-                usernameText = localizedName;
-            }
-            else
-            {
-                usernameText = username;
-            }
-        }
-        break;
-
-        default:
-        case UsernameDisplayMode::UsernameAndLocalizedName: {
-            if (hasLocalizedName)
-            {
-                usernameText = username + "(" + localizedName + ")";
-            }
-            else
-            {
-                usernameText = username;
-            }
-        }
-        break;
-    }
-
-    if (auto nicknameText = getSettings()->matchNickname(usernameText))
-    {
-        usernameText = *nicknameText;
-    }
-
-    return usernameText;
 }
 
 MessageColor MessageBuilder::textColor() const
