@@ -89,6 +89,8 @@ public:
     static ImagePtr fromResourcePixmap(const QPixmap &pixmap, qreal scale = 1);
     static ImagePtr getEmpty();
 
+    static ImagePtr fromAutoscaledUrl(const Url &url, int autoScale);
+
     const Url &url() const;
     bool loaded() const;
     // either returns the current pixmap, or triggers loading it (lazy loading)
@@ -114,7 +116,7 @@ private:
     void expireFrames();
 
     const Url url_{};
-    const qreal scale_{1};
+    qreal scale_{1};
     /// @brief The expected size of this image once its loaded.
     ///
     /// This doesn't represent the actual size (it can be different) - it's
@@ -124,6 +126,11 @@ private:
     std::atomic_bool empty_{false};
 
     bool shouldLoad_{false};
+
+    /// Size this image should take (in both dimensions).
+    ///
+    /// Unused if negative
+    int autoScale_ = -1;
 
     mutable std::chrono::time_point<std::chrono::steady_clock> lastUsed_;
 

@@ -2619,4 +2619,9 @@ QString MessageBuilder::stylizeUsername(const QString &username,
     return usernameText;
 }
 
+MessageColor MessageBuilder::textColor() const
+{
+    return this->textColor_;
+}
+
 }  // namespace chatterino

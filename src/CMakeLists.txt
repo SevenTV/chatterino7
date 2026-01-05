@@ -398,6 +398,8 @@ set(SOURCE_FILES
         providers/kick/KickChannel.hpp
         providers/kick/KickChatServer.cpp
         providers/kick/KickChatServer.hpp
+        providers/kick/KickEmotes.cpp
+        providers/kick/KickEmotes.hpp
         providers/kick/KickLiveUpdates.cpp
         providers/kick/KickLiveUpdates.hpp
         providers/kick/KickMessageBuilder.cpp

@@ -11,6 +11,7 @@
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
 #include "providers/kick/KickChannel.hpp"
+#include "providers/kick/KickEmotes.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "singletons/Settings.hpp"
@@ -94,6 +95,11 @@ void appendNonKickEmoteText(MessageBuilder &builder, QStringView text)
     }
 }
 
+/// Try to find the next emote in `text`
+///
+/// Kick emotes are present as `[emote:{id}:{name}]` where `{id}` is numeric.
+/// They can be right next to each other or to text. For example, we could find
+/// the following message: `foo [emote:1234:name]foo[emote:1234:name]`.
 bool tryAppendKickEmoteText(MessageBuilder &builder, QString &messageText,
                             QStringView &text)
 {
@@ -128,8 +134,9 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, QString &messageText,
     }
 
     auto emoteName = text.sliced(secondColon + 1, endBrace - secondColon - 1);
-    builder.emplace<TextElement>(emoteName.toString(),
-                                 MessageElementFlag::Emote);
+    builder.emplace<EmoteElement>(KickEmotes::emoteForID(emoteID, emoteName),
+                                  MessageElementFlag::Emote,
+                                  builder.textColor());
     messageText.append(emoteName);
 
     text = text.sliced(endBrace + 1);

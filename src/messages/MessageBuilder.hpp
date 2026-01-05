@@ -168,6 +168,8 @@ public:
 
     void appendEmote(const EmotePtr &emote);
 
+    MessageColor textColor() const;
+
     static void triggerHighlights(const Channel *channel,
                                   const HighlightAlert &alert);
 
