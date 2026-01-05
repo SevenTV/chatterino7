@@ -306,7 +306,6 @@ void appendChannelName(MessageBuilder &builder, const Channel *channel)
 void appendUsername(MessageBuilder &builder, BoostJsonObject senderObj,
                     BoostJsonObject identityObj)
 {
-    auto slug = builder->loginName;
     builder->displayName = senderObj["username"].toQString();
 
     QString usernameText = displayedUsername(builder.message()) + ':';

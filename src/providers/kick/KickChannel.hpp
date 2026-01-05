@@ -20,7 +20,7 @@ public:
     KickChannel(const QString &name);
     ~KickChannel() override;
 
-    void initialize(UserInit init);
+    void initialize(const UserInit &init);
 
     std::shared_ptr<KickChannel> sharedFromThis();
     std::weak_ptr<KickChannel> weakFromThis();

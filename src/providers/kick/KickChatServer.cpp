@@ -32,8 +32,8 @@ std::shared_ptr<KickChannel> KickChatServer::findBySlug(
     return nullptr;
 }
 
-std::shared_ptr<Channel> KickChatServer::getOrCreate(const QString &slug,
-                                                     KickChannel::UserInit init)
+std::shared_ptr<Channel> KickChatServer::getOrCreate(
+    const QString &slug, const KickChannel::UserInit &init)
 {
     auto lower = slug.toLower();
     if (lower.startsWith(u":kick:"))

@@ -16,7 +16,7 @@ template <typename T>
 using StringMap =
     boost::unordered_flat_map<QString, T, StringViewHash, std::equal_to<>>;
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables, clazy-non-pod-global-static)
 StringMap<EmotePtr> CACHE;
 
 }  // namespace

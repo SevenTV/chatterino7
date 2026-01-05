@@ -26,7 +26,7 @@ KickChannel::~KickChannel()
     }
 }
 
-void KickChannel::initialize(UserInit init)
+void KickChannel::initialize(const UserInit &init)
 {
     this->setUserInfo(init);
     this->resolveChannelInfo();

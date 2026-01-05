@@ -175,7 +175,7 @@ public:
         }
         constexpr const_iterator operator-(difference_type j) const
         {
-            return operator+(-j);
+            return this->operator+(-j);
         }
         constexpr difference_type operator-(const_iterator j) const
         {
@@ -183,7 +183,7 @@ public:
         }
 
         friend constexpr const_iterator operator+(difference_type j,
-                                                  const const_iterator &it)
+                                                  const_iterator it)
         {
             return it.it + j;
         }

@@ -24,8 +24,8 @@ public:
     std::shared_ptr<KickChannel> findByRoomID(uint64_t roomID) const;
     std::shared_ptr<KickChannel> findBySlug(const QString &slug) const;
 
-    std::shared_ptr<Channel> getOrCreate(const QString &slug,
-                                         KickChannel::UserInit init = {});
+    std::shared_ptr<Channel> getOrCreate(
+        const QString &slug, const KickChannel::UserInit &init = {});
 
     void onChatMessage(uint64_t roomID, BoostJsonObject data) const;
     void onJoin(uint64_t roomID) const;
