@@ -38,7 +38,7 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(const QString &slug,
     auto lower = slug.toLower();
     if (lower.startsWith(u":kick:"))
     {
-        lower.slice(6);
+        lower = std::move(lower).mid(6);
     }
 
     auto existing = this->findBySlug(lower);
