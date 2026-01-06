@@ -484,11 +484,11 @@ bool SelectChannelDialog::EventFilter::eventFilter(QObject *watched,
             if (widget == ui.channelName)
             {
                 // Special case for when current selection is the "Channel" entry's edit box since the Edit box actually has the focus
-                ui.whispers->setFocus();
+                ui.automod->setFocus();
                 return true;
             }
 
-            if (widget == ui.kickName)
+            if (widget == ui.automod)
             {
                 // Special case for when current selection is "AutoMod" (the last entry in the list), next wrap is Channel, but we need to select its edit box
                 ui.channel->setFocus();
