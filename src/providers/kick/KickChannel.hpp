@@ -62,7 +62,6 @@ private:
 
     // Kick usually calls this username
     QString displayName_;
-    QString slug_;
 };
 
 }  // namespace chatterino

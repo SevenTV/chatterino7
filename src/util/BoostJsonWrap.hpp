@@ -3,11 +3,23 @@
 #include <boost/json/value.hpp>
 #include <QString>
 
+#if __has_cpp_attribute(gsl::Pointer)
+#    define CHATTERINO_GSL_POINTER [[gsl::Pointer]]
+#else
+#    define CHATTERINO_GSL_POINTER
+#endif
+
 namespace chatterino {
 
 class BoostJsonObject;
 class BoostJsonArray;
-class BoostJsonValue
+
+/// This is a small wrapper around `const boost::json::value*` which handles
+/// missing or unexpected values gracefully.
+///
+/// It's similar to `QJsonValue` with the big difference that this class is a
+/// reference.
+class CHATTERINO_GSL_POINTER BoostJsonValue
 {
 public:
     BoostJsonValue(const boost::json::value &v)
@@ -65,7 +77,12 @@ private:
     friend BoostJsonArray;
 };
 
-class BoostJsonObject
+/// This is a small wrapper around `const boost::json::object*` which handles
+/// missing or unexpected values gracefully.
+///
+/// It's similar to `QJsonObject` with the big difference that this class is a
+/// reference.
+class CHATTERINO_GSL_POINTER BoostJsonObject
 {
 public:
     BoostJsonObject(const boost::json::object &o)
@@ -108,7 +125,12 @@ private:
     friend BoostJsonValue;
 };
 
-class BoostJsonArray
+/// This is a small wrapper around `const boost::json::array*` which handles
+/// missing or unexpected values gracefully.
+///
+/// It's similar to `QJsonArray` with the big difference that this class is a
+/// reference.
+class CHATTERINO_GSL_POINTER BoostJsonArray
 {
 public:
     BoostJsonArray(const boost::json::array &a)
