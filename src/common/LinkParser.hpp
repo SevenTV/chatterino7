@@ -75,6 +75,8 @@ struct Parsed {
     QStringView link;
 
     /// Checks if the parsed link contains a prefix
+    ///
+    /// @param source The exact source string passed to parse()
     bool hasPrefix(QStringView source) const noexcept
     {
         return this->link.begin() != source.begin();
@@ -89,12 +91,16 @@ struct Parsed {
     /// https://www.forsen.tv/commands
     /// (empty)
     /// ```
+    ///
+    /// @param source The exact source string passed to parse()
     QStringView prefix(QStringView source) const noexcept
     {
         return {source.data(), this->link.begin()};
     }
 
     /// Checks if the parsed link contains a suffix
+    ///
+    /// @param source The exact source string passed to parse()
     bool hasSuffix(QStringView source) const noexcept
     {
         return this->link.end() != source.end();
@@ -109,6 +115,8 @@ struct Parsed {
     /// https://www.forsen.tv/commands
     /// (empty)
     /// ```
+    ///
+    /// @param source The exact source string passed to parse()
     QStringView suffix(QStringView source) const noexcept
     {
         return {
