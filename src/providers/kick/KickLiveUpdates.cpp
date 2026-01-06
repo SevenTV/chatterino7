@@ -8,7 +8,6 @@
 #include "util/BoostJsonWrap.hpp"
 
 #include <boost/json.hpp>
-#include <rapidjson/writer.h>
 
 using namespace Qt::Literals;
 
@@ -17,57 +16,6 @@ namespace {
 constexpr std::chrono::seconds MAX_HEARTBEAT_INTERVAL{20};
 const QString WS_URL =
     u"wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false"_s;
-
-// NOLINTBEGIN(readability-identifier-naming, readability-convert-member-functions-to-static)
-class QByteArrayStreamWrapper
-{
-public:
-    using Ch = char;
-
-    QByteArrayStreamWrapper(QByteArray &ba)
-        : ba(ba)
-    {
-    }
-    ~QByteArrayStreamWrapper() = default;
-    Q_DISABLE_COPY_MOVE(QByteArrayStreamWrapper);
-
-    Ch Peek() const
-    {
-        assert(false);
-        return '\0';
-    }
-    Ch Take()
-    {
-        assert(false);
-        return '\0';
-    }
-    size_t Tell() const
-    {
-        return 0;
-    }
-
-    Ch *PutBegin()
-    {
-        assert(false);
-        return nullptr;
-    }
-    void Put(Ch c)
-    {
-        this->ba.push_back(c);
-    }
-    void Flush()
-    {
-    }
-    size_t PutEnd(Ch * /* c */)
-    {
-        assert(false);
-        return 0;
-    }
-
-private:
-    QByteArray &ba;
-};
-// NOLINTEND(readability-identifier-naming, readability-convert-member-functions-to-static)
 
 }  // namespace
 
@@ -215,49 +163,25 @@ void KickLiveUpdatesClient::checkHeartbeat()
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
 QByteArray KickLiveUpdatesClient::encodeSubscription(const Subscription &sub)
 {
-    QByteArray ba;
-    {
-        QByteArrayStreamWrapper wrap(ba);
-        rapidjson::Writer<QByteArrayStreamWrapper> w(wrap);
-        w.StartObject();
-        w.Key("event");
-        w.String("pusher:subscribe");
-
-        w.Key("data");
-        w.StartObject();
-
-        w.Key("auth");
-        w.String("");
-
-        w.Key("channel");
-        w.String(sub.toStdString());
-
-        w.EndObject();
-
-        w.EndObject();
-    }
-    return ba;
+    return QByteArray::fromStdString(boost::json::serialize(boost::json::object{
+        {"event", "pusher:subscribe"},
+        {"data",
+         boost::json::object{
+             {"auth", ""},
+             {"channel", sub.toStdString()},
+         }},
+    }));
 }
 
 QByteArray KickLiveUpdatesClient::encodeUnsubscription(const Subscription &sub)
 {
-    QByteArray ba;
-    {
-        QByteArrayStreamWrapper wrap(ba);
-        rapidjson::Writer<QByteArrayStreamWrapper> w(wrap);
-        w.StartObject();
-        w.Key("event");
-        w.String("pusher:unsubscribe");
-
-        w.Key("data");
-        w.StartObject();
-        w.Key("channel");
-        w.String(sub.toStdString());
-        w.EndObject();
-
-        w.EndObject();
-    }
-    return ba;
+    return QByteArray::fromStdString(boost::json::serialize(boost::json::object{
+        {"event", "pusher:unsubscribe"},
+        {"data",
+         boost::json::object{
+             {"channel", sub.toStdString()},
+         }},
+    }));
 }
 // NOLINTEND(readability-convert-member-functions-to-static)
 
