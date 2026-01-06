@@ -484,7 +484,7 @@ bool SelectChannelDialog::EventFilter::eventFilter(QObject *watched,
             if (widget == ui.channelName)
             {
                 // Special case for when current selection is the "Channel" entry's edit box since the Edit box actually has the focus
-                ui.automod->setFocus();
+                ui.whispers->setFocus();
                 return true;
             }
 
@@ -516,7 +516,7 @@ bool SelectChannelDialog::EventFilter::eventFilter(QObject *watched,
             if (widget == ui.channelName)
             {
                 // Special case for when current selection is the "Channel" entry's edit box since the Edit box actually has the focus
-                ui.whispers->setFocus();
+                ui.automod->setFocus();
                 return true;
             }
 
