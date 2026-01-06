@@ -69,7 +69,7 @@ protected:
     void paintContent(QPainter &painter) override
     {
         painter.setPen({});
-        if (selected)
+        if (this->selected)
         {
             painter.setBrush(getTheme()->tabs.selected.backgrounds.regular);
         }
@@ -79,7 +79,7 @@ protected:
         }
         painter.drawRect(this->rect());
 
-        if (selected)
+        if (this->selected)
         {
             painter.setPen({getTheme()->tabs.selected.line.regular, 1});
             painter.drawLine(this->rect().topLeft() + QPoint{0, 1},
