@@ -208,7 +208,7 @@ Application::Application(Settings &_settings, const Paths &paths,
     , twitchUsers(new TwitchUsers)
     , pronouns(new pronouns::Pronouns)
     , spellChecker(new SpellChecker)
-    , kickChatServer(std::make_shared<KickChatServer>())
+    , kickChatServer(new KickChatServer)
 #ifdef CHATTERINO_HAVE_PLUGINS
     , plugins(new PluginController(paths))
 #endif
@@ -297,6 +297,7 @@ void Application::initialize(Settings &settings, const Paths &paths)
     this->seventvEmotes->loadGlobalEmotes();
 
     this->twitch->initialize();
+    this->kickChatServer->initialize();
 
     // Load live status
     this->notifications->initialize();

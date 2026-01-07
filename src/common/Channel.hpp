@@ -20,6 +20,8 @@ namespace chatterino {
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
 
+class EmoteMap;
+
 class Channel : public std::enable_shared_from_this<Channel>, public MessageSink
 {
 public:
@@ -139,6 +141,11 @@ public:
     virtual QString getCurrentStreamID() const;
 
     static std::shared_ptr<Channel> getEmpty();
+
+    // Update the user's last message and insert the personal emotes if necessary.
+    void upsertPersonalSeventvEmotes(
+        const QString &userLogin,
+        const std::shared_ptr<const EmoteMap> &emoteMap);
 
     TabCompletionModel *completionModel;
     QDate lastDate_;

@@ -8,6 +8,7 @@
 #include "util/BoostJsonWrap.hpp"
 
 #include <boost/json.hpp>
+#include <QPointer>
 
 using namespace Qt::Literals;
 
@@ -26,7 +27,7 @@ class KickLiveUpdatesClient
       public std::enable_shared_from_this<KickLiveUpdatesClient>
 {
 public:
-    KickLiveUpdatesClient(std::weak_ptr<KickChatServer> chatServer)
+    KickLiveUpdatesClient(QPointer<KickChatServer> chatServer)
         : BasicPubSubClient(500)
         , lastHeartbeat_(std::chrono::steady_clock::now())
         , heartbeatInterval_(MAX_HEARTBEAT_INTERVAL)
@@ -62,7 +63,7 @@ private:
 
     std::chrono::steady_clock::time_point lastHeartbeat_;
     std::chrono::milliseconds heartbeatInterval_;
-    std::weak_ptr<KickChatServer> chatServer_;
+    QPointer<KickChatServer> chatServer_;
 };
 
 void KickLiveUpdatesClient::onMessage(const QByteArray &msg)
@@ -105,11 +106,10 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
     }
     else if (event == "App\\Events\\ChatMessageEvent")
     {
-        auto server = this->chatServer_.lock();
         auto roomID = data["chatroom_id"].toUint64();
-        if (server && roomID > 0)
+        if (this->chatServer_ && roomID > 0)
         {
-            server->onChatMessage(roomID, data.toObject());
+            this->chatServer_->onChatMessage(roomID, data.toObject());
         }
     }
     else if (event == "pusher_internal:subscription_succeeded")
@@ -120,10 +120,9 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
         {
             auto roomIDStr = channel.substr(10, channel.size() - 10 - 3);
             uint64_t roomID = QLatin1StringView(roomIDStr).toULongLong();
-            auto server = this->chatServer_.lock();
-            if (server && roomID > 0)
+            if (this->chatServer_ && roomID > 0)
             {
-                server->onJoin(roomID);
+                this->chatServer_->onJoin(roomID);
             }
         }
     }
@@ -223,7 +222,7 @@ KickLiveUpdatesPrivate::~KickLiveUpdatesPrivate()
 std::shared_ptr<KickLiveUpdatesClient> KickLiveUpdatesPrivate::makeClient()
 {
     return std::make_shared<KickLiveUpdatesClient>(
-        getApp()->getKickChatServer()->weak_from_this());
+        getApp()->getKickChatServer());
 }
 
 void KickLiveUpdatesPrivate::checkHeartbeats()

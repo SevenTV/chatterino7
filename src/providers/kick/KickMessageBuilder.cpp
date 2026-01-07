@@ -22,7 +22,7 @@ namespace {
 
 using namespace chatterino;
 
-EmotePtr lookupEmote(QStringView word)
+EmotePtr lookupEmote(const KickChannel &channel, QStringView word)
 {
     EmoteName wordStr(word.toString());  // FIXME: don't do this...
     const auto *globalFfzEmotes = getApp()->getFfzEmotes();
@@ -31,7 +31,11 @@ EmotePtr lookupEmote(QStringView word)
 
     EmotePtr emote;
 
-    // FIXME: lookup channel emotes
+    emote = channel.seventvEmote(wordStr);
+    if (emote)
+    {
+        return emote;
+    }
 
     emote = globalFfzEmotes->emote(wordStr).value_or(std::move(emote));
     if (emote)
@@ -55,9 +59,10 @@ EmotePtr lookupEmote(QStringView word)
     return emote;
 }
 
-void appendWord(MessageBuilder &builder, QStringView word)
+void appendWord(MessageBuilder &builder, const KickChannel &channel,
+                QStringView word)
 {
-    auto emote = lookupEmote(word);
+    auto emote = lookupEmote(channel, word);
     if (emote)
     {
         builder.appendEmote(emote);
@@ -79,7 +84,8 @@ bool isEmoteID(QStringView v)
     return !v.empty();
 }
 
-void appendNonKickEmoteText(MessageBuilder &builder, QStringView text)
+void appendNonKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
+                            QStringView text)
 {
     for (const auto &variant : getApp()->getEmotes()->getEmojis()->parse(text))
     {
@@ -89,7 +95,7 @@ void appendNonKickEmoteText(MessageBuilder &builder, QStringView text)
                                emote, MessageElementFlag::EmojiAll);
                        },
                        [&](QStringView text) {
-                           appendWord(builder, text);
+                           appendWord(builder, channel, text);
                        },
                    },
                    variant);
@@ -101,8 +107,8 @@ void appendNonKickEmoteText(MessageBuilder &builder, QStringView text)
 /// Kick emotes are present as `[emote:{id}:{name}]` where `{id}` is numeric.
 /// They can be right next to each other or to text. For example, we could find
 /// the following message: `foo [emote:1234:name]foo[emote:1234:name]`.
-bool tryAppendKickEmoteText(MessageBuilder &builder, QString &messageText,
-                            QStringView &text)
+bool tryAppendKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
+                            QString &messageText, QStringView &text)
 {
     auto nextEmote = text.indexOf(u"[emote:");
     if (nextEmote < 0)
@@ -131,7 +137,7 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, QString &messageText,
         auto prefix = text.sliced(0, nextEmote);
         messageText.append(prefix);
         messageText.append(' ');
-        appendNonKickEmoteText(builder, prefix);
+        appendNonKickEmoteText(builder, channel, prefix);
     }
 
     auto emoteName = text.sliced(secondColon + 1, endBrace - secondColon - 1);
@@ -149,8 +155,8 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, QString &messageText,
     return true;
 }
 
-void parseContent(MessageBuilder &builder, QString &messageText,
-                  QStringView content)
+void parseContent(MessageBuilder &builder, const KickChannel &channel,
+                  QString &messageText, QStringView content)
 {
     for (auto word : content.tokenize(u' ', Qt::SkipEmptyParts))
     {
@@ -161,10 +167,10 @@ void parseContent(MessageBuilder &builder, QString &messageText,
 
         while (!word.empty())
         {
-            if (!tryAppendKickEmoteText(builder, messageText, word))
+            if (!tryAppendKickEmoteText(builder, channel, messageText, word))
             {
                 messageText.append(word);
-                appendNonKickEmoteText(builder, word);
+                appendNonKickEmoteText(builder, channel, word);
                 break;
             }
         }
@@ -339,6 +345,7 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
         QDateTime::fromString(createdAt, Qt::DateFormat::ISODate);
     builder->parseTime = QTime::currentTime();
     builder->loginName = sender["slug"].toQString();
+    builder->userID = QString::number(sender["id"].toUint64());
 
     if (data["type"].toStringView() == "reply")
     {
@@ -346,10 +353,14 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
     }
 
     appendChannelName(builder, kickChannel);
+
+    builder.emplace<TimestampElement>(builder->serverReceivedTime.time());
+    builder.emplace<TwitchModerationElement>();
+
     // FIXME: append badges
     appendUsername(builder, sender, identity);
     QString messageText;
-    parseContent(builder, messageText, content);
+    parseContent(builder, *kickChannel, messageText, content);
 
     builder->searchText =
         builder->loginName % ' ' % builder->displayName % u": " % messageText;

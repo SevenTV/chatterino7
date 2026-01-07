@@ -194,7 +194,7 @@ private:
     std::unique_ptr<ITwitchUsers> twitchUsers;
     std::unique_ptr<pronouns::Pronouns> pronouns;
     std::unique_ptr<SpellChecker> spellChecker;
-    std::shared_ptr<KickChatServer> kickChatServer;
+    std::unique_ptr<KickChatServer> kickChatServer;
 #ifdef CHATTERINO_HAVE_PLUGINS
     std::unique_ptr<PluginController> plugins;
 #endif

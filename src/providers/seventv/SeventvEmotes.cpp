@@ -8,6 +8,7 @@
 #include "messages/Image.hpp"
 #include "messages/ImageSet.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "providers/kick/KickChannel.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvAPI.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -393,6 +394,98 @@ void SeventvEmotes::loadChannelEmotes(
                     shared->addSystemMessage(
                         "Using cached 7TV emotes as fallback.");
                 }
+            }
+        });
+}
+
+// FIXME: This is mostly a duplicate of the Twitch loading. However, there's an
+// emote refactoring soon (hopefully) after which this can be fixed.
+void SeventvEmotes::loadKickChannelEmotes(
+    const std::weak_ptr<KickChannel> &channel, uint64_t userID,
+    std::function<void(EmoteMap &&, ChannelInfo)> callback, bool manualRefresh)
+{
+    qCDebug(chatterinoSeventv)
+        << "Reloading Kick 7TV Channel Emotes" << userID << manualRefresh;
+
+    getApp()->getSeventvAPI()->getUserByKickID(
+        userID,
+        [callback = std::move(callback), channel, manualRefresh,
+         userID](const auto &json) {
+            const auto emoteSet = json["emote_set"].toObject();
+            const auto parsedEmotes = emoteSet["emotes"].toArray();
+
+            auto emoteMap =
+                parseEmotes(parsedEmotes, SeventvEmoteSetKind::Channel);
+            bool hasEmotes = !emoteMap.empty();
+
+            qCDebug(chatterinoSeventv)
+                << "Loaded" << emoteMap.size() << "7TV Channel Emotes for"
+                << userID << "manual refresh:" << manualRefresh;
+
+            if (hasEmotes)
+            {
+                auto user = json["user"].toObject();
+
+                size_t connectionIdx = 0;
+                for (const auto &conn : user["connections"].toArray())
+                {
+                    if (conn.toObject()["platform"].toString() == "KICK")
+                    {
+                        break;
+                    }
+                    connectionIdx++;
+                }
+
+                callback(std::move(emoteMap),
+                         {user["id"].toString(), emoteSet["id"].toString(),
+                          connectionIdx});
+            }
+
+            auto shared = channel.lock();
+            if (!shared)
+            {
+                return;
+            }
+
+            if (manualRefresh)
+            {
+                if (hasEmotes)
+                {
+                    shared->addSystemMessage("7TV channel emotes reloaded.");
+                }
+                else
+                {
+                    shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
+                }
+            }
+        },
+        [userID, channel, manualRefresh](const auto &result) {
+            auto shared = channel.lock();
+            if (!shared)
+            {
+                return;
+            }
+            if (result.status() == 404)
+            {
+                qCWarning(chatterinoSeventv)
+                    << "Error occurred fetching 7TV emotes: "
+                    << result.parseJson();
+                if (manualRefresh)
+                {
+                    shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
+                }
+            }
+            else
+            {
+                // TODO: Auto retry in case of a timeout, with a delay
+                auto errorString = result.formatError();
+                qCWarning(chatterinoSeventv)
+                    << "Error fetching 7TV emotes for channel" << userID
+                    << ", error" << errorString;
+                shared->addSystemMessage(
+                    QStringLiteral("Failed to fetch 7TV channel "
+                                   "emotes. (Error: %1)")
+                        .arg(errorString));
             }
         });
 }
