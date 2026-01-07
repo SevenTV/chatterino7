@@ -76,11 +76,6 @@ public:
     {
     }
 
-    Atomic(const std::shared_ptr<T> &val)
-        : value_(val)
-    {
-    }
-
     Atomic(const Atomic &) = delete;
     Atomic &operator=(const Atomic &) = delete;
 

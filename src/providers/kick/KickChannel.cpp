@@ -22,7 +22,7 @@ namespace chatterino {
 
 KickChannel::KickChannel(const QString &name)
     : Channel(name.toLower(), Type::Kick)
-    , seventvEmotes_(EMPTY_EMOTE_MAP)
+    , seventvEmotes_(std::make_shared<const EmoteMap>())
 {
 }
 
