@@ -21,6 +21,7 @@
 #include <QNetworkRequest>
 #include <QTimer>
 
+#include <algorithm>
 #include <atomic>
 
 // Duration between each check of every Image instance
@@ -241,7 +242,7 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
             return;
         }
         shared->frames_ = std::make_unique<detail::Frames>(std::move(parsed));
-        if (shared->autoScale_ > 0)
+        if (shared->autoScale_)
         {
             // FIXME: We should actually scale the pixmaps. However, we'd also
             //        need to cache that.
@@ -250,8 +251,8 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
             {
                 auto actualSize = firstFrame->size();
                 shared->scale_ =
-                    static_cast<qreal>(shared->autoScale_) /
-                    std::max(actualSize.width(), actualSize.height());
+                    static_cast<qreal>(*shared->autoScale_) /
+                    std::max({actualSize.width(), actualSize.height(), 1});
             }
         }
 
@@ -338,13 +339,8 @@ ImagePtr Image::fromUrl(const Url &url, qreal scale, QSize expectedSize)
     return shared;
 }
 
-ImagePtr Image::fromAutoscaledUrl(const Url &url, int autoScale)
+ImagePtr Image::fromAutoscaledUrl(const Url &url, uint16_t autoScale)
 {
-    if (autoScale <= 0)
-    {
-        assert(false && "Use Image::fromUrl");
-        return Image::fromUrl(url);
-    }
     auto shared = Image::fromUrl(url, 1.0, {autoScale, autoScale});
     shared->autoScale_ = autoScale;
 

@@ -35,6 +35,7 @@ struct HelixVip;
 using HelixModerator = HelixVip;
 struct ChannelPointReward;
 struct TwitchEmoteOccurrence;
+class ChannelChatters;
 
 namespace linkparser {
 struct Parsed;
@@ -164,7 +165,7 @@ public:
                                             QString &toUpdate);
 
     void addWordFromUserMessage(QStringView string,
-                                TwitchChannel *channel = nullptr);
+                                ChannelChatters *chatters = nullptr);
 
     void appendEmote(const EmotePtr &emote);
 

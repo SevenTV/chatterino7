@@ -59,8 +59,7 @@ EmotePtr lookupEmote(const KickChannel &channel, QStringView word)
     return emote;
 }
 
-void appendWord(MessageBuilder &builder, const KickChannel &channel,
-                QStringView word)
+void appendWord(MessageBuilder &builder, KickChannel &channel, QStringView word)
 {
     auto emote = lookupEmote(channel, word);
     if (emote)
@@ -69,7 +68,7 @@ void appendWord(MessageBuilder &builder, const KickChannel &channel,
         return;
     }
 
-    builder.addWordFromUserMessage(word);
+    builder.addWordFromUserMessage(word, &channel);
 }
 
 bool isEmoteID(QStringView v)
@@ -84,7 +83,7 @@ bool isEmoteID(QStringView v)
     return !v.empty();
 }
 
-void appendNonKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
+void appendNonKickEmoteText(MessageBuilder &builder, KickChannel &channel,
                             QStringView text)
 {
     for (const auto &variant : getApp()->getEmotes()->getEmojis()->parse(text))
@@ -107,7 +106,7 @@ void appendNonKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
 /// Kick emotes are present as `[emote:{id}:{name}]` where `{id}` is numeric.
 /// They can be right next to each other or to text. For example, we could find
 /// the following message: `foo [emote:1234:name]foo[emote:1234:name]`.
-bool tryAppendKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
+bool tryAppendKickEmoteText(MessageBuilder &builder, KickChannel &channel,
                             QString &messageText, QStringView &text)
 {
     auto nextEmote = text.indexOf(u"[emote:");
@@ -155,7 +154,7 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
     return true;
 }
 
-void parseContent(MessageBuilder &builder, const KickChannel &channel,
+void parseContent(MessageBuilder &builder, KickChannel &channel,
                   QString &messageText, QStringView content)
 {
     for (auto word : content.tokenize(u' ', Qt::SkipEmptyParts))
@@ -359,6 +358,9 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
 
     // FIXME: append badges
     appendUsername(builder, sender, identity);
+    kickChannel->setUserColor(builder->displayName, builder->usernameColor);
+    kickChannel->addRecentChatter(builder->displayName);
+
     QString messageText;
     parseContent(builder, *kickChannel, messageText, content);
 

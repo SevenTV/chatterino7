@@ -2,6 +2,7 @@
 
 #include "common/Atomic.hpp"
 #include "common/Channel.hpp"
+#include "common/ChannelChatters.hpp"
 
 #include <unordered_map>
 
@@ -22,7 +23,7 @@ using EmotePtr = std::shared_ptr<const Emote>;
 
 struct EmoteName;
 
-class KickChannel : public Channel
+class KickChannel : public Channel, public ChannelChatters
 {
 public:
     struct UserInit {
