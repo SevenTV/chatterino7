@@ -109,12 +109,14 @@ void appendNonKickEmoteText(MessageBuilder &builder, KickChannel &channel,
 bool tryAppendKickEmoteText(MessageBuilder &builder, KickChannel &channel,
                             QString &messageText, QStringView &text)
 {
-    auto nextEmote = text.indexOf(u"[emote:");
+    static constexpr QStringView emotePrefix = u"[emote:";
+
+    auto nextEmote = text.indexOf(emotePrefix);
     if (nextEmote < 0)
     {
         return false;
     }
-    auto secondColon = text.indexOf(u':', nextEmote + 7);
+    auto secondColon = text.indexOf(u':', nextEmote + emotePrefix.size());
     if (secondColon < 0)
     {
         return false;
@@ -125,7 +127,8 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, KickChannel &channel,
         return false;
     }
 
-    auto emoteID = text.sliced(nextEmote + 7, secondColon - nextEmote - 7);
+    auto emoteID = text.sliced(nextEmote + emotePrefix.size(),
+                               secondColon - nextEmote - emotePrefix.size());
     if (!isEmoteID(emoteID))
     {
         return false;
@@ -183,7 +186,6 @@ QString displayedUsername(const Message &message)
     {
         case UsernameDisplayMode::Username:
             usernameText = message.loginName;
-
             break;
 
         case UsernameDisplayMode::LocalizedName:
@@ -255,7 +257,6 @@ void appendReply(MessageBuilder &builder, KickChannel *channel,
 
     builder.emplace<ReplyCurveElement>();
 
-    // construct reply elements
     auto *replyingTo = builder.emplace<TextElement>(
         "Replying to", MessageElementFlag::RepliedMessage, MessageColor::System,
         FontStyle::ChatMediumSmall);
@@ -356,7 +357,7 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
     builder.emplace<TimestampElement>(builder->serverReceivedTime.time());
     builder.emplace<TwitchModerationElement>();
 
-    // FIXME: append badges
+    // FIXME: append badges (kick + seventv)
     appendUsername(builder, sender, identity);
     kickChannel->setUserColor(builder->displayName, builder->usernameColor);
     kickChannel->addRecentChatter(builder->displayName);
