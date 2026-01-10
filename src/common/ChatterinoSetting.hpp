@@ -58,6 +58,7 @@ using BoolSetting = ChatterinoSetting<bool>;
 using FloatSetting = ChatterinoSetting<float>;
 using DoubleSetting = ChatterinoSetting<double>;
 using IntSetting = ChatterinoSetting<int>;
+using UInt64Setting = ChatterinoSetting<uint64_t>;
 using StringSetting = ChatterinoSetting<std::string>;
 using QStringSetting = ChatterinoSetting<QString>;
 using QSizeSetting = ChatterinoSetting<QSize>;

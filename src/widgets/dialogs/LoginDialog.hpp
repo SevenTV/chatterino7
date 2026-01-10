@@ -1,6 +1,7 @@
 #pragma once
 
 #include "widgets/BaseWidget.hpp"
+#include "widgets/dialogs/KickLoginPage.hpp"
 
 #include <QAction>
 #include <QApplication>
@@ -77,6 +78,8 @@ private:
         BasicLoginWidget basic;
 
         AdvancedLoginWidget advanced;
+
+        KickLoginPage kick;
     } ui_;
 };
 

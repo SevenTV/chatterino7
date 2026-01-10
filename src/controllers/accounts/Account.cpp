@@ -4,6 +4,8 @@
 
 namespace chatterino {
 
+using namespace Qt::Literals;
+
 Account::Account(ProviderId providerId)
     : providerId_(providerId)
 {
@@ -14,6 +16,8 @@ Account::Account(ProviderId providerId)
         {
             case ProviderId::Twitch:
                 return twitch;
+            case ProviderId::Kick:
+                return u"Kick"_s;
         }
         return QString("Unknown ProviderId");
     }();

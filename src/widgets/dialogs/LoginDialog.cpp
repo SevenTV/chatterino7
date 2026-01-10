@@ -259,6 +259,8 @@ LoginDialog::LoginDialog(QWidget *parent)
                      });
 
     this->ui_.mainLayout.addWidget(&this->ui_.buttonBox);
+
+    this->ui_.tabWidget.addTab(&this->ui_.kick, "Kick");
 }
 
 }  // namespace chatterino
