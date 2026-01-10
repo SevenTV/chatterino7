@@ -2,6 +2,7 @@
 
 #include "util/Expected.hpp"
 
+#include <QDateTime>
 #include <QString>
 
 #include <cstdint>
@@ -16,12 +17,14 @@ struct KickPrivateUserInfo {
 
     uint64_t userID = 0;
     QString username;
+    std::optional<QString> profilePictureURL;
 };
 
 struct KickPrivateChatroomInfo {
     KickPrivateChatroomInfo(BoostJsonObject obj);
 
     uint64_t roomID = 0;
+    QDateTime createdAt;
 };
 
 struct KickPrivateChannelInfo {
@@ -33,12 +36,25 @@ struct KickPrivateChannelInfo {
     KickPrivateChatroomInfo chatroom;
 };
 
+struct KickPrivateUserInChannelInfo {
+    KickPrivateUserInChannelInfo(BoostJsonObject obj);
+
+    uint64_t userID = 0;
+    std::optional<QDateTime> followingSince;
+    std::optional<uint16_t> subscriptionMonths;
+    std::optional<QString> profilePictureURL;
+};
+
 class KickApi
 {
 public:
     static void privateChannelInfo(
-        const QString &slug,
+        const QString &username,
         std::function<void(ExpectedStr<KickPrivateChannelInfo>)> cb);
+
+    static void privateUserInChannelInfo(
+        const QString &userUsername, const QString &channelUsername,
+        std::function<void(ExpectedStr<KickPrivateUserInChannelInfo>)> cb);
 };
 
 }  // namespace chatterino
