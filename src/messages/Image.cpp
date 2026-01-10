@@ -19,10 +19,12 @@
 
 #include <boost/functional/hash.hpp>
 #include <QBuffer>
+#include <QFile>
 #include <QImageReader>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QThreadPool>
 #include <QTimer>
 
 #include <algorithm>
