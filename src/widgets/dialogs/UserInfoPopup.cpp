@@ -1511,6 +1511,8 @@ void UserInfoPopup::updateKickUserData()
         self->ui_.notesAdd->setEnabled(true);
     };
 
+    // FIXME: this doesn't support opening by user ID
+
     KickApi::privateChannelInfo(
         this->userName_, [self = QPointer(this), onChannelFetched,
                           onChannelFetchFailed](const auto &res) {
