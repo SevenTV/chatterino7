@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #include "common/Channel.hpp"
 
 #include "Application.hpp"
@@ -446,7 +450,7 @@ void Channel::upsertPersonalSeventvEmotes(
 
     assertInGuiThread();
     auto snapshot = this->getMessageSnapshot();
-    if (snapshot.size() == 0)
+    if (snapshot.empty())
     {
         return;
     }
@@ -545,7 +549,8 @@ void Channel::upsertPersonalSeventvEmotes(
         };
 
         // Find all words that match a personal emote and replace them with emotes
-        for (const auto &word : textElement->words())
+        const auto prevWords = textElement->words();
+        for (const auto &word : prevWords)
         {
             auto emoteIt = emoteMap->find(EmoteName{word});
             if (emoteIt == emoteMap->end())

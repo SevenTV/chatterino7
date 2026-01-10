@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2018 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "singletons/Paths.hpp"
@@ -15,9 +19,6 @@ class QCheckBox;
 class QMovie;
 
 namespace chatterino {
-
-inline static const QString SEVENTV_USER_API =
-    "https://7tv.io/v3/users/twitch/%1";
 
 class Channel;
 using ChannelPtr = std::shared_ptr<Channel>;
@@ -57,15 +58,21 @@ private:
     void updateLatestMessages();
     void updateNotes();
 
-    void loadAvatar(const HelixUser &user);
+    void loadAvatar(const QString &userID, const QString &pictureURL,
+                    bool isKick);
 
-    void loadSevenTVAvatar(const HelixUser &user);
+    void loadSevenTVAvatar(const QString &userID, bool isKick);
     void setSevenTVAvatar(const QString &filename, const QByteArray &format);
 
     void saveCacheAvatar(const QByteArray &avatar,
                          const QString &filename) const;
 
     void updateAvatarUrl();
+
+    void updateKickUserData();
+    void onKickProfilePictureClick(Qt::MouseButton button);
+
+    QStringView platformName() const;
 
     bool isMod_{};
     bool isBroadcaster_{};
@@ -126,6 +133,9 @@ private:
     bool isTwitchAvatarShown_ = true;
     QPixmap avatarPixmap_;
     QPointer<EditUserNotesDialog> editUserNotesDialog_;
+
+    bool isKick_ = false;
+    uint64_t kickUserID_ = 0;
 
     class TimeoutWidget : public BaseWidget
     {

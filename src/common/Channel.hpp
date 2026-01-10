@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "common/enums/MessageContext.hpp"
@@ -142,7 +146,7 @@ public:
 
     static std::shared_ptr<Channel> getEmpty();
 
-    // Update the user's last message and insert the personal emotes if necessary.
+    /// Update the user's last message and insert the personal emotes if necessary.
     void upsertPersonalSeventvEmotes(
         const QString &userLogin,
         const std::shared_ptr<const EmoteMap> &emoteMap);

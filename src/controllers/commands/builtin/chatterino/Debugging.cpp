@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #include "controllers/commands/builtin/chatterino/Debugging.hpp"
 
 #include "Application.hpp"
@@ -202,18 +206,6 @@ QString debugTest(const CommandContext &ctx)
     {
         getApp()->getUpdates().checkForUpdates();
         ctx.channel->addSystemMessage(QString("checking for updates"));
-    }
-    else if (command == "spellcheck-get-system-dictionaries")
-    {
-#ifdef CHATTERINO_WITH_SPELLCHECK
-        auto dicts = getApp()->getSpellChecker()->getSystemDictionaries();
-        for (const auto &dict : dicts)
-        {
-            ctx.channel->addSystemMessage(QString("system dictionary: %1 at %2")
-                                              .arg(dict.name)
-                                              .arg(dict.path));
-        }
-#endif
     }
     else if (command == "save-settings")
     {

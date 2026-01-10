@@ -53,10 +53,17 @@ KickPrivateUserInfo::KickPrivateUserInfo(BoostJsonObject obj)
     : userID(obj["id"].toUint64())
     , username(obj["username"].toQString())
 {
+    auto pictureUrl = obj["profile_pic"];
+    if (pictureUrl.isString())
+    {
+        this->profilePictureURL = pictureUrl.toQString();
+    }
 }
 
 KickPrivateChatroomInfo::KickPrivateChatroomInfo(BoostJsonObject obj)
     : roomID(obj["id"].toUint64())
+    , createdAt(QDateTime::fromString(obj["created_at"].toQString(),
+                                      Qt::ISODateWithMs))
 {
 }
 
@@ -68,12 +75,46 @@ KickPrivateChannelInfo::KickPrivateChannelInfo(BoostJsonObject obj)
 {
 }
 
+KickPrivateUserInChannelInfo::KickPrivateUserInChannelInfo(BoostJsonObject obj)
+    : userID(obj["id"].toUint64())
+
+{
+    auto followingSinceStr = obj["following_since"].toQString();
+    if (!followingSinceStr.isEmpty())
+    {
+        this->followingSince =
+            QDateTime::fromString(followingSinceStr, Qt::ISODateWithMs);
+    }
+
+    auto months = obj["subscribed_for"].toUint64();
+    if (months > 0 && months < std::numeric_limits<uint16_t>::max())
+    {
+        this->subscriptionMonths = static_cast<uint16_t>(months);
+    }
+
+    auto pictureUrl = obj["profile_pic"];
+    if (pictureUrl.isString())
+    {
+        this->profilePictureURL = pictureUrl.toQString();
+    }
+}
+
 void KickApi::privateChannelInfo(
-    const QString &slug,
+    const QString &username,
     std::function<void(ExpectedStr<KickPrivateChannelInfo>)> cb)
 {
-    getJson<KickPrivateChannelInfo>(u"https://kick.com/api/v2/channels/" % slug,
-                                    std::move(cb));
+    getJson<KickPrivateChannelInfo>(
+        u"https://kick.com/api/v2/channels/" % username, std::move(cb));
+}
+
+void KickApi::privateUserInChannelInfo(
+    const QString &userUsername, const QString &channelUsername,
+    std::function<void(ExpectedStr<KickPrivateUserInChannelInfo>)> cb)
+{
+    getJson<KickPrivateUserInChannelInfo>(u"https://kick.com/api/v2/channels/" %
+                                              channelUsername % "/users/" %
+                                              userUsername,
+                                          std::move(cb));
 }
 
 }  // namespace chatterino

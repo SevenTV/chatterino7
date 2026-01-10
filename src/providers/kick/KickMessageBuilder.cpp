@@ -10,6 +10,7 @@
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/kick/KickBadges.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
@@ -59,8 +60,7 @@ EmotePtr lookupEmote(const KickChannel &channel, QStringView word)
     return emote;
 }
 
-void appendWord(MessageBuilder &builder, const KickChannel &channel,
-                QStringView word)
+void appendWord(MessageBuilder &builder, KickChannel &channel, QStringView word)
 {
     auto emote = lookupEmote(channel, word);
     if (emote)
@@ -69,7 +69,7 @@ void appendWord(MessageBuilder &builder, const KickChannel &channel,
         return;
     }
 
-    builder.addWordFromUserMessage(word);
+    builder.addWordFromUserMessage(word, &channel);
 }
 
 bool isEmoteID(QStringView v)
@@ -84,7 +84,7 @@ bool isEmoteID(QStringView v)
     return !v.empty();
 }
 
-void appendNonKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
+void appendNonKickEmoteText(MessageBuilder &builder, KickChannel &channel,
                             QStringView text)
 {
     for (const auto &variant : getApp()->getEmotes()->getEmojis()->parse(text))
@@ -107,15 +107,17 @@ void appendNonKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
 /// Kick emotes are present as `[emote:{id}:{name}]` where `{id}` is numeric.
 /// They can be right next to each other or to text. For example, we could find
 /// the following message: `foo [emote:1234:name]foo[emote:1234:name]`.
-bool tryAppendKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
+bool tryAppendKickEmoteText(MessageBuilder &builder, KickChannel &channel,
                             QString &messageText, QStringView &text)
 {
-    auto nextEmote = text.indexOf(u"[emote:");
+    static constexpr QStringView emotePrefix = u"[emote:";
+
+    auto nextEmote = text.indexOf(emotePrefix);
     if (nextEmote < 0)
     {
         return false;
     }
-    auto secondColon = text.indexOf(u':', nextEmote + 7);
+    auto secondColon = text.indexOf(u':', nextEmote + emotePrefix.size());
     if (secondColon < 0)
     {
         return false;
@@ -126,7 +128,8 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
         return false;
     }
 
-    auto emoteID = text.sliced(nextEmote + 7, secondColon - nextEmote - 7);
+    auto emoteID = text.sliced(nextEmote + emotePrefix.size(),
+                               secondColon - nextEmote - emotePrefix.size());
     if (!isEmoteID(emoteID))
     {
         return false;
@@ -155,7 +158,7 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, const KickChannel &channel,
     return true;
 }
 
-void parseContent(MessageBuilder &builder, const KickChannel &channel,
+void parseContent(MessageBuilder &builder, KickChannel &channel,
                   QString &messageText, QStringView content)
 {
     for (auto word : content.tokenize(u' ', Qt::SkipEmptyParts))
@@ -184,7 +187,6 @@ QString displayedUsername(const Message &message)
     {
         case UsernameDisplayMode::Username:
             usernameText = message.loginName;
-
             break;
 
         case UsernameDisplayMode::LocalizedName:
@@ -256,7 +258,6 @@ void appendReply(MessageBuilder &builder, KickChannel *channel,
 
     builder.emplace<ReplyCurveElement>();
 
-    // construct reply elements
     auto *replyingTo = builder.emplace<TextElement>(
         "Replying to", MessageElementFlag::RepliedMessage, MessageColor::System,
         FontStyle::ChatMediumSmall);
@@ -324,6 +325,20 @@ void appendUsername(MessageBuilder &builder, BoostJsonObject senderObj,
         ->setLink({Link::UserInfo, builder.message().displayName});
 }
 
+void appendKickBadges(MessageBuilder &builder, BoostJsonArray badges)
+{
+    for (auto badgeObj : badges)
+    {
+        auto ty = badgeObj["type"].toStringView();
+        auto [emote, flag] = KickBadges::lookup(ty);
+        if (!emote)
+        {
+            continue;
+        }
+        builder.emplace<BadgeElement>(emote, flag);
+    }
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -357,8 +372,13 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
     builder.emplace<TimestampElement>(builder->serverReceivedTime.time());
     builder.emplace<TwitchModerationElement>();
 
-    // FIXME: append badges
+    appendKickBadges(builder, identity["badges"].toArray());
+    // FIXME: append seventv badges
+
     appendUsername(builder, sender, identity);
+    kickChannel->setUserColor(builder->displayName, builder->usernameColor);
+    kickChannel->addRecentChatter(builder->displayName);
+
     QString messageText;
     parseContent(builder, *kickChannel, messageText, content);
 

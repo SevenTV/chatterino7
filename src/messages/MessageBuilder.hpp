@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "common/Aliases.hpp"
@@ -35,6 +39,7 @@ struct HelixVip;
 using HelixModerator = HelixVip;
 struct ChannelPointReward;
 struct TwitchEmoteOccurrence;
+class ChannelChatters;
 
 namespace linkparser {
 struct Parsed;
@@ -164,7 +169,7 @@ public:
                                             QString &toUpdate);
 
     void addWordFromUserMessage(QStringView string,
-                                TwitchChannel *channel = nullptr);
+                                ChannelChatters *chatters = nullptr);
 
     void appendEmote(const EmotePtr &emote);
 

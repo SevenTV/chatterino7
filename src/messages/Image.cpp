@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #include "messages/Image.hpp"
 
 #include "Application.hpp"
@@ -15,12 +19,15 @@
 
 #include <boost/functional/hash.hpp>
 #include <QBuffer>
+#include <QFile>
 #include <QImageReader>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QThreadPool>
 #include <QTimer>
 
+#include <algorithm>
 #include <atomic>
 
 // Duration between each check of every Image instance
@@ -241,7 +248,7 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
             return;
         }
         shared->frames_ = std::make_unique<detail::Frames>(std::move(parsed));
-        if (shared->autoScale_ > 0)
+        if (shared->autoScale_)
         {
             // FIXME: We should actually scale the pixmaps. However, we'd also
             //        need to cache that.
@@ -250,8 +257,8 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
             {
                 auto actualSize = firstFrame->size();
                 shared->scale_ =
-                    static_cast<qreal>(shared->autoScale_) /
-                    std::max(actualSize.width(), actualSize.height());
+                    static_cast<qreal>(*shared->autoScale_) /
+                    std::max({actualSize.width(), actualSize.height(), 1});
             }
         }
 
@@ -338,13 +345,8 @@ ImagePtr Image::fromUrl(const Url &url, qreal scale, QSize expectedSize)
     return shared;
 }
 
-ImagePtr Image::fromAutoscaledUrl(const Url &url, int autoScale)
+ImagePtr Image::fromAutoscaledUrl(const Url &url, uint16_t autoScale)
 {
-    if (autoScale <= 0)
-    {
-        assert(false && "Use Image::fromUrl");
-        return Image::fromUrl(url);
-    }
     auto shared = Image::fromUrl(url, 1.0, {autoScale, autoScale});
     shared->autoScale_ = autoScale;
 
@@ -531,75 +533,107 @@ QSizeF Image::size() const
 void Image::actuallyLoad()
 {
     auto weak = weakOf(this);
-    NetworkRequest(this->url().string)
-        .concurrent()
-        .cache()
-        .onSuccess([weak](auto result) {
-            auto shared = weak.lock();
-            if (!shared)
-            {
-                return;
-            }
+    auto onSuccess = [weak](const auto &result) {
+        auto shared = weak.lock();
+        if (!shared)
+        {
+            return;
+        }
 
-            assert(!isAppAboutToQuit());
+        assert(!isAppAboutToQuit());
 
-            QBuffer buffer;
-            buffer.setData(result.getData());
-            QImageReader reader(&buffer);
+        QBuffer buffer;
+        buffer.setData(result.getData());
+        QImageReader reader(&buffer);
 
-            if (!reader.canRead())
-            {
-                qCDebug(chatterinoImage)
-                    << "Error: image cant be read " << shared->url().string;
-                shared->empty_ = true;
-                return;
-            }
-
-            const auto size = reader.size();
-            if (size.isEmpty())
-            {
-                shared->empty_ = true;
-                return;
-            }
-
-            // returns 1 for non-animated formats
-            if (reader.imageCount() <= 0)
-            {
-                qCDebug(chatterinoImage)
-                    << "Error: image has less than 1 frame "
-                    << shared->url().string << ": " << reader.errorString();
-                shared->empty_ = true;
-                return;
-            }
-
-            // use "double" to prevent int overflows
-            if (double(size.width()) * double(size.height()) *
-                    double(reader.imageCount()) * 4.0 >
-                double(Image::maxBytesRam))
-            {
-                qCDebug(chatterinoImage) << "image too large in RAM";
-
-                shared->empty_ = true;
-                return;
-            }
-
-            auto parsed = detail::readFrames(reader, shared->url());
-
-            assignFrames(shared, parsed);
-        })
-        .onError([weak](auto /*result*/) {
-            auto shared = weak.lock();
-            if (!shared)
-            {
-                return false;
-            }
-
-            // fourtf: is this the right thing to do?
+        if (!reader.canRead())
+        {
+            qCDebug(chatterinoImage)
+                << "Error: image cant be read " << shared->url().string;
             shared->empty_ = true;
+            return;
+        }
 
-            return true;
-        })
-        .execute();
+        const auto size = reader.size();
+        if (size.isEmpty())
+        {
+            shared->empty_ = true;
+            return;
+        }
+
+        // returns 1 for non-animated formats
+        if (reader.imageCount() <= 0)
+        {
+            qCDebug(chatterinoImage)
+                << "Error: image has less than 1 frame " << shared->url().string
+                << ": " << reader.errorString();
+            shared->empty_ = true;
+            return;
+        }
+
+        // use "double" to prevent int overflows
+        if (double(size.width()) * double(size.height()) *
+                double(reader.imageCount()) * 4.0 >
+            double(Image::maxBytesRam))
+        {
+            qCDebug(chatterinoImage) << "image too large in RAM";
+
+            shared->empty_ = true;
+            return;
+        }
+
+        auto parsed = detail::readFrames(reader, shared->url());
+
+        assignFrames(shared, parsed);
+    };
+    auto onError = [weak](const auto & /*result*/) {
+        auto shared = weak.lock();
+        if (!shared)
+        {
+            return false;
+        }
+
+        // fourtf: is this the right thing to do?
+        shared->empty_ = true;
+
+        return true;
+    };
+
+    if (this->url_.string.startsWith(u":/"))
+    {
+        QThreadPool::globalInstance()->start([onSuccess = std::move(onSuccess),
+                                              onError = std::move(onError),
+                                              url = this->url_.string] {
+            QByteArray data;
+            {
+                QFile file(url);
+                if (!file.open(QFile::ReadOnly))
+                {
+                    onError(NetworkResult{
+                        NetworkResult::NetworkError::ContentNotFoundError,
+                        404,
+                        {},
+                    });
+                    return;
+                }
+                data = file.readAll();
+            }
+            onSuccess(NetworkResult{
+                NetworkResult::NetworkError::NoError,
+                200,
+                std::move(data),
+            });
+        });
+    }
+    else
+    {
+        NetworkRequest(this->url().string)
+            .concurrent()
+            .cache()
+            .onSuccess(std::move(onSuccess))
+            .onError(std::move(onError))
+            .execute();
+    }
 }
 
 void Image::expireFrames()

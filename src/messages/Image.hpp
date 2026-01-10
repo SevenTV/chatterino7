@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "common/Aliases.hpp"
@@ -89,7 +93,7 @@ public:
     static ImagePtr fromResourcePixmap(const QPixmap &pixmap, qreal scale = 1);
     static ImagePtr getEmpty();
 
-    static ImagePtr fromAutoscaledUrl(const Url &url, int autoScale);
+    static ImagePtr fromAutoscaledUrl(const Url &url, uint16_t autoScale);
 
     const Url &url() const;
     bool loaded() const;
@@ -127,10 +131,14 @@ private:
 
     bool shouldLoad_{false};
 
-    /// Size this image should take (in both dimensions).
+    /// Size this image should take when loaded (in both dimensions).
     ///
-    /// Unused if negative
-    int autoScale_ = -1;
+    /// This is used for images that have an unknown scale when they're created
+    /// (i.e. the scale is only known after the image is loaded).
+    ///
+    /// Upon creation, only `expectedSize_` is set to `(autoScale, autoScale)`.
+    /// When the image is loaded, `scale_` is set to `autoScale / actualSize`.
+    std::optional<uint16_t> autoScale_;
 
     mutable std::chrono::time_point<std::chrono::steady_clock> lastUsed_;
 

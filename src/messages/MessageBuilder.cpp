@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #include "messages/MessageBuilder.hpp"
 
 #include "Application.hpp"
@@ -1793,7 +1797,7 @@ void MessageBuilder::addTextOrEmote(TextState &state, QString string)
 }
 
 void MessageBuilder::addWordFromUserMessage(QStringView string,
-                                            TwitchChannel *twitchChannel)
+                                            ChannelChatters *chatters)
 {
     // Actually just text
     auto link = linkparser::parse(string);
@@ -1814,9 +1818,9 @@ void MessageBuilder::addWordFromUserMessage(QStringView string,
             QString username = match.captured(1);
             auto originalTextColor = textColor;
 
-            if (twitchChannel != nullptr)
+            if (chatters != nullptr)
             {
-                if (auto userColor = twitchChannel->getUserColor(username);
+                if (auto userColor = chatters->getUserColor(username);
                     userColor.isValid())
                 {
                     textColor = userColor;
@@ -1840,17 +1844,16 @@ void MessageBuilder::addWordFromUserMessage(QStringView string,
         }
     }
 
-    if (twitchChannel != nullptr && getSettings()->findAllUsernames)
+    if (chatters != nullptr && getSettings()->findAllUsernames)
     {
         auto match = allUsernamesMentionRegex.match(string);
         QString username = match.captured(1);
 
-        if (match.hasMatch() &&
-            twitchChannel->accessChatters()->contains(username))
+        if (match.hasMatch() && chatters->accessChatters()->contains(username))
         {
             auto originalTextColor = textColor;
 
-            if (auto userColor = twitchChannel->getUserColor(username);
+            if (auto userColor = chatters->getUserColor(username);
                 userColor.isValid())
             {
                 textColor = userColor;

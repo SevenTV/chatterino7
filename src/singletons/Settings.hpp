@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "common/ChatterinoSetting.hpp"
@@ -364,8 +368,8 @@ public:
         "/behaviour/spellChecking/enabled",
         false,
     };
-    QStringSetting spellCheckingFallback = {
-        "/behaviour/spellChecking/systemFallback",
+    QStringSetting spellCheckingDefaultDictionary = {
+        "/behaviour/spellChecking/defaultDictionary",
         "",
     };
 
