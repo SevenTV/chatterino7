@@ -1592,11 +1592,11 @@ void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)
             auto avatarUrl = this->avatarUrl_;
 
             // add context menu actions
-            menu->addAction("Open avatar in browser", [avatarUrl] {
+            menu->addAction("Open avatar in browser", this, [avatarUrl] {
                 QDesktopServices::openUrl(QUrl(avatarUrl));
             });
 
-            menu->addAction("Copy avatar link", [avatarUrl] {
+            menu->addAction("Copy avatar link", this, [avatarUrl] {
                 crossPlatformCopy(avatarUrl);
             });
 
