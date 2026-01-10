@@ -10,6 +10,7 @@
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/kick/KickBadges.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
@@ -324,6 +325,20 @@ void appendUsername(MessageBuilder &builder, BoostJsonObject senderObj,
         ->setLink({Link::UserInfo, builder.message().displayName});
 }
 
+void appendKickBadges(MessageBuilder &builder, BoostJsonArray badges)
+{
+    for (auto badgeObj : badges)
+    {
+        auto ty = badgeObj["type"].toStringView();
+        auto [emote, flag] = KickBadges::lookup(ty);
+        if (!emote)
+        {
+            continue;
+        }
+        builder.emplace<BadgeElement>(emote, flag);
+    }
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -357,7 +372,9 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
     builder.emplace<TimestampElement>(builder->serverReceivedTime.time());
     builder.emplace<TwitchModerationElement>();
 
-    // FIXME: append badges (kick + seventv)
+    appendKickBadges(builder, identity["badges"].toArray());
+    // FIXME: append seventv badges
+
     appendUsername(builder, sender, identity);
     kickChannel->setUserColor(builder->displayName, builder->usernameColor);
     kickChannel->addRecentChatter(builder->displayName);

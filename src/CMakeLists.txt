@@ -394,6 +394,8 @@ set(SOURCE_FILES
 
         providers/kick/KickApi.cpp
         providers/kick/KickApi.hpp
+        providers/kick/KickBadges.cpp
+        providers/kick/KickBadges.hpp
         providers/kick/KickChannel.cpp
         providers/kick/KickChannel.hpp
         providers/kick/KickChatServer.cpp
