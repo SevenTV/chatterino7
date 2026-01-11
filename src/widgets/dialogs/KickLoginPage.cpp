@@ -34,6 +34,8 @@ namespace {
 
 using namespace chatterino;
 
+const QString REDIRECT_URL = u"http://localhost:38275"_s;
+
 QByteArray generateRandomBytes(qsizetype size)
 {
     assert((size % 4) == 0);
@@ -99,7 +101,7 @@ public:
         QUrlQuery query{
             {"response_type", "code"},
             {"client_id", this->clientID},
-            {"redirect_uri", "http://localhost:38275"},
+            {"redirect_uri", REDIRECT_URL},
             {"scope", "user:read channel:read channel:write chat:write "
                       "moderation:ban moderation:chat_message:manage"},
             {"code_challenge", this->authParams.codeChallenge},
@@ -179,7 +181,7 @@ private:
             {"grant_type", "authorization_code"},
             {"client_id", this->clientID},
             {"client_secret", this->clientSecret},
-            {"redirect_uri", "http://localhost:38275"},
+            {"redirect_uri", REDIRECT_URL},
             {"code_verifier", this->authParams.codeVerifier},
             {"code", code},
         };
@@ -274,7 +276,8 @@ KickLoginPage::KickLoginPage()
         "can be created at <a "
         "href=\"https://kick.com/settings/developer\">kick.com/settings/"
         "developer</a>. The following redirect URL <b>must</b> be specified: "
-        "<b><code>http://localhost:38275</code></b>");
+        "<b><code>" %
+        REDIRECT_URL % "</code></b>");
     topLabel->setWordWrap(true);
     topLabel->setOpenExternalLinks(true);
     topLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
