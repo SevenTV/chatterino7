@@ -50,19 +50,16 @@ QByteArray generateRandomBytes(qsizetype size)
 
 QString formatAPIError(const NetworkResult &result)
 {
-    const auto &data = result.getData();
-    if (!data.isEmpty())
+    const auto json = result.parseJson();
+    auto error =
+        json["error_description"_L1].toString(json["message"_L1].toString());
+    if (!error.isEmpty())
     {
-        const auto json = QJsonDocument::fromJson(data).object();
-        auto error = json["error_description"_L1].toString(
-            json["message"_L1].toString());
-        if (!error.isEmpty())
-        {
-            return u"Error: " % error % u" (" % result.formatError() % ')';
-        }
+        return u"Error: " % error % u" (" % result.formatError() % ')';
     }
     return u"Error: " % result.formatError() % u" (no further information)";
 }
+
 struct AuthParams {
     QByteArray codeVerifier;
     QByteArray codeChallenge;
