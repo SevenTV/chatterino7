@@ -428,7 +428,7 @@ void KickChannel::addLoginMessage()
     builder.emplace<TimestampElement>();
     builder.emplace<TextElement>(
         u"You need to log in to send messages. You can link your "_s
-        "Twitch account",
+        "Kick account",
         MessageElementFlag::Text, MessageColor::System);
     builder
         .emplace<TextElement>(u"in the settings."_s, MessageElementFlag::Text,
