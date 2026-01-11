@@ -4,6 +4,8 @@
 #include "common/Channel.hpp"
 #include "common/ChannelChatters.hpp"
 
+#include <chrono>
+#include <queue>
 #include <unordered_map>
 
 namespace chatterino {

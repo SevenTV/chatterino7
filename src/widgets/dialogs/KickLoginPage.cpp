@@ -9,9 +9,18 @@
 #include "singletons/Theme.hpp"
 #include "util/HttpServer.hpp"
 
+#include <QApplication>
 #include <QClipboard>
+#include <QDesktopServices>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QLabel>
 #include <QLineEdit>
+#include <QPainter>
+#include <QPushButton>
 #include <QRandomGenerator>
+#include <QRegularExpressionValidator>
 #include <QSpacerItem>
 #include <QString>
 #include <QUrlQuery>

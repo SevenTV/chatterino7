@@ -2,6 +2,12 @@
 
 #include "controllers/accounts/Account.hpp"
 
+#include <QDateTime>
+#include <QString>
+
+#include <memory>
+#include <string>
+
 namespace chatterino {
 
 struct KickAccountData {

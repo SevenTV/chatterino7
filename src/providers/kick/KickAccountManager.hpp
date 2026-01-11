@@ -2,7 +2,9 @@
 
 #include "common/SignalVector.hpp"
 
+#include <pajlada/settings/setting.hpp>
 #include <pajlada/signals/signal.hpp>
+#include <QDateTime>
 #include <QString>
 #include <QTimer>
 
