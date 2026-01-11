@@ -2,9 +2,12 @@
 
 #include "Application.hpp"
 #include "common/QLogging.hpp"
+#include "messages/MessageBuilder.hpp"
 #include "providers/kick/KickMessageBuilder.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"  // IWYU pragma: keep
 #include "providers/seventv/SeventvEventAPI.hpp"
+#include "providers/twitch/TwitchIrcServer.hpp"
+#include "singletons/Settings.hpp"
 #include "util/BoostJsonWrap.hpp"
 #include "util/PostToThread.hpp"
 
@@ -105,16 +108,35 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
 
 void KickChatServer::onChatMessage(uint64_t roomID, BoostJsonObject data) const
 {
-    auto existing = this->findByRoomID(roomID);
-    if (!existing)
+    auto channel = this->findByRoomID(roomID);
+    if (!channel)
     {
         qCWarning(chatterinoKick) << "No channel found for room" << roomID;
         return;
     }
-    auto msg = KickMessageBuilder::makeChatMessage(existing.get(), data);
+    auto [msg, highlight] =
+        KickMessageBuilder::makeChatMessage(channel.get(), data);
     if (msg)
     {
-        existing->addMessage(msg, MessageContext::Original);
+        channel->applySimilarityFilters(msg);
+
+        if (!msg->flags.has(MessageFlag::Similar) ||
+            (!getSettings()->hideSimilar &&
+             getSettings()->shownSimilarTriggerHighlights))
+        {
+            MessageBuilder::triggerHighlights(channel.get(), highlight);
+        }
+
+        const auto highlighted = msg->flags.has(MessageFlag::Highlighted);
+        const auto showInMentions = msg->flags.has(MessageFlag::ShowInMentions);
+
+        if (highlighted && showInMentions)
+        {
+            // yes, we add this to the Twitch channel
+            getApp()->getTwitch()->getMentionsChannel()->addMessage(
+                msg, MessageContext::Original);
+        }
+        channel->addMessage(msg, MessageContext::Original);
     }
 }
 

@@ -4,6 +4,8 @@
 #include "common/Channel.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/emotes/EmoteController.hpp"
+#include "controllers/highlights/HighlightController.hpp"
+#include "controllers/highlights/HighlightResult.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "messages/MessageElement.hpp"
 #include "messages/MessageThread.hpp"
@@ -15,6 +17,7 @@
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
+#include "providers/twitch/TwitchBadge.hpp"
 #include "singletons/Settings.hpp"
 #include "util/BoostJsonWrap.hpp"
 #include "util/Variant.hpp"
@@ -339,12 +342,46 @@ void appendKickBadges(MessageBuilder &builder, BoostJsonArray badges)
     }
 }
 
+HighlightAlert processHighlights(MessageBuilder &builder,
+                                 const MessageParseArgs &args)
+{
+    if (getSettings()->isBlacklistedUser(builder->loginName))
+    {
+        // Do nothing. We ignore highlights from this user.
+        return {};
+    }
+
+    auto [highlighted, highlightResult] = getApp()->getHighlights()->check(
+        args, {}, builder->loginName, builder->messageText, builder->flags);
+
+    if (!highlighted)
+    {
+        return {};
+    }
+
+    // This message triggered one or more highlights, act upon the highlight result
+
+    builder->flags.set(MessageFlag::Highlighted);
+    builder->highlightColor = highlightResult.color;
+
+    if (highlightResult.showInMentions)
+    {
+        builder->flags.set(MessageFlag::ShowInMentions);
+    }
+
+    return {
+        .customSound = highlightResult.customSoundUrl.value_or(QUrl{}),
+        .playSound = highlightResult.playSound,
+        .windowAlert = highlightResult.alert,
+    };
+}
+
 }  // namespace
 
 namespace chatterino {
 
-MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
-                                                  BoostJsonObject data)
+std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
+    KickChannel *kickChannel, BoostJsonObject data)
 {
     auto id = data["id"].toQString();
     auto content = data["content"].toQString();
@@ -386,7 +423,12 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
         builder->loginName % ' ' % builder->displayName % u": " % messageText;
     builder->messageText = messageText;
 
-    return builder.release();
+    MessageParseArgs args;
+    args.isStaffOrBroadcaster = kickChannel->isBroadcaster();
+
+    auto highlightAlert = processHighlights(builder, args);
+
+    return {builder.release(), highlightAlert};
 }
 
 }  // namespace chatterino
