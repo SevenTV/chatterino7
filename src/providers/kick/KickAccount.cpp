@@ -1,9 +1,11 @@
 #include "providers/kick/KickAccount.hpp"
 
+#include "Application.hpp"
 #include "common/ChatterinoSetting.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
+#include "controllers/accounts/AccountController.hpp"
 #include "singletons/Settings.hpp"
 
 #include <pajlada/settings/setting.hpp>
@@ -11,6 +13,7 @@
 #include <pajlada/settings/settingmanager.hpp>
 #include <pajlada/signals/signalholder.hpp>
 #include <QUrlQuery>
+
 
 namespace chatterino {
 
@@ -158,15 +161,18 @@ void KickAccount::refreshIfNeeded()
         return;
     }
 
+    QUrlQuery payload{
+        {"refresh_token"_L1, this->refreshToken_},
+        {"client_id"_L1, this->clientID_},
+        {"client_secret"_L1, this->clientSecret_},
+        {"grant_type"_L1, "refresh_token"_L1},
+    };
+
     auto weak = this->weak_from_this();
     NetworkRequest(u"https://id.kick.com/oauth/token"_s,
                    NetworkRequestType::Post)
-        .json(QJsonObject{
-            {"refresh_token"_L1, this->refreshToken_},
-            {"client_id"_L1, this->clientID_},
-            {"client_secret"_L1, this->clientSecret_},
-            {"grant_type"_L1, "refresh_token"_L1},
-        })
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
         .onSuccess([weak](const NetworkResult &res) {
             auto self = weak.lock();
             if (!self)
@@ -183,6 +189,7 @@ void KickAccount::refreshIfNeeded()
             self->expiresAt_ =
                 QDateTime::currentDateTimeUtc().addSecs(expiresInSec);
             self->save();
+            self->authUpdated.invoke();
         })
         .onError([weak](const NetworkResult &res) {
             qCWarning(chatterinoKick)

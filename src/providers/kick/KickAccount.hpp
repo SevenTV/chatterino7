@@ -2,6 +2,7 @@
 
 #include "controllers/accounts/Account.hpp"
 
+#include <pajlada/signals/signal.hpp>
 #include <QDateTime>
 #include <QString>
 
@@ -69,6 +70,8 @@ public:
     }
 
     void refreshIfNeeded();
+
+    pajlada::Signals::NoArgSignal authUpdated;
 
 private:
     QString username_;

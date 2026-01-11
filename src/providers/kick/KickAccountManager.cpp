@@ -162,7 +162,16 @@ KickAccountManager::AddUserResponse KickAccountManager::addAccount(
         return AddUserResponse::UserAlreadyExists;
     }
 
-    this->accounts.insert(std::make_shared<KickAccount>(data));
+    auto account = std::make_shared<KickAccount>(data);
+    this->accounts.insert(account);
+    this->holder.managedConnect(account->authUpdated, [this, account] {
+        if (this->currentUser_ == account)
+        {
+            getKickApi()->setAuth(account->authToken());
+            qCDebug(chatterinoKick)
+                << "Kick auth updated for" << account->username();
+        }
+    });
 
     return AddUserResponse::UserAdded;
 }

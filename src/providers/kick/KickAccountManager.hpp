@@ -4,6 +4,7 @@
 
 #include <pajlada/settings/setting.hpp>
 #include <pajlada/signals/signal.hpp>
+#include <pajlada/signals/signalholder.hpp>
 #include <QDateTime>
 #include <QString>
 #include <QTimer>
@@ -53,6 +54,7 @@ private:
     std::shared_ptr<KickAccount> currentUser_;
     std::shared_ptr<KickAccount> anonymousUser_;
     QTimer refreshTimer;
+    pajlada::Signals::SignalHolder holder;
 };
 
 }  // namespace chatterino
