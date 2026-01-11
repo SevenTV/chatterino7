@@ -11,6 +11,7 @@
 namespace chatterino {
 
 class BoostJsonObject;
+class NetworkRequest;
 
 struct KickPrivateUserInfo {
     KickPrivateUserInfo(BoostJsonObject obj);
@@ -48,13 +49,39 @@ struct KickPrivateUserInChannelInfo {
 class KickApi
 {
 public:
-    static void privateChannelInfo(
-        const QString &username,
-        std::function<void(ExpectedStr<KickPrivateChannelInfo>)> cb);
+    template <typename T>
+    using Callback = std::function<void(ExpectedStr<T>)>;
+
+    static KickApi *instance();
+
+    static void privateChannelInfo(const QString &username,
+                                   Callback<KickPrivateChannelInfo> cb);
 
     static void privateUserInChannelInfo(
         const QString &userUsername, const QString &channelUsername,
-        std::function<void(ExpectedStr<KickPrivateUserInChannelInfo>)> cb);
+        Callback<KickPrivateUserInChannelInfo> cb);
+
+    void sendMessage(uint64_t broadcasterUserID, const QString &message,
+                     const QString &replyToMessageID, Callback<void> cb);
+
+    void setAuth(const QString &authToken);
+
+private:
+    KickApi();
+
+    template <typename T>
+    void getJson(const QString &endpoint, Callback<T> cb);
+
+    template <typename T>
+    void postJson(const QString &endpoint, const QJsonObject &json,
+                  Callback<T> cb);
+
+    template <typename T>
+    void doRequest(NetworkRequest &&req, Callback<T> cb);
+
+    QByteArray authToken;
 };
+
+KickApi *getKickApi();
 
 }  // namespace chatterino

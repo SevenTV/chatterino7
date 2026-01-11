@@ -2,10 +2,17 @@
 
 #include "Application.hpp"
 #include "common/QLogging.hpp"
+#include "controllers/accounts/AccountController.hpp"
+#include "controllers/emotes/EmoteController.hpp"
 #include "messages/Emote.hpp"
+#include "messages/Link.hpp"
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "messages/MessageElement.hpp"
+#include "messages/MessageFlag.hpp"
 #include "messages/MessageThread.hpp"
+#include "providers/emoji/Emojis.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/kick/KickLiveUpdates.hpp"
@@ -17,6 +24,7 @@
 #include "util/PostToThread.hpp"
 
 using namespace Qt::Literals;
+using namespace std::chrono_literals;
 
 namespace chatterino {
 
@@ -206,6 +214,76 @@ const QString &KickChannel::seventvEmoteSetID() const
     return this->seventvEmoteSetID_;
 }
 
+bool KickChannel::canSendMessage() const
+{
+    return getApp()->getAccounts()->kick.isLoggedIn();
+}
+
+void KickChannel::sendMessage(const QString &message)
+{
+    this->sendReply(message, {});
+}
+
+void KickChannel::sendReply(const QString &message, const QString &replyToId)
+{
+    if (!getApp()->getAccounts()->kick.isLoggedIn())
+    {
+        this->addLoginMessage();
+        return;
+    }
+
+    auto prepared = this->prepareMessage(message);
+    if (prepared.isEmpty())
+    {
+        return;
+    }
+
+    if (!this->checkMessageRatelimit())
+    {
+        return;
+    }
+
+    getKickApi()->sendMessage(
+        this->userID(), prepared, replyToId,
+        [weak = this->weakFromThis()](const auto &res) {
+            if (res)
+            {
+                return;  // message sent
+            }
+            auto self = weak.lock();
+            if (self)
+            {
+                self->addSystemMessage(u"Failed to send message: " %
+                                       res.error());
+            }
+        });
+}
+
+bool KickChannel::isMod() const
+{
+    return this->isMod_;
+}
+
+bool KickChannel::isVip() const
+{
+    return this->isVip_;
+}
+
+bool KickChannel::isBroadcaster() const
+{
+    return this->userID() == getApp()->getAccounts()->kick.current()->userID();
+}
+
+bool KickChannel::hasModRights() const
+{
+    return this->isMod() || this->isBroadcaster();
+}
+
+bool KickChannel::hasHighRateLimit() const
+{
+    return this->hasModRights() || this->isVip();
+}
+
 void KickChannel::resolveChannelInfo()
 {
     auto weak = this->weakFromThis();
@@ -268,6 +346,96 @@ void KickChannel::setUserInfo(UserInit init)
     {
         this->reloadSeventvEmotes(false);
     }
+}
+
+size_t KickChannel::maxBurstMessages() const
+{
+    // FIXME: this isn't fully tested (maybe these are higher?)
+    if (this->hasHighRateLimit())
+    {
+        return 10;
+    }
+    return 5;
+}
+
+std::chrono::milliseconds KickChannel::minMessageOffset() const
+{
+    // FIXME: this isn't fully tested
+    if (this->hasHighRateLimit())
+    {
+        return 50ms;
+    }
+    return 100ms;
+}
+
+bool KickChannel::checkMessageRatelimit()
+{
+    auto now = std::chrono::steady_clock::now();
+    auto &timestamps = this->lastMessageTimestamps_;
+
+    // FIXME: haven't tested this fully
+    const auto cooldown = 30s;
+
+    // This is mostly identical to the logic in TwitchIrcServer
+    if (!timestamps.empty() &&
+        timestamps.back() + this->minMessageOffset() > now)
+    {
+        if (this->lastMessageSpeedErrorTs_ + 30s < now)
+        {
+            this->addSystemMessage(u"You are sending messages too quickly."_s);
+            this->lastMessageSpeedErrorTs_ = now;
+        }
+        return false;
+    }
+
+    // remove messages older than `cooldown`
+    while (!timestamps.empty() && timestamps.front() + cooldown < now)
+    {
+        timestamps.pop();
+    }
+
+    // check if you are sending too many messages
+    if (timestamps.size() >= this->maxBurstMessages())
+    {
+        if (this->lastMessageAmountErrorTs_ + 30s < now)
+        {
+            this->addSystemMessage(u"You are sending too many messages."_s);
+
+            this->lastMessageAmountErrorTs_ = now;
+        }
+        return false;
+    }
+
+    timestamps.push(now);
+    return true;
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static) -- might need some state later
+QString KickChannel::prepareMessage(const QString &message) const
+{
+    QString prepared =
+        getApp()->getEmotes()->getEmojis()->replaceShortCodes(message);
+
+    return prepared.simplified();
+}
+
+void KickChannel::addLoginMessage()
+{
+    auto builder = MessageBuilder();
+    builder->flags.set(MessageFlag::System);
+    builder->flags.set(MessageFlag::DoNotTriggerNotification);
+
+    builder.emplace<TimestampElement>();
+    builder.emplace<TextElement>(
+        u"You need to log in to send messages. You can link your "_s
+        "Twitch account",
+        MessageElementFlag::Text, MessageColor::System);
+    builder
+        .emplace<TextElement>(u"in the settings."_s, MessageElementFlag::Text,
+                              MessageColor::Link)
+        ->setLink({Link::OpenAccountsPage, {}});
+
+    this->addMessage(builder.release(), MessageContext::Original);
 }
 
 void KickChannel::updateSeventvData(const QString &newUserID,

@@ -2,7 +2,9 @@
 
 #include "common/SignalVector.hpp"
 
+#include <pajlada/signals/signal.hpp>
 #include <QString>
+#include <QTimer>
 
 namespace chatterino {
 
@@ -30,7 +32,7 @@ public:
     pajlada::Settings::Setting<QString> currentUsername{"/kickAccounts/current",
                                                         ""};
 
-    boost::signals2::signal<void()> currentUserChanged;
+    pajlada::Signals::NoArgSignal currentUserChanged;
     pajlada::Signals::NoArgSignal userListUpdated;
 
     SignalVector<std::shared_ptr<KickAccount>> accounts;
@@ -44,8 +46,11 @@ private:
     AddUserResponse addAccount(const KickAccountData &data);
     bool removeAccount(KickAccount *account);
 
+    void refreshAccounts() const;
+
     std::shared_ptr<KickAccount> currentUser_;
     std::shared_ptr<KickAccount> anonymousUser_;
+    QTimer refreshTimer;
 };
 
 }  // namespace chatterino

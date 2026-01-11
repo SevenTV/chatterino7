@@ -22,6 +22,7 @@
 #include "messages/MessageElement.hpp"
 #include "messages/MessageThread.hpp"
 #include "providers/colors/ColorProvider.hpp"
+#include "providers/kick/KickChannel.hpp"
 #include "providers/links/LinkInfo.hpp"
 #include "providers/links/LinkResolver.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -3294,10 +3295,15 @@ void ChannelView::setInputReply(const MessagePtr &message)
         // Message did not already have a thread attached, try to find or create one
         auto *tc =
             dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get());
+        auto *kc = dynamic_cast<KickChannel *>(this->underlyingChannel_.get());
 
         if (tc)
         {
             tc->getOrCreateThread(message);
+        }
+        else if (kc)
+        {
+            kc->getOrCreateThread(message->id);
         }
         else
         {
@@ -3352,7 +3358,7 @@ bool ChannelView::canReplyToMessages() const
 
     assert(this->channel_ != nullptr);
 
-    if (!this->channel_->isTwitchChannel())
+    if (!this->channel_->isTwitchOrKickChannel())
     {
         return false;
     }

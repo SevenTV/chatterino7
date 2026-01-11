@@ -11,6 +11,7 @@
 namespace chatterino {
 
 class AccountSwitchWidget;
+class KickAccountSwitchWidget;
 
 class AccountSwitchPopup : public BaseWindow
 {
@@ -29,6 +30,7 @@ protected:
 private:
     struct {
         AccountSwitchWidget *accountSwitchWidget = nullptr;
+        KickAccountSwitchWidget *kickAccountSwitcher = nullptr;
     } ui_;
 };
 

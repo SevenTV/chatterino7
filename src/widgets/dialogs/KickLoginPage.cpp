@@ -1,8 +1,11 @@
 #include "widgets/dialogs/KickLoginPage.hpp"
 
+#include "Application.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
+#include "controllers/accounts/AccountController.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "singletons/Theme.hpp"
 #include "util/HttpServer.hpp"
 
@@ -36,6 +39,21 @@ QByteArray generateRandomBytes(qsizetype size)
     return bytes;
 }
 
+QString formatAPIError(const NetworkResult &result)
+{
+    const auto &data = result.getData();
+    if (!data.isEmpty())
+    {
+        const auto json = QJsonDocument::fromJson(data).object();
+        auto error = json["error_description"_L1].toString(
+            json["message"_L1].toString());
+        if (!error.isEmpty())
+        {
+            return u"Error: " % error % u" (" % result.formatError() % ')';
+        }
+    }
+    return u"Error: " % result.formatError() % u" (no further information)";
+}
 struct AuthParams {
     QByteArray codeVerifier;
     QByteArray codeChallenge;
@@ -76,7 +94,8 @@ public:
             {"response_type", "code"},
             {"client_id", this->clientID},
             {"redirect_uri", "http://localhost:38275"},
-            {"scope", "chat:write"},
+            {"scope", "user:read channel:read channel:write chat:write "
+                      "moderation:ban moderation:chat_message:manage"},
             {"code_challenge", this->authParams.codeChallenge},
             {"code_challenge_method", "S256"},
             {"state", this->authParams.state},
@@ -96,13 +115,13 @@ public:
         auto *urlButtonLayout = new QHBoxLayout(urlButtons);
 
         auto *openUrl = new QPushButton(u"Log in (Opens in browser)"_s);
-        QObject::connect(openUrl, &QPushButton::click, this, [this] {
+        QObject::connect(openUrl, &QPushButton::clicked, this, [this] {
             QDesktopServices::openUrl(this->authURL);
         });
         urlButtonLayout->addWidget(openUrl, 1);
 
         auto *copyUrl = new QPushButton(u"Copy URL"_s);
-        QObject::connect(copyUrl, &QPushButton::click, this, [this] {
+        QObject::connect(copyUrl, &QPushButton::clicked, this, [this] {
             qApp->clipboard()->setText(
                 this->authURL.toString(QUrl::FullyEncoded));
         });
@@ -139,47 +158,7 @@ public:
             return {400, "State mismatch!"_ba};
         }
 
-        QUrlQuery payload{
-            {"grant_type", "authorization_code"},
-            {"client_id", this->clientID},
-            {"client_secret", this->clientSecret},
-            {"redirect_uri", "http://localhost:38275"},
-            {"code_verifier", this->authParams.codeVerifier},
-            {"code", query.queryItemValue("code")},
-        };
-        NetworkRequest("https://id.kick.com/oauth/token",
-                       NetworkRequestType::Post)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
-            .caller(this)
-            .onError([this](const NetworkResult &result) {
-                const auto &data = result.getData();
-
-                qCWarning(chatterinoKick)
-                    << "Getting token failed" << result.formatError() << data;
-
-                if (!data.isEmpty())
-                {
-                    auto error = QJsonDocument::fromJson(data)
-                                     .object()
-                                     .value("error_description")
-                                     .toString();
-                    if (!error.isEmpty())
-                    {
-                        this->statusLabel.setText(u"Error: " % error % u" (" %
-                                                  result.formatError() % ')');
-                        return;
-                    }
-                }
-                this->statusLabel.setText(u"Error: " % result.formatError() %
-                                          u" (no further information)");
-            })
-            .onSuccess([this](const NetworkResult &result) {
-                qWarning() << QString::fromUtf8(result.getData());
-                this->accept();
-                this->close();
-            })
-            .execute();
+        this->requestToken(query.queryItemValue("code"));
 
         return {
             200,
@@ -188,6 +167,77 @@ public:
     }
 
 private:
+    void requestToken(const QString &code)
+    {
+        QUrlQuery payload{
+            {"grant_type", "authorization_code"},
+            {"client_id", this->clientID},
+            {"client_secret", this->clientSecret},
+            {"redirect_uri", "http://localhost:38275"},
+            {"code_verifier", this->authParams.codeVerifier},
+            {"code", code},
+        };
+        NetworkRequest("https://id.kick.com/oauth/token",
+                       NetworkRequestType::Post)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
+            .caller(this)
+            .onError([this](const NetworkResult &result) {
+                auto error = formatAPIError(result);
+                qCWarning(chatterinoKick) << "Getting token failed" << error;
+                this->statusLabel.setText(error);
+            })
+            .onSuccess([this](const NetworkResult &result) {
+                this->getAuthenticatedUser(result.parseJson());
+            })
+            .execute();
+    }
+
+    void getAuthenticatedUser(const QJsonObject &tokenData)
+    {
+        qint64 expiresIn = 0;
+        auto expiresInVal = tokenData["expires_in"];
+        if (expiresInVal.isString())
+        {
+            expiresIn = expiresInVal.toString().toLongLong();
+        }
+        else
+        {
+            expiresIn = expiresInVal.toInteger();
+        }
+
+        auto expiresAt = QDateTime::currentDateTimeUtc().addSecs(expiresIn);
+        NetworkRequest("https://api.kick.com/public/v1/users")
+            .header("Authorization",
+                    u"Bearer " % tokenData["access_token"_L1].toString())
+            .caller(this)
+            .onError([this](const NetworkResult &result) {
+                auto error = formatAPIError(result);
+                qCWarning(chatterinoKick) << "Getting user failed" << error;
+                this->statusLabel.setText(error);
+            })
+            .onSuccess([this, tokenData,
+                        expiresAt](const NetworkResult &result) {
+                const auto obj =
+                    result.parseJson()["data"_L1].toArray().at(0).toObject();
+                KickAccountData{
+                    .username = obj["name"].toString(),
+                    .userID =
+                        static_cast<uint64_t>(obj["user_id"_L1].toInteger()),
+                    .clientID = this->clientID,
+                    .clientSecret = this->clientSecret,
+                    .authToken = tokenData["access_token"_L1].toString(),
+                    .refreshToken = tokenData["refresh_token"_L1].toString(),
+                    .expiresAt = expiresAt,
+                }
+                    .save();
+                getApp()->getAccounts()->kick.reloadUsers();
+                this->accept();
+                this->close();
+            })
+            .execute();
+    }
+
     QString clientID;
     QString clientSecret;
     AuthParams authParams;
@@ -202,6 +252,8 @@ namespace chatterino {
 
 KickLoginPage::KickLoginPage()
 {
+    static const QRegularExpression nonEmptyRe{u".+"_s};
+
     auto *root = new QFormLayout(this);
 
     auto *topLabel = new QLabel(
@@ -221,18 +273,42 @@ KickLoginPage::KickLoginPage()
 
     this->ui.clientID = new QLineEdit;
     this->ui.clientID->setPlaceholderText("ABCD123");
+    this->ui.clientID->setValidator(
+        new QRegularExpressionValidator(nonEmptyRe, this));
     root->addRow("Client ID:", this->ui.clientID);
 
     this->ui.clientSecret = new QLineEdit;
     this->ui.clientSecret->setPlaceholderText("12345abcd");
     this->ui.clientSecret->setEchoMode(QLineEdit::Password);
+    this->ui.clientSecret->setValidator(
+        new QRegularExpressionValidator(nonEmptyRe, this));
     root->addRow("Client Secret:", this->ui.clientSecret);
+
+    auto currentAccount = getApp()->getAccounts()->kick.current();
+    if (!currentAccount->isAnonymous())
+    {
+        this->ui.clientID->setText(currentAccount->clientID());
+        this->ui.clientSecret->setText(currentAccount->clientSecret());
+    }
 
     root->addItem(
         new QSpacerItem(0, 10, QSizePolicy::Minimum, QSizePolicy::Fixed));
 
     auto *startButton = new QPushButton("Start");
     root->addRow(startButton);
+    QObject::connect(startButton, &QPushButton::clicked, this, [this] {
+        if (!this->ui.clientID->hasAcceptableInput() ||
+            !this->ui.clientSecret->hasAcceptableInput())
+        {
+            return;
+        }
+        auto *diag = new AuthDialog(this->ui.clientID->text(),
+                                    this->ui.clientSecret->text(), this);
+        QObject::connect(diag, &QDialog::accepted, this, [this] {
+            this->window()->close();
+        });
+        diag->show();
+    });
 }
 
 void KickLoginPage::paintEvent(QPaintEvent * /*event*/)

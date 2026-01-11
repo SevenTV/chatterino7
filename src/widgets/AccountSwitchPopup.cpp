@@ -4,10 +4,14 @@
 
 #include "widgets/AccountSwitchPopup.hpp"
 
+#include "Application.hpp"
 #include "common/Literals.hpp"
+#include "controllers/accounts/AccountController.hpp"
 #include "singletons/Theme.hpp"
 #include "widgets/AccountSwitchWidget.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
+#include "widgets/helper/KickAccountSwitchWidget.hpp"
+#include "widgets/helper/MicroNotebook.hpp"
 
 #include <QLayout>
 #include <QPainter>
@@ -31,10 +35,32 @@ AccountSwitchPopup::AccountSwitchPopup(QWidget *parent)
 
     this->setContentsMargins(0, 0, 0, 0);
 
+    auto *notebook = new MicroNotebook(this);
+
     this->ui_.accountSwitchWidget = new AccountSwitchWidget(this);
-    QVBoxLayout *vbox = new QVBoxLayout(this);
     this->ui_.accountSwitchWidget->setFocusPolicy(Qt::NoFocus);
-    vbox->addWidget(this->ui_.accountSwitchWidget);
+    this->ui_.kickAccountSwitcher = new KickAccountSwitchWidget(this);
+    this->ui_.kickAccountSwitcher->setFocusPolicy(Qt::NoFocus);
+
+    auto updateNotebook = [this, notebook] {
+        if (getApp()->getAccounts()->kick.accounts.empty())
+        {
+            notebook->setShowHeader(false);
+            notebook->select(this->ui_.accountSwitchWidget);
+        }
+        else
+        {
+            notebook->setShowHeader(true);
+        }
+    };
+    updateNotebook();
+    this->signalHolder_.addConnection(
+        getApp()->getAccounts()->kick.userListUpdated.connect(updateNotebook));
+
+    notebook->addPage(this->ui_.accountSwitchWidget, "Twitch");
+    notebook->addPage(this->ui_.kickAccountSwitcher, "Kick");
+    QVBoxLayout *vbox = new QVBoxLayout(this);
+    vbox->addWidget(notebook);
 
     auto *hbox = new QHBoxLayout();
     auto *manageAccountsButton = new QPushButton(this);
@@ -98,6 +124,7 @@ void AccountSwitchPopup::themeChangedEvent()
 void AccountSwitchPopup::refresh()
 {
     this->ui_.accountSwitchWidget->refresh();
+    this->ui_.kickAccountSwitcher->refresh();
 }
 
 void AccountSwitchPopup::paintEvent(QPaintEvent *)

@@ -1,8 +1,12 @@
 #include "providers/kick/KickAccountManager.hpp"
 
 #include "common/QLogging.hpp"
+#include "KickApi.hpp"
 #include "providers/kick/KickAccount.hpp"
+#include "util/RapidJsonSerializeQString.hpp"  // IWYU pragma: keep
 #include "util/SharedPtrElementLess.hpp"
+
+#include <pajlada/settings/setting.hpp>
 
 namespace chatterino {
 
@@ -10,13 +14,20 @@ KickAccountManager::KickAccountManager()
     : accounts(SharedPtrElementLess<KickAccount>{})
     , anonymousUser_(std::make_shared<KickAccount>(KickAccountData{}))
 {
-    this->currentUserChanged.connect([this] {
+    std::ignore = this->currentUserChanged.connect([] {
         // auto currentUser = this->current();
         // FIXME: load 7tv user
     });
 
     std::ignore = this->accounts.itemRemoved.connect([this](const auto &acc) {
         this->removeAccount(acc.item.get());
+    });
+
+    this->refreshTimer.setSingleShot(false);
+    this->refreshTimer.setInterval(std::chrono::minutes{4});
+    // NOLINTNEXTLINE(clazy-connect-3arg-lambda)
+    QObject::connect(&this->refreshTimer, &QTimer::timeout, [this] {
+        this->refreshAccounts();
     });
 }
 
@@ -58,9 +69,15 @@ bool KickAccountManager::userExists(const QString &username) const
     return this->findUserByUsername(username) != nullptr;
 }
 
+bool KickAccountManager::isLoggedIn() const
+{
+    return this->currentUser_ && !this->currentUser_->isAnonymous();
+}
+
 void KickAccountManager::reloadUsers()
 {
-    auto keys = pajlada::Settings::SettingManager::getObjectKeys("/accounts");
+    auto keys =
+        pajlada::Settings::SettingManager::getObjectKeys("/kickAccounts");
 
     bool listUpdated = false;
 
@@ -89,7 +106,7 @@ void KickAccountManager::reloadUsers()
                     << "User" << data->username << "updated";
                 if (data->username == this->current()->username())
                 {
-                    this->currentUserChanged();
+                    this->currentUserChanged.invoke();
                 }
             }
             break;
@@ -104,6 +121,7 @@ void KickAccountManager::reloadUsers()
     if (listUpdated)
     {
         this->userListUpdated.invoke();
+        this->refreshAccounts();
     }
 }
 
@@ -115,9 +133,8 @@ void KickAccountManager::load()
         auto user = this->findUserByUsername(newUsername);
         if (user)
         {
-            qCDebug(chatterinoTwitch)
-                << "Twitch user updated to" << newUsername;
-            getHelix()->update(user->getOAuthClient(), user->getOAuthToken());
+            qCDebug(chatterinoKick) << "Kick user updated to" << newUsername;
+            getKickApi()->setAuth(user->authToken());
             this->currentUser_ = user;
         }
         else
@@ -126,8 +143,57 @@ void KickAccountManager::load()
             this->currentUser_ = this->anonymousUser_;
         }
 
-        this->currentUserChanged();
+        this->currentUserChanged.invoke();
     });
+}
+
+KickAccountManager::AddUserResponse KickAccountManager::addAccount(
+    const KickAccountData &data)
+{
+    auto previousUser = this->findUserByUsername(data.username);
+    if (previousUser)
+    {
+        bool userUpdated = previousUser->update(data);
+        if (userUpdated)
+        {
+            return AddUserResponse::UserUpdated;
+        }
+
+        return AddUserResponse::UserAlreadyExists;
+    }
+
+    this->accounts.insert(std::make_shared<KickAccount>(data));
+
+    return AddUserResponse::UserAdded;
+}
+
+bool KickAccountManager::removeAccount(KickAccount *account)
+{
+    if (account->isAnonymous())
+    {
+        return false;
+    }
+
+    auto accountPath = "/kickAccounts/uid" + std::to_string(account->userID());
+    pajlada::Settings::SettingManager::removeSetting(accountPath);
+
+    if (account->username() == this->currentUsername)
+    {
+        // The user that was removed is the current user, log into the anonymous
+        // account
+        this->currentUsername = "";
+    }
+
+    this->userListUpdated.invoke();
+    return true;
+}
+
+void KickAccountManager::refreshAccounts() const
+{
+    for (const auto &acc : this->accounts.raw())
+    {
+        acc->refreshIfNeeded();
+    }
 }
 
 }  // namespace chatterino

@@ -25,6 +25,8 @@ public:
 
     void save() const;
 
+    bool update(const KickAccountData &data);
+
     QString toString() const override;
 
     bool isAnonymous() const

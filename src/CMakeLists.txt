@@ -392,6 +392,10 @@ set(SOURCE_FILES
         providers/irc/IrcConnection2.cpp
         providers/irc/IrcConnection2.hpp
 
+        providers/kick/KickAccount.cpp
+        providers/kick/KickAccount.hpp
+        providers/kick/KickAccountManager.cpp
+        providers/kick/KickAccountManager.hpp
         providers/kick/KickApi.cpp
         providers/kick/KickApi.hpp
         providers/kick/KickBadges.cpp
@@ -785,8 +789,12 @@ set(SOURCE_FILES
         widgets/helper/IconDelegate.hpp
         widgets/helper/InvisibleSizeGrip.cpp
         widgets/helper/InvisibleSizeGrip.hpp
+        widgets/helper/KickAccountSwitchWidget.cpp
+        widgets/helper/KickAccountSwitchWidget.hpp
         widgets/helper/MessageView.cpp
         widgets/helper/MessageView.hpp
+        widgets/helper/MicroNotebook.cpp
+        widgets/helper/MicroNotebook.hpp
         widgets/helper/NotebookTab.cpp
         widgets/helper/NotebookTab.hpp
         widgets/helper/OverlayInteraction.cpp

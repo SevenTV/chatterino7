@@ -60,6 +60,7 @@ void KickAccountData::save() const
     QStringSetting::set(basePath + "/refreshToken", this->refreshToken);
     QStringSetting::set(basePath + "/expiresAt",
                         this->expiresAt.toString(Qt::ISODate));
+    getSettings()->requestSave();
 }
 
 KickAccount::KickAccount(const KickAccountData &args)
@@ -86,6 +87,54 @@ void KickAccount::save() const
         .expiresAt = this->expiresAt_,
     }
         .save();
+}
+
+bool KickAccount::update(const KickAccountData &data)
+{
+    bool changed = false;
+
+    if (QString::compare(this->username_, data.username, Qt::CaseInsensitive) ==
+        0)
+    {
+        changed = true;
+        this->username_ = data.username;
+    }
+    if (this->userID_ != data.userID)
+    {
+        changed = true;
+        this->userID_ = data.userID;
+    }
+    if (this->clientID_ != data.clientID)
+    {
+        changed = true;
+        this->clientID_ = data.clientID;
+    }
+    if (this->clientSecret_ != data.clientSecret)
+    {
+        changed = true;
+        this->clientSecret_ = data.clientSecret;
+    }
+    if (this->authToken_ != data.authToken)
+    {
+        changed = true;
+        this->authToken_ = data.authToken;
+    }
+    if (this->refreshToken_ != data.refreshToken)
+    {
+        changed = true;
+        this->refreshToken_ = data.refreshToken;
+    }
+    if (this->expiresAt_ != data.expiresAt)
+    {
+        changed = true;
+        this->expiresAt_ = data.expiresAt;
+    }
+
+    if (changed)
+    {
+        this->save();
+    }
+    return changed;
 }
 
 QString KickAccount::toString() const
@@ -132,7 +181,6 @@ void KickAccount::refreshIfNeeded()
             self->expiresAt_ =
                 QDateTime::currentDateTimeUtc().addSecs(expiresInSec);
             self->save();
-            getSettings()->requestSave();
         })
         .onError([weak](const NetworkResult &res) {
             qCWarning(chatterinoKick)
