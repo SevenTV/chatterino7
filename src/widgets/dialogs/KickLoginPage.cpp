@@ -224,8 +224,11 @@ private:
             })
             .onSuccess([this, tokenData,
                         expiresAt](const NetworkResult &result) {
-                const auto obj =
-                    result.parseJson()["data"_L1].toArray().at(0).toObject();
+                const auto obj = result.parseJson()
+                                     .value("data"_L1)
+                                     .toArray()
+                                     .at(0)
+                                     .toObject();
                 KickAccountData{
                     .username = obj["name"].toString(),
                     .userID =

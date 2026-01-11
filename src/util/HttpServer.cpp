@@ -29,7 +29,7 @@ public:
 
         if (this->socket->bytesAvailable() > 0)
         {
-            this->socket->readyRead();
+            Q_EMIT this->socket->readyRead();
         }
     }
 

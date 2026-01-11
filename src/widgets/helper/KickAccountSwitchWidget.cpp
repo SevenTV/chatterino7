@@ -39,7 +39,7 @@ KickAccountSwitchWidget::KickAccountSwitchWidget(QWidget *parent)
             getApp()->getAccounts()->kick.currentUsername = newUsername;
         }
 
-        getSettings()->requestSave();
+        std::ignore = getSettings()->requestSave();
     });
 }
 

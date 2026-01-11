@@ -60,7 +60,7 @@ void KickAccountData::save() const
     QStringSetting::set(basePath + "/refreshToken", this->refreshToken);
     QStringSetting::set(basePath + "/expiresAt",
                         this->expiresAt.toString(Qt::ISODate));
-    getSettings()->requestSave();
+    std::ignore = getSettings()->requestSave();
 }
 
 KickAccount::KickAccount(const KickAccountData &args)
@@ -74,6 +74,8 @@ KickAccount::KickAccount(const KickAccountData &args)
     , expiresAt_(args.expiresAt)
 {
 }
+
+KickAccount::~KickAccount() = default;
 
 void KickAccount::save() const
 {

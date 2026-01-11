@@ -28,6 +28,9 @@ class KickAccount : public Account,
 {
 public:
     KickAccount(const KickAccountData &args);
+    ~KickAccount() override;
+
+    Q_DISABLE_COPY_MOVE(KickAccount);
 
     void save() const;
 
