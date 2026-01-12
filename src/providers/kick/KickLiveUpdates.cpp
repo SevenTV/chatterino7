@@ -10,6 +10,8 @@
 #include <boost/json.hpp>
 #include <QPointer>
 
+#include <utility>
+
 using namespace Qt::Literals;
 
 namespace {
