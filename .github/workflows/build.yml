@@ -383,10 +383,6 @@ jobs:
           ./../.CI/CreateDMG.sh
         shell: bash
 
-      - name: ssh
-        if: startsWith(matrix.os, 'macos')
-        uses: mxschmitt/action-tmate@v3
-
       - name: Upload artifact (MacOS)
         if: startsWith(matrix.os, 'macos')
         uses: actions/upload-artifact@v6
