@@ -14,7 +14,6 @@
 #include <pajlada/signals/signalholder.hpp>
 #include <QUrlQuery>
 
-
 namespace chatterino {
 
 using namespace Qt::Literals;
