@@ -14,6 +14,7 @@
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "providers/colors/ColorProvider.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/twitch/TwitchAccount.hpp"  // IWYU pragma: keep
 #include "providers/twitch/TwitchBadge.hpp"
 #include "singletons/Settings.hpp"
@@ -198,6 +199,21 @@ void rebuildMessageHighlights(Settings &settings,
     {
         HighlightPhrase highlight(
             currentUsername, settings.showSelfHighlightInMentions,
+            settings.enableSelfHighlightTaskbar,
+            settings.enableSelfHighlightSound, false, false,
+            settings.selfHighlightSoundUrl.getValue(),
+            ColorProvider::instance().color(ColorType::SelfHighlight));
+
+        checks.emplace_back(highlightPhraseCheck(highlight));
+    }
+
+    auto kickUser = getApp()->getAccounts()->kick.current();
+    auto kickUsername = kickUser->username();
+    if (settings.enableSelfHighlight && !kickUsername.isEmpty() &&
+        !kickUser->isAnonymous())
+    {
+        HighlightPhrase highlight(
+            kickUsername, settings.showSelfHighlightInMentions,
             settings.enableSelfHighlightTaskbar,
             settings.enableSelfHighlightSound, false, false,
             settings.selfHighlightSoundUrl.getValue(),
@@ -447,6 +463,14 @@ HighlightController::HighlightController(Settings &settings,
                 << "Rebuild checks because user name changed";
             this->rebuildChecks(settings);
         });
+
+    this->signalHolder_.managedConnect(
+        accounts->kick.currentUserChanged, [this, &settings] {
+            qCDebug(chatterinoHighlights)
+                << "Rebuild checks because Kick user changed";
+            this->rebuildChecks(settings);
+        });
+
     this->rebuildChecks(settings);
 }
 
@@ -484,7 +508,10 @@ std::pair<bool, HighlightResult> HighlightController::check(
     const auto checks = this->checks_.accessConst();
 
     auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
-    auto self = (senderName == currentUser->getUserName());
+    auto kickUser = getApp()->getAccounts()->kick.current();
+    auto self =
+        (senderName == currentUser->getUserName()) ||
+        (!kickUser->isAnonymous() && senderName == kickUser->username());
 
     for (const auto &check : *checks)
     {
