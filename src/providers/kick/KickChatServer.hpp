@@ -57,6 +57,7 @@ private:
     void onUserBanned(KickChannel *channel, BoostJsonObject data);
     void onUserUnbanned(KickChannel *channel, BoostJsonObject data);
     void onMessageDeleted(KickChannel *channel, BoostJsonObject data);
+    void onChatroomClear(KickChannel *channel, BoostJsonObject data);
 
     boost::unordered_flat_map<uint64_t, std::weak_ptr<KickChannel>>
         channelsByRoomID;

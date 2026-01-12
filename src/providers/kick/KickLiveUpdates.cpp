@@ -171,8 +171,7 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
     }
     else
     {
-        std::string_view origEvent = event;
-        stripPrefix(event, "App\\Events\\");
+        bool isApp = stripPrefix(event, "App\\Events\\");
 
         auto channel = rootObj["channel"].toStringView();
         auto roomID = parseRoomID(channel);
@@ -183,7 +182,7 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
             if (!handled)
             {
                 qCWarning(chatterinoKick).noquote()
-                    << "Unknown event" << origEvent
+                    << "Unknown event" << event << "isApp:" << isApp
                     << "channel:" << rootObj["channel"].toStringView()
                     << "data:" << dataStr;
             }

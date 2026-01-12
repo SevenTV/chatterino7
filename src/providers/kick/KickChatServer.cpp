@@ -136,6 +136,7 @@ bool KickChatServer::onAppEvent(uint64_t roomID, std::string_view event,
         event,                                                     //
         "ChatMessageEvent", &KickChatServer::onChatMessage,        //
         "MessageDeletedEvent", &KickChatServer::onMessageDeleted,  //
+        "ChatroomClearEvent", &KickChatServer::onChatroomClear,    //
         "UserBannedEvent", &KickChatServer::onUserBanned,          //
         "UserUnbannedEvent", &KickChatServer::onUserUnbanned);
 
@@ -218,6 +219,15 @@ void KickChatServer::onMessageDeleted(KickChannel *channel,
         channel->addMessage(MessageBuilder::makeDeletionMessageFromIRC(msg),
                             MessageContext::Original);
     }
+}
+
+void KickChatServer::onChatroomClear(KickChannel *channel,
+                                     BoostJsonObject /* data */)
+{
+    auto now = QDateTime::currentDateTime();
+    auto clear = KickMessageBuilder::makeClearChatMessage(now, {});
+    channel->disableAllMessages();
+    channel->addOrReplaceClearChat(clear, now);
 }
 
 // NOLINTEND(readability-convert-member-functions-to-static)
