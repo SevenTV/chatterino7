@@ -10,6 +10,7 @@
 #include <boost/json.hpp>
 #include <QPointer>
 
+#include <charconv>
 #include <utility>
 
 using namespace Qt::Literals;
