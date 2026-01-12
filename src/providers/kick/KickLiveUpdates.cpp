@@ -10,6 +10,9 @@
 #include <boost/json.hpp>
 #include <QPointer>
 
+#include <charconv>
+#include <utility>
+
 using namespace Qt::Literals;
 
 namespace {
@@ -17,6 +20,44 @@ namespace {
 constexpr std::chrono::seconds MAX_HEARTBEAT_INTERVAL{20};
 const QString WS_URL =
     u"wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false"_s;
+
+bool stripPrefix(std::string_view &str, std::string_view prefix)
+{
+    if (str.starts_with(prefix))
+    {
+        str = str.substr(prefix.size());
+        return true;
+    }
+    return false;
+}
+
+bool stripSuffix(std::string_view &str, std::string_view suffix)
+{
+    if (str.ends_with(suffix))
+    {
+        str = str.substr(0, str.size() - suffix.size());
+        return true;
+    }
+    return false;
+}
+
+uint64_t parseRoomID(std::string_view channel)
+{
+    if (stripPrefix(channel, "chatrooms."))
+    {
+        stripSuffix(channel, ".v2");
+    }
+    else
+    {
+        stripPrefix(channel, "chatroom_") || stripPrefix(channel, "channel_") ||
+            stripPrefix(channel, "channel.") ||
+            stripPrefix(channel, "predictions-channel-");
+    }
+
+    uint64_t v = 0;
+    std::from_chars(channel.data(), channel.data() + channel.size(), v);
+    return v;
+}
 
 }  // namespace
 
@@ -104,22 +145,13 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
     {
         this->lastHeartbeat_ = std::chrono::steady_clock::now();
     }
-    else if (event == "App\\Events\\ChatMessageEvent")
-    {
-        auto roomID = data["chatroom_id"].toUint64();
-        if (this->chatServer_ && roomID > 0)
-        {
-            this->chatServer_->onChatMessage(roomID, data.toObject());
-        }
-    }
     else if (event == "pusher_internal:subscription_succeeded")
     {
         auto channel = rootObj["channel"].toStdString();
         // that's the main chat subscription
         if (channel.starts_with("chatrooms.") && channel.ends_with(".v2"))
         {
-            auto roomIDStr = channel.substr(10, channel.size() - 10 - 3);
-            uint64_t roomID = QLatin1StringView(roomIDStr).toULongLong();
+            uint64_t roomID = parseRoomID(channel);
             if (this->chatServer_ && roomID > 0)
             {
                 this->chatServer_->onJoin(roomID);
@@ -128,7 +160,7 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
     }
     else if (event == "pusher:subscription_error")
     {
-        qCWarning(chatterinoKick) << "Failed to subscribe";
+        qCWarning(chatterinoKick) << "Failed to subscribe" << msg;
     }
     else if (event == "pusher:connection_established")
     {
@@ -138,6 +170,25 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
             activityTimeout < this->heartbeatInterval_)
         {
             this->heartbeatInterval_ = activityTimeout;
+        }
+    }
+    else
+    {
+        bool isApp = stripPrefix(event, "App\\Events\\");
+
+        auto channel = rootObj["channel"].toStringView();
+        auto roomID = parseRoomID(channel);
+        if (this->chatServer_ && roomID > 0)
+        {
+            bool handled =
+                this->chatServer_->onAppEvent(roomID, event, data.toObject());
+            if (!handled)
+            {
+                qCWarning(chatterinoKick).noquote()
+                    << "Unknown event" << event << "isApp:" << isApp
+                    << "channel:" << rootObj["channel"].toStringView()
+                    << "data:" << dataStr;
+            }
         }
     }
 }

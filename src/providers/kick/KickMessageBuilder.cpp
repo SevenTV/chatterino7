@@ -4,6 +4,8 @@
 #include "common/Channel.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/emotes/EmoteController.hpp"
+#include "controllers/highlights/HighlightController.hpp"
+#include "controllers/highlights/HighlightResult.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "messages/MessageElement.hpp"
 #include "messages/MessageThread.hpp"
@@ -15,8 +17,10 @@
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
+#include "providers/twitch/TwitchBadge.hpp"
 #include "singletons/Settings.hpp"
 #include "util/BoostJsonWrap.hpp"
+#include "util/FormatTime.hpp"
 #include "util/Variant.hpp"
 
 namespace {
@@ -60,16 +64,16 @@ EmotePtr lookupEmote(const KickChannel &channel, QStringView word)
     return emote;
 }
 
-void appendWord(MessageBuilder &builder, KickChannel &channel, QStringView word)
+void appendWord(KickMessageBuilder &builder, QStringView word)
 {
-    auto emote = lookupEmote(channel, word);
+    auto emote = lookupEmote(*builder.channel(), word);
     if (emote)
     {
         builder.appendEmote(emote);
         return;
     }
 
-    builder.addWordFromUserMessage(word, &channel);
+    builder.addWordFromUserMessage(word, builder.channel());
 }
 
 bool isEmoteID(QStringView v)
@@ -84,8 +88,7 @@ bool isEmoteID(QStringView v)
     return !v.empty();
 }
 
-void appendNonKickEmoteText(MessageBuilder &builder, KickChannel &channel,
-                            QStringView text)
+void appendNonKickEmoteText(KickMessageBuilder &builder, QStringView text)
 {
     for (const auto &variant : getApp()->getEmotes()->getEmojis()->parse(text))
     {
@@ -95,7 +98,7 @@ void appendNonKickEmoteText(MessageBuilder &builder, KickChannel &channel,
                                emote, MessageElementFlag::EmojiAll);
                        },
                        [&](QStringView text) {
-                           appendWord(builder, channel, text);
+                           appendWord(builder, text);
                        },
                    },
                    variant);
@@ -107,8 +110,8 @@ void appendNonKickEmoteText(MessageBuilder &builder, KickChannel &channel,
 /// Kick emotes are present as `[emote:{id}:{name}]` where `{id}` is numeric.
 /// They can be right next to each other or to text. For example, we could find
 /// the following message: `foo [emote:1234:name]foo[emote:1234:name]`.
-bool tryAppendKickEmoteText(MessageBuilder &builder, KickChannel &channel,
-                            QString &messageText, QStringView &text)
+bool tryAppendKickEmoteText(KickMessageBuilder &builder, QString &messageText,
+                            QStringView &text)
 {
     static constexpr QStringView emotePrefix = u"[emote:";
 
@@ -140,7 +143,7 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, KickChannel &channel,
         auto prefix = text.sliced(0, nextEmote);
         messageText.append(prefix);
         messageText.append(' ');
-        appendNonKickEmoteText(builder, channel, prefix);
+        appendNonKickEmoteText(builder, prefix);
     }
 
     auto emoteName = text.sliced(secondColon + 1, endBrace - secondColon - 1);
@@ -158,8 +161,8 @@ bool tryAppendKickEmoteText(MessageBuilder &builder, KickChannel &channel,
     return true;
 }
 
-void parseContent(MessageBuilder &builder, KickChannel &channel,
-                  QString &messageText, QStringView content)
+void parseContent(KickMessageBuilder &builder, QString &messageText,
+                  QStringView content)
 {
     for (auto word : content.tokenize(u' ', Qt::SkipEmptyParts))
     {
@@ -170,10 +173,10 @@ void parseContent(MessageBuilder &builder, KickChannel &channel,
 
         while (!word.empty())
         {
-            if (!tryAppendKickEmoteText(builder, channel, messageText, word))
+            if (!tryAppendKickEmoteText(builder, messageText, word))
             {
                 messageText.append(word);
-                appendNonKickEmoteText(builder, channel, word);
+                appendNonKickEmoteText(builder, word);
                 break;
             }
         }
@@ -227,13 +230,12 @@ void checkThreadSubscription(const QString &senderLogin,
 }
 
 // FIXME: this is 🍝
-void appendReply(MessageBuilder &builder, KickChannel *channel,
-                 BoostJsonObject metadata)
+void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
 {
     auto originalMessage = metadata["original_message"].toObject();
     auto originalSender = metadata["original_sender"]["username"].toQString();
     auto originalMessageID = originalMessage["id"].toQString();
-    auto thread = channel->getOrCreateThread(originalMessageID);
+    auto thread = builder.channel()->getOrCreateThread(originalMessageID);
     MessagePtr threadRoot;
     if (thread)
     {
@@ -299,33 +301,7 @@ void appendReply(MessageBuilder &builder, KickChannel *channel,
     }
 }
 
-void appendChannelName(MessageBuilder &builder, const Channel *channel)
-{
-    QString channelName('#' + channel->getName());
-    Link link(Link::JumpToChannel, u":kick:" % channel->getName());
-
-    builder
-        .emplace<TextElement>(channelName, MessageElementFlag::ChannelName,
-                              MessageColor::System)
-        ->setLink(link);
-}
-
-void appendUsername(MessageBuilder &builder, BoostJsonObject senderObj,
-                    BoostJsonObject identityObj)
-{
-    builder->displayName = senderObj["username"].toQString();
-
-    QString usernameText = displayedUsername(builder.message()) + ':';
-
-    auto userColor = QColor::fromString(identityObj["color"].toStringView());
-    builder->usernameColor = userColor;
-    builder
-        .emplace<TextElement>(usernameText, MessageElementFlag::Username,
-                              userColor, FontStyle::ChatMediumBold)
-        ->setLink({Link::UserInfo, builder.message().displayName});
-}
-
-void appendKickBadges(MessageBuilder &builder, BoostJsonArray badges)
+void appendKickBadges(KickMessageBuilder &builder, BoostJsonArray badges)
 {
     for (auto badgeObj : badges)
     {
@@ -339,12 +315,62 @@ void appendKickBadges(MessageBuilder &builder, BoostJsonArray badges)
     }
 }
 
+HighlightAlert processHighlights(KickMessageBuilder &builder,
+                                 const MessageParseArgs &args)
+{
+    if (getSettings()->isBlacklistedUser(builder->loginName))
+    {
+        // Do nothing. We ignore highlights from this user.
+        return {};
+    }
+
+    auto [highlighted, highlightResult] = getApp()->getHighlights()->check(
+        args, {}, builder->loginName, builder->messageText, builder->flags);
+
+    if (!highlighted)
+    {
+        return {};
+    }
+
+    // This message triggered one or more highlights, act upon the highlight result
+
+    builder->flags.set(MessageFlag::Highlighted);
+    builder->highlightColor = highlightResult.color;
+
+    if (highlightResult.showInMentions)
+    {
+        builder->flags.set(MessageFlag::ShowInMentions);
+    }
+
+    return {
+        .customSound = highlightResult.customSoundUrl.value_or(QUrl{}),
+        .playSound = highlightResult.playSound,
+        .windowAlert = highlightResult.alert,
+    };
+}
+
 }  // namespace
 
 namespace chatterino {
 
-MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
-                                                  BoostJsonObject data)
+KickMessageBuilder::KickMessageBuilder(SystemMessageTag /* tag */,
+                                       KickChannel *channel,
+                                       const QDateTime &time)
+    : channel_(channel)
+{
+    this->emplace<TimestampElement>(time.time());
+    this->message().flags.set(MessageFlag::System);
+    this->message().serverReceivedTime = time;
+}
+
+KickMessageBuilder::KickMessageBuilder(KickChannel *channel)
+    : channel_(channel)
+{
+    // set Kick flag?
+}
+
+std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
+    KickChannel *kickChannel, BoostJsonObject data)
 {
     auto id = data["id"].toQString();
     auto content = data["content"].toQString();
@@ -353,7 +379,7 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
     auto sender = data["sender"].toObject();
     auto identity = sender["identity"].toObject();
 
-    MessageBuilder builder;
+    KickMessageBuilder builder(kickChannel);
     builder->channelName = kickChannel->getName();
     builder->id = id;
     builder->serverReceivedTime =
@@ -364,10 +390,10 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
 
     if (data["type"].toStringView() == "reply")
     {
-        appendReply(builder, kickChannel, data["metadata"].toObject());
+        appendReply(builder, data["metadata"].toObject());
     }
 
-    appendChannelName(builder, kickChannel);
+    builder.appendChannelName();
 
     builder.emplace<TimestampElement>(builder->serverReceivedTime.time());
     builder.emplace<TwitchModerationElement>();
@@ -375,18 +401,204 @@ MessagePtrMut KickMessageBuilder::makeChatMessage(KickChannel *kickChannel,
     appendKickBadges(builder, identity["badges"].toArray());
     // FIXME: append seventv badges
 
-    appendUsername(builder, sender, identity);
+    builder.appendUsername(sender, identity);
     kickChannel->setUserColor(builder->displayName, builder->usernameColor);
     kickChannel->addRecentChatter(builder->displayName);
 
     QString messageText;
-    parseContent(builder, *kickChannel, messageText, content);
+    parseContent(builder, messageText, content);
 
     builder->searchText =
         builder->loginName % ' ' % builder->displayName % u": " % messageText;
     builder->messageText = messageText;
 
+    MessageParseArgs args;
+    args.isStaffOrBroadcaster = kickChannel->isBroadcaster();
+
+    auto highlightAlert = processHighlights(builder, args);
+
+    return {builder.release(), highlightAlert};
+}
+
+MessagePtrMut KickMessageBuilder::makeTimeoutMessage(KickChannel *channel,
+                                                     const QDateTime &now,
+                                                     BoostJsonObject data)
+{
+    bool isPermanent = data["permanent"].toBool();
+    auto duration = [&] {
+        if (isPermanent)
+        {
+            return std::chrono::seconds{};
+        }
+        auto dur = data["duration"].toInt64();
+        if (dur != 0)
+        {
+            return std::chrono::seconds{dur * 60};
+        }
+        auto expiresAt =
+            QDateTime::fromString(data["expires_at"].toQString(), Qt::ISODate);
+        if (!expiresAt.isValid())
+        {
+            return std::chrono::seconds{0};
+        }
+        return std::chrono::round<std::chrono::seconds>(expiresAt - now);
+    }();
+
+    KickMessageBuilder builder(systemMessage, channel, now);
+    const auto timedOutUsername = data["user"]["username"].toQString();
+    const auto moderatorUsername = data["banned_by"]["username"].toQString();
+
+    bool hasBannedBy = !moderatorUsername.isEmpty();
+
+    builder->flags.set(MessageFlag::PubSub, MessageFlag::Timeout,
+                       MessageFlag::ModerationAction);
+
+    QString text;
+
+    if (hasBannedBy)
+    {
+        builder->loginName = moderatorUsername;
+        builder.emplaceSystemTextAndUpdate(moderatorUsername, text)
+            ->setLink({Link::UserInfo, moderatorUsername});
+        if (isPermanent)
+        {
+            builder.emplaceSystemTextAndUpdate("permanently banned", text);
+        }
+        else
+        {
+            builder.emplaceSystemTextAndUpdate("timed out", text);
+        }
+        builder.emplaceSystemTextAndUpdate(timedOutUsername, text)
+            ->setLink({Link::UserInfo, timedOutUsername});
+    }
+    else
+    {
+        builder.emplaceSystemTextAndUpdate(timedOutUsername, text)
+            ->setLink({Link::UserInfo, timedOutUsername});
+        if (isPermanent)
+        {
+            builder.emplaceSystemTextAndUpdate("has been permanently banned",
+                                               text);
+        }
+        else
+        {
+            builder.emplaceSystemTextAndUpdate("has been timed out", text);
+        }
+    }
+
+    if (!isPermanent)
+    {
+        builder.emplaceSystemTextAndUpdate("for", text);
+        builder.emplaceSystemTextAndUpdate(
+            formatTime(static_cast<int>(duration.count())), text);
+    }
+
+    builder->elements.back()->setTrailingSpace(false);
+    text.removeLast();  // trailing space
+
+    builder.emplaceSystemTextAndUpdate(".", text);
+    builder->messageText = text;
+    builder->searchText = text;
+    builder->timeoutUser = timedOutUsername;
+
     return builder.release();
+}
+
+MessagePtrMut KickMessageBuilder::makeUntimeoutMessage(KickChannel *channel,
+                                                       BoostJsonObject data)
+{
+    bool isPermanent = data["permanent"].toBool();
+
+    KickMessageBuilder builder(systemMessage, channel,
+                               QDateTime::currentDateTime());
+    const auto timedOutUsername = data["user"]["username"].toQString();
+    const auto moderatorUsername = data["unbanned_by"]["username"].toQString();
+
+    bool hasBannedBy = !moderatorUsername.isEmpty();
+
+    builder->flags.set(MessageFlag::PubSub, MessageFlag::Untimeout,
+                       MessageFlag::ModerationAction);
+
+    QString text;
+
+    if (hasBannedBy)
+    {
+        builder->loginName = moderatorUsername;
+        builder.appendMentionedUser(moderatorUsername, text);
+        if (isPermanent)
+        {
+            builder.emplaceSystemTextAndUpdate("unbanned", text);
+        }
+        else
+        {
+            builder.emplaceSystemTextAndUpdate("untimed out", text);
+        }
+        builder.appendMentionedUser(timedOutUsername, text);
+    }
+    else
+    {
+        builder.appendMentionedUser(timedOutUsername, text);
+        if (isPermanent)
+        {
+            builder.emplaceSystemTextAndUpdate("was unbanned", text);
+        }
+        else
+        {
+            builder.emplaceSystemTextAndUpdate("was untimed out", text);
+        }
+    }
+
+    builder->elements.back()->setTrailingSpace(false);
+    text.removeLast();  // trailing space
+
+    builder.emplaceSystemTextAndUpdate(".", text);
+    builder->messageText = text;
+    builder->searchText = text;
+    builder->timeoutUser = timedOutUsername;
+
+    return builder.release();
+}
+
+void KickMessageBuilder::appendChannelName()
+{
+    QString channelName('#' + this->channel()->getName());
+    Link link(Link::JumpToChannel, u":kick:" % this->channel()->getName());
+
+    this->emplace<TextElement>(channelName, MessageElementFlag::ChannelName,
+                               MessageColor::System)
+        ->setLink(link);
+}
+
+void KickMessageBuilder::appendUsername(BoostJsonObject senderObj,
+                                        BoostJsonObject identityObj)
+{
+    this->message().displayName = senderObj["username"].toQString();
+
+    QString usernameText = displayedUsername(this->message()) + ':';
+
+    auto userColor = QColor::fromString(identityObj["color"].toStringView());
+    this->message().usernameColor = userColor;
+    this->emplace<TextElement>(usernameText, MessageElementFlag::Username,
+                               userColor, FontStyle::ChatMediumBold)
+        ->setLink({Link::UserInfo, this->message().displayName});
+}
+
+void KickMessageBuilder::appendMentionedUser(const QString &username,
+                                             QString &text, bool trailingSpace)
+{
+    auto *el =
+        this->emplace<MentionElement>(username, username, MessageColor::System,
+                                      this->channel()->getUserColor(username));
+    text.append(username);
+
+    if (trailingSpace)
+    {
+        text.append(u' ');
+    }
+    else
+    {
+        el->setTrailingSpace(false);
+    }
 }
 
 }  // namespace chatterino

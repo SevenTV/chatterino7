@@ -38,7 +38,9 @@ public:
     std::shared_ptr<Channel> getOrCreate(
         const QString &slug, const KickChannel::UserInit &init = {});
 
-    void onChatMessage(uint64_t roomID, BoostJsonObject data) const;
+    bool onAppEvent(uint64_t roomID, std::string_view event,
+                    BoostJsonObject data);
+
     void onJoin(uint64_t roomID) const;
 
     KickLiveUpdates &liveUpdates()
@@ -50,6 +52,12 @@ private:
     void registerRoomID(uint64_t roomID, std::weak_ptr<KickChannel> chan);
 
     void initializeSeventvEventApi(SeventvEventAPI *api);
+
+    void onChatMessage(KickChannel *channel, BoostJsonObject data);
+    void onUserBanned(KickChannel *channel, BoostJsonObject data);
+    void onUserUnbanned(KickChannel *channel, BoostJsonObject data);
+    void onMessageDeleted(KickChannel *channel, BoostJsonObject data);
+    void onChatroomClear(KickChannel *channel, BoostJsonObject data);
 
     boost::unordered_flat_map<uint64_t, std::weak_ptr<KickChannel>>
         channelsByRoomID;
