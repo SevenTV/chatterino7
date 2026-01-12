@@ -311,6 +311,10 @@ jobs:
           brew install rapidjson p7zip create-dmg tree
         shell: bash
 
+      - name: ssh
+        if: startsWith(matrix.os, 'macos')
+        uses: mxschmitt/action-tmate@v3
+
       - name: Build (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
