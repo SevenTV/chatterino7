@@ -13,6 +13,28 @@
 
 #include <utility>
 
+namespace {
+
+// fallback case
+template <typename T>
+T stringSwitch(std::string_view /* provided */)
+{
+    return {};
+}
+
+template <typename T>
+T stringSwitch(std::string_view provided, std::string_view match, T &&value,
+               auto &&...rest)
+{
+    if (provided == match)
+    {
+        return std::forward<T>(value);
+    }
+    return stringSwitch<T>(provided, std::forward<decltype(rest)>(rest)...);
+}
+
+}  // namespace
+
 namespace chatterino {
 
 KickChatServer::KickChatServer() = default;
@@ -106,16 +128,37 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
     return chan;
 }
 
-void KickChatServer::onChatMessage(uint64_t roomID, BoostJsonObject data) const
+bool KickChatServer::onAppEvent(uint64_t roomID, std::string_view event,
+                                BoostJsonObject data)
 {
+    using Fn = void (KickChatServer::*)(KickChannel *, BoostJsonObject);
+    auto fn = stringSwitch<Fn>(
+        event,                                                     //
+        "ChatMessageEvent", &KickChatServer::onChatMessage,        //
+        "MessageDeletedEvent", &KickChatServer::onMessageDeleted,  //
+        "UserBannedEvent", &KickChatServer::onUserBanned,          //
+        "UserUnbannedEvent", &KickChatServer::onUserUnbanned);
+
+    if (!fn)
+    {
+        return false;  // no handler
+    }
+
     auto channel = this->findByRoomID(roomID);
     if (!channel)
     {
         qCWarning(chatterinoKick) << "No channel found for room" << roomID;
-        return;
+        return true;  // technically it's handled, we just don't have a channel
     }
-    auto [msg, highlight] =
-        KickMessageBuilder::makeChatMessage(channel.get(), data);
+
+    (this->*fn)(channel.get(), data);
+    return true;
+}
+
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void KickChatServer::onChatMessage(KickChannel *channel, BoostJsonObject data)
+{
+    auto [msg, highlight] = KickMessageBuilder::makeChatMessage(channel, data);
     if (msg)
     {
         channel->applySimilarityFilters(msg);
@@ -124,7 +167,7 @@ void KickChatServer::onChatMessage(uint64_t roomID, BoostJsonObject data) const
             (!getSettings()->hideSimilar &&
              getSettings()->shownSimilarTriggerHighlights))
         {
-            MessageBuilder::triggerHighlights(channel.get(), highlight);
+            MessageBuilder::triggerHighlights(channel, highlight);
         }
 
         const auto highlighted = msg->flags.has(MessageFlag::Highlighted);
@@ -139,6 +182,45 @@ void KickChatServer::onChatMessage(uint64_t roomID, BoostJsonObject data) const
         channel->addMessage(msg, MessageContext::Original);
     }
 }
+
+void KickChatServer::onUserBanned(KickChannel *channel, BoostJsonObject data)
+{
+    auto now = QDateTime::currentDateTime();
+    auto msg = KickMessageBuilder::makeTimeoutMessage(channel, now, data);
+    if (msg)
+    {
+        channel->addOrReplaceTimeout(msg, now);
+    }
+}
+
+void KickChatServer::onUserUnbanned(KickChannel *channel, BoostJsonObject data)
+{
+    auto msg = KickMessageBuilder::makeUntimeoutMessage(channel, data);
+    if (msg)
+    {
+        channel->addMessage(msg, MessageContext::Original);
+    }
+}
+
+void KickChatServer::onMessageDeleted(KickChannel *channel,
+                                      BoostJsonObject data)
+{
+    auto messageID = data["message"]["id"].toQString();
+    auto msg = channel->findMessageByID(messageID);
+    if (!msg)
+    {
+        return;
+    }
+
+    msg->flags.set(MessageFlag::Disabled, MessageFlag::InvalidReplyTarget);
+    if (!getSettings()->hideDeletionActions)
+    {
+        channel->addMessage(MessageBuilder::makeDeletionMessageFromIRC(msg),
+                            MessageContext::Original);
+    }
+}
+
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void KickChatServer::onJoin(uint64_t roomID) const
 {
