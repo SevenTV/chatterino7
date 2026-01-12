@@ -5,7 +5,6 @@
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
-#include "controllers/accounts/AccountController.hpp"
 #include "singletons/Settings.hpp"
 
 #include <pajlada/settings/setting.hpp>
@@ -153,8 +152,8 @@ void KickAccount::refreshIfNeeded()
         return;
     }
 
-    auto now =
-        QDateTime::currentDateTimeUtc().addSecs(static_cast<qint64>(5) * 60);
+    auto now = QDateTime::currentDateTimeUtc() + CHECK_REFRESH_INTERVAL +
+               std::chrono::seconds{30};
     if (now < this->expiresAt_)
     {
         return;
@@ -191,8 +190,13 @@ void KickAccount::refreshIfNeeded()
             self->authUpdated.invoke();
         })
         .onError([weak](const NetworkResult &res) {
-            qCWarning(chatterinoKick)
-                << "Failed to refresh" << res.formatError();
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            qCWarning(chatterinoKick) << "Failed to refresh" << self->username()
+                                      << "error:" << res.formatError();
         })
         .execute();
 }

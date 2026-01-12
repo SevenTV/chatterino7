@@ -6,6 +6,11 @@
 
 namespace chatterino {
 
+/// A very minimal local-only HTTP server.
+///
+/// It's intended to be used for short-lived authentication procedures. Hence,
+/// it only exposes the requested URL in the callback. The callback can then
+/// return the status code as well as the response.
 class HttpServer : public QObject
 {
 public:

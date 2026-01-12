@@ -24,7 +24,7 @@ KickAccountManager::KickAccountManager()
     });
 
     this->refreshTimer.setSingleShot(false);
-    this->refreshTimer.setInterval(std::chrono::minutes{4});
+    this->refreshTimer.setInterval(KickAccount::CHECK_REFRESH_INTERVAL);
     // NOLINTNEXTLINE(clazy-connect-3arg-lambda)
     QObject::connect(&this->refreshTimer, &QTimer::timeout, [this] {
         this->refreshAccounts();

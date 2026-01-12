@@ -35,6 +35,7 @@ namespace {
 using namespace chatterino;
 
 const QString REDIRECT_URL = u"http://localhost:38275"_s;
+constexpr uint16_t SERVER_PORT = 38275;
 
 QByteArray generateRandomBytes(qsizetype size)
 {
@@ -111,7 +112,7 @@ public:
         this->authURL = u"https://id.kick.com/oauth/authorize?" %
                         query.toString(QUrl::FullyEncoded);
 
-        auto *srv = new HttpServer(38275, this);
+        auto *srv = new HttpServer(SERVER_PORT, this);
         srv->setHandler([this](const QString &path) {
             return this->handleRequest(path);
         });

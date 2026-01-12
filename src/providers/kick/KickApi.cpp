@@ -145,7 +145,8 @@ void KickApi::sendMessage(uint64_t broadcasterUserID, const QString &message,
     QJsonObject json{
         {"broadcaster_user_id"_L1, static_cast<qint64>(broadcasterUserID)},
         {"content"_L1, message},
-        {"type"_L1, "user"_L1}};
+        {"type"_L1, "user"_L1},
+    };
     if (!replyToMessageID.isEmpty())
     {
         json.insert("reply_to_message_id"_L1, replyToMessageID);

@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QString>
 
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -30,6 +31,8 @@ class KickAccount : public Account,
 public:
     KickAccount(const KickAccountData &args);
     ~KickAccount() override;
+
+    constexpr static std::chrono::minutes CHECK_REFRESH_INTERVAL{5};
 
     Q_DISABLE_COPY_MOVE(KickAccount);
 
