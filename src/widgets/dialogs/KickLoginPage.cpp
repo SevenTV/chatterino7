@@ -269,11 +269,13 @@ KickLoginPage::KickLoginPage()
     auto *root = new QFormLayout(this);
 
     auto *topLabel = new QLabel(
-        "The Kick API does not provide a way for chat clients like Chatterino "
+        "The Kick API does not provide an OAuth flow for local chat clients "
+        "like Chatterino "
         "to authenticate without exposing the client secret or using an "
         "external server that would need to see <i>all</i> tokens of "
         "<i>all</i> users.<br>Because of this, Chatterino7 currently requires "
-        "users to provide their own application credentials.<br>Applications "
+        "users to provide their own application credentials. Unfortunately, "
+        "this requires you to enable 2FA.<br><br>Applications "
         "can be created at <a "
         "href=\"https://kick.com/settings/developer\">kick.com/settings/"
         "developer</a>. The following redirect URL <b>must</b> be specified: "
@@ -283,6 +285,8 @@ KickLoginPage::KickLoginPage()
     topLabel->setOpenExternalLinks(true);
     topLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
     root->addRow(topLabel);
+    root->addItem(
+        new QSpacerItem(0, 10, QSizePolicy::Minimum, QSizePolicy::Fixed));
 
     this->ui.clientID = new QLineEdit;
     this->ui.clientID->setPlaceholderText("ABCD123");
