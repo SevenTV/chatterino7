@@ -6,11 +6,63 @@
 #include "util/BoostJsonWrap.hpp"
 
 #include <boost/json/parse.hpp>
+#include <QUrlQuery>
 
 namespace {
 
 using namespace chatterino;
 using namespace Qt::Literals;
+
+template <typename T>
+struct IsCollectionS : std::false_type {
+};
+template <typename T, typename Alloc>
+struct IsCollectionS<std::vector<T, Alloc>> : std::true_type {
+};
+template <typename T>
+struct IsCollectionS<QList<T>> : std::true_type {
+};
+
+template <typename T>
+concept IsCollection = IsCollectionS<T>::value;
+
+template <typename T>
+void callDeserialize(auto &&cb, BoostJsonValue data)
+{
+    if (data.isObject())
+    {
+        cb(T(data.toObject()));
+    }
+    else
+    {
+        cb(makeUnexpected(u"'data' is not an object"_s));
+    }
+}
+
+template <IsCollection T>
+void callDeserialize(auto &&cb, BoostJsonValue data)
+{
+    if (!data.isArray())
+    {
+        cb(makeUnexpected(u"'data' is not an array"_s));
+        return;
+    }
+    auto arr = data.toArray();
+    T coll;
+    coll.reserve(arr.size());
+
+    for (auto val : arr)
+    {
+        if (!val.isObject())
+        {
+            cb(makeUnexpected(u"Array element was not an object"_s));
+            return;
+        }
+        coll.emplace_back(typename T::value_type(val.toObject()));
+    }
+
+    cb(std::move(coll));
+}
 
 template <typename T>
 void getJsonNoAuth(const QString &url, std::function<void(ExpectedStr<T>)> cb)
@@ -104,6 +156,28 @@ KickPrivateUserInChannelInfo::KickPrivateUserInChannelInfo(BoostJsonObject obj)
     }
 }
 
+KickCategoryInfo::KickCategoryInfo(BoostJsonObject obj)
+    : name(obj["name"].toQString())
+{
+}
+
+KickStreamInfo::KickStreamInfo(BoostJsonObject obj)
+    : isLive(obj["is_live"].toBool())
+    , viewerCount(obj["viewer_count"].toUint64())
+    , startTime(
+          QDateTime::fromString(obj["start_time"].toQString(), Qt::ISODate))
+    , thumbnailUrl(obj["thumbnail"].toQString())
+{
+}
+
+KickChannelInfo::KickChannelInfo(BoostJsonObject obj)
+    : userID(obj["broadcaster_user_id"].toUint64())
+    , category(obj["category"].toObject())
+    , stream(obj["stream"].toObject())
+    , streamTitle(obj["stream_title"].toQString())
+{
+}
+
 KickApi *KickApi::instance()
 {
     static std::unique_ptr<KickApi> api;
@@ -165,6 +239,21 @@ void KickApi::sendMessage(uint64_t broadcasterUserID, const QString &message,
         });
 }
 
+void KickApi::getChannels(std::span<uint64_t> userIDs,
+                          Callback<std::vector<KickChannelInfo>> cb)
+{
+    QString path = u"channels?"_s;
+    for (auto id : userIDs)
+    {
+        path += u"broadcaster_user_id=";
+        path += QString::number(id);
+        path += '&';
+    }
+    path.removeLast();
+
+    this->getJson(path, std::move(cb));
+}
+
 void KickApi::setAuth(const QString &authToken)
 {
     this->authToken = authToken.toUtf8();
@@ -223,14 +312,8 @@ void KickApi::doRequest(NetworkRequest &&req, Callback<T> cb)
                 cb(makeUnexpected(u"Root value was not an object"_s));
                 return;
             }
-            auto dataObj = ref["data"];
-            if (!dataObj.isObject())
-            {
-                qCWarning(chatterinoKick) << "Data value was not an object";
-                cb(makeUnexpected(u"'data' value was not an object"_s));
-                return;
-            }
-            cb(T(dataObj.toObject()));
+            auto data = ref["data"];
+            callDeserialize<T>(cb, data);
         })
         .execute();
 }

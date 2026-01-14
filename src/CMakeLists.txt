@@ -406,6 +406,8 @@ set(SOURCE_FILES
         providers/kick/KickChatServer.hpp
         providers/kick/KickEmotes.cpp
         providers/kick/KickEmotes.hpp
+        providers/kick/KickLiveController.cpp
+        providers/kick/KickLiveController.hpp
         providers/kick/KickLiveUpdates.cpp
         providers/kick/KickLiveUpdates.hpp
         providers/kick/KickMessageBuilder.cpp

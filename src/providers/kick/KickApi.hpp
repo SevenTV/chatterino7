@@ -46,6 +46,30 @@ struct KickPrivateUserInChannelInfo {
     std::optional<QString> profilePictureURL;
 };
 
+struct KickCategoryInfo {
+    KickCategoryInfo(BoostJsonObject obj);
+
+    QString name;
+};
+
+struct KickStreamInfo {
+    KickStreamInfo(BoostJsonObject obj);
+
+    bool isLive = false;
+    uint64_t viewerCount = 0;
+    QDateTime startTime;
+    QString thumbnailUrl;
+};
+
+struct KickChannelInfo {
+    KickChannelInfo(BoostJsonObject obj);
+
+    uint64_t userID = 0;
+    KickCategoryInfo category;
+    KickStreamInfo stream;
+    QString streamTitle;
+};
+
 class KickApi
 {
 public:
@@ -63,6 +87,9 @@ public:
 
     void sendMessage(uint64_t broadcasterUserID, const QString &message,
                      const QString &replyToMessageID, Callback<void> cb);
+
+    void getChannels(std::span<uint64_t> userIDs,
+                     Callback<std::vector<KickChannelInfo>> cb);
 
     void setAuth(const QString &authToken);
 

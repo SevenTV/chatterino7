@@ -4,6 +4,8 @@
 #include "common/Channel.hpp"
 #include "common/ChannelChatters.hpp"
 
+#include <pajlada/signals/signal.hpp>
+
 #include <chrono>
 #include <queue>
 #include <unordered_map>
@@ -24,6 +26,8 @@ struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;
 
 struct EmoteName;
+
+struct KickChannelInfo;
 
 class KickChannel : public Channel, public ChannelChatters
 {
@@ -89,6 +93,23 @@ public:
     bool isBroadcaster() const override;
     bool hasModRights() const override;
     bool hasHighRateLimit() const override;
+    bool isLive() const override;
+
+    struct StreamData {
+        bool isLive = false;
+        QString title;
+        QString category;
+
+        QString thumbnailUrl;
+        QString uptime;
+        uint64_t viewerCount = 0;
+    };
+    void updateStreamData(const KickChannelInfo &info);
+    const StreamData &streamData() const;
+    pajlada::Signals::NoArgSignal streamDataChanged;
+    pajlada::Signals::NoArgSignal liveStatusChanged;
+
+    pajlada::Signals::NoArgSignal userIDChanged;
 
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
 
@@ -139,6 +160,8 @@ private:
 
     bool isMod_ = false;
     bool isVip_ = false;
+
+    StreamData streamData_;
 };
 
 }  // namespace chatterino

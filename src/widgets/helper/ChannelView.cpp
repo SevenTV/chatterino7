@@ -1104,6 +1104,14 @@ void ChannelView::setChannel(const ChannelPtr &underlyingChannel)
                 this->liveStatusChanged.invoke();
             });
     }
+    else if (auto *kickChannel =
+                 dynamic_cast<KickChannel *>(underlyingChannel.get()))
+    {
+        this->channelConnections_.managedConnect(
+            kickChannel->liveStatusChanged, [this] {
+                this->liveStatusChanged.invoke();
+            });
+    }
 }
 
 void ChannelView::setFilters(const QList<QUuid> &ids)

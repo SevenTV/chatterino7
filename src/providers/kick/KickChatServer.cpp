@@ -37,7 +37,11 @@ T stringSwitch(std::string_view provided, std::string_view match, T &&value,
 
 namespace chatterino {
 
-KickChatServer::KickChatServer() = default;
+KickChatServer::KickChatServer()
+    : liveController_(*this)
+{
+}
+
 KickChatServer::~KickChatServer() = default;
 
 void KickChatServer::initialize()
@@ -49,6 +53,16 @@ std::shared_ptr<KickChannel> KickChatServer::findByRoomID(uint64_t roomID) const
 {
     auto it = this->channelsByRoomID.find(roomID);
     if (it != this->channelsByRoomID.end())
+    {
+        return it->second.lock();
+    }
+    return nullptr;
+}
+
+std::shared_ptr<KickChannel> KickChatServer::findByUserID(uint64_t userID) const
+{
+    auto it = this->channelsByUserID.find(userID);
+    if (it != this->channelsByUserID.end())
     {
         return it->second.lock();
     }
@@ -124,6 +138,15 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
     {
         this->channelsByRoomID[init.roomID] = chan;
     }
+    this->signalHolder_.managedConnect(
+        chan->userIDChanged, [this, weak{chan->weakFromThis()}] {
+            auto chan = weak.lock();
+            if (chan && chan->userID() != 0)
+            {
+                this->channelsByUserID[chan->userID()] = weak;
+                this->liveController_.queueNewChannel(chan->userID());
+            }
+        });
     chan->initialize(init);
     return chan;
 }
