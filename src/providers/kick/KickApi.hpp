@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <span>
 
 namespace chatterino {
 

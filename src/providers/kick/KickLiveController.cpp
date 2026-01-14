@@ -6,6 +6,8 @@
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickChatServer.hpp"
 
+#include <QPointer>
+
 #include <chrono>
 
 namespace {
