@@ -21,11 +21,13 @@
 #include "singletons/Settings.hpp"
 #include "util/BoostJsonWrap.hpp"
 #include "util/FormatTime.hpp"
+#include "util/Helpers.hpp"
 #include "util/Variant.hpp"
 
 namespace {
 
 using namespace chatterino;
+using namespace Qt::Literals;
 
 EmotePtr lookupEmote(const KickChannel &channel, QStringView word)
 {
@@ -349,6 +351,16 @@ HighlightAlert processHighlights(KickMessageBuilder &builder,
     };
 }
 
+QStringView plural(QStringView pluralText, uint64_t n)
+{
+    assert(pluralText.endsWith('s'));
+    if (n == 1)
+    {
+        return pluralText.sliced(0, pluralText.length() - 1);
+    }
+    return pluralText;
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -360,6 +372,14 @@ KickMessageBuilder::KickMessageBuilder(SystemMessageTag /* tag */,
 {
     this->emplace<TimestampElement>(time.time());
     this->message().flags.set(MessageFlag::System);
+    this->message().serverReceivedTime = time;
+}
+
+KickMessageBuilder::KickMessageBuilder(KickChannel *channel,
+                                       const QDateTime &time)
+    : channel_(channel)
+{
+    this->emplace<TimestampElement>(time.time());
     this->message().serverReceivedTime = time;
 }
 
@@ -559,6 +579,248 @@ MessagePtrMut KickMessageBuilder::makeUntimeoutMessage(KickChannel *channel,
     return builder.release();
 }
 
+MessagePtrMut KickMessageBuilder::makePinnedMessage(KickChannel *channel,
+                                                    BoostJsonObject data)
+{
+    const auto creator = data["pinnedBy"]["username"].toQString();
+    auto jsonMessage = data["message"];
+    auto messageID = jsonMessage["id"].toQString();
+
+    auto existing = channel->findMessageByID(messageID);
+    auto messageText = [&] {
+        if (existing)
+        {
+            return existing->messageText;
+        }
+        return jsonMessage["text"].toQString();
+    }();
+    auto limit = getSettings()->deletedMessageLengthLimit.getValue();
+    if (limit > 0 && messageText.length() > limit)
+    {
+        messageText = QStringView(messageText).left(limit) % u'…';
+    }
+
+    KickMessageBuilder builder(systemMessage, channel,
+                               QDateTime::currentDateTime());
+    QString text;
+    builder.appendMentionedUser(creator, text);
+    builder.appendOrEmplaceSystemTextAndUpdate(u"pinned"_s, text);
+    builder
+        .emplace<TextElement>(messageText, MessageElementFlag::Text,
+                              MessageColor::Text)
+        ->setLink({Link::JumpToMessage, messageID});
+
+    builder->searchText = text;
+    builder->messageText = text;
+    builder->loginName = creator.toLower();
+    return builder.release();
+}
+
+MessagePtrMut KickMessageBuilder::makeHostMessage(KickChannel *channel,
+                                                  BoostJsonObject data)
+{
+    const auto user = data["host_username"].toQString();
+    const auto viewers = data["number_viewers"].toUint64();
+    KickMessageBuilder builder(systemMessage, channel,
+                               QDateTime::currentDateTime());
+    QString text;
+    builder.appendMentionedUser(user, text);
+    builder.appendOrEmplaceSystemTextAndUpdate(
+        u"hosted the stream with " % QString::number(viewers) % ' ' %
+            plural(u"viewers", viewers) % '.',
+        text);
+
+    builder->searchText = text;
+    builder->messageText = text;
+    builder->loginName = user.toLower();
+    return builder.release();
+}
+
+std::tuple<MessagePtrMut, MessagePtrMut, HighlightAlert>
+    KickMessageBuilder::makeSubscriptionMessage(KickChannel *channel,
+                                                BoostJsonObject data)
+{
+    MessagePtrMut customMessage;
+    HighlightAlert alert;
+    auto now = QDateTime::currentDateTime();
+
+    auto months = data["months"].toUint64();
+    auto username = data["username"].toQString();
+    auto customMessageText = data["custom_message"].toQString();
+    if (!customMessageText.isEmpty())
+    {
+        KickMessageBuilder builder(channel);
+        builder->serverReceivedTime = now;
+        builder->flags.set(MessageFlag::Subscription);
+        builder->loginName = username;
+
+        builder.emplace<TimestampElement>(now.time());
+        builder.appendUsernameAsSender(username);
+        QString text;
+        parseContent(builder, text, customMessageText);
+
+        builder->messageText = text;
+        builder->searchText = username % ": " % text;
+
+        MessageParseArgs args;
+        args.isSubscriptionMessage = true;
+        args.isStaffOrBroadcaster = channel->isBroadcaster();
+        alert = processHighlights(builder, args);
+        customMessage = builder.release();
+    }
+
+    KickMessageBuilder builder(systemMessage, channel, now);
+    builder->flags.set(MessageFlag::Subscription);
+
+    QString text;
+    builder.appendMentionedUser(username, text);
+    builder.appendOrEmplaceSystemTextAndUpdate(
+        u"subscribed for " % QString::number(months) %
+            plural(u" months", months) % '.',
+        text);
+    builder->searchText = text;
+    builder->messageText = text;
+    builder->loginName = username;
+
+    return {customMessage, builder.release(), alert};
+}
+
+MessagePtrMut KickMessageBuilder::makeGiftedSubscriptionMessage(
+    KickChannel *channel, BoostJsonObject data)
+{
+    const auto gifter = data["gifter_username"].toQString();
+    const auto gifted = data["gifted_usernames"].toArray();
+    auto total = data["gifter_total"].toUint64();
+
+    if (gifted.size() == 0)
+    {
+        return nullptr;
+    }
+
+    KickMessageBuilder builder(systemMessage, channel,
+                               QDateTime::currentDateTime());
+    builder->flags.set(MessageFlag::Subscription);
+
+    QString text;
+    builder.appendMentionedUser(gifter, text);
+    builder.emplaceSystemTextAndUpdate(
+        u"gifted " % QString::number(gifted.size()) %
+            plural(u" subscriptions", gifted.size()) % u" to",
+        text);
+
+    for (size_t i = 0; i < gifted.size(); i++)
+    {
+        if (i != 0)
+        {
+            if (i == gifted.size() - 1)
+            {
+                QString toAdd = u", and"_s;
+                if (gifted.size() == 2)
+                {
+                    toAdd = u"and"_s;
+                    builder->elements.back()->setTrailingSpace(true);
+                    text.append(' ');
+                }
+                builder.appendOrEmplaceSystemTextAndUpdate(text, text);
+            }
+            else
+            {
+                builder.appendOrEmplaceSystemTextAndUpdate(u","_s, text);
+            }
+        }
+        builder.appendMentionedUser(gifted[i].toQString(), text, false);
+    }
+    builder.appendOrEmplaceSystemTextAndUpdate(
+        u". They gifted "_s % QString::number(total) % plural(u" subs", total) %
+            u" in total.",
+        text);
+
+    builder->messageText = text;
+    builder->searchText = text;
+    builder->loginName = gifter;
+
+    return builder.release();
+}
+
+MessagePtrMut KickMessageBuilder::makeRewardRedeemedMessage(
+    KickChannel *channel, BoostJsonObject data)
+{
+    const auto reward = data["reward_title"].toQString();
+    const auto username = data["username"].toQString();
+    const auto userInput = data["user_input"].toQString();
+
+    KickMessageBuilder builder(channel, QDateTime::currentDateTime());
+    builder->flags.set(MessageFlag::RedeemedChannelPointReward);
+
+    QString text;
+    builder.appendMentionedUser(username, text);
+    builder.appendOrEmplaceText(u"redeemed"_s, MessageColor::Text);
+    text += u" redeemed ";
+    builder.emplace<TextElement>(reward, MessageElementFlag::Text,
+                                 MessageColor::Text, FontStyle::ChatMediumBold);
+    text += reward;
+
+    if (userInput.isEmpty())
+    {
+        builder->messageText = text;
+        builder->searchText = text;
+    }
+    else
+    {
+        builder.emplace<LinebreakElement>(
+            MessageElementFlag::ChannelPointReward);
+        builder.appendUsernameAsSender(username);
+        QString redeemedText;
+        parseContent(builder, redeemedText, userInput);
+        builder->messageText = text;
+        builder->searchText = text % ' ' % username % u": " % redeemedText;
+    }
+    builder->loginName = username;
+    return builder.release();
+}
+
+MessagePtrMut KickMessageBuilder::makeKicksGiftedMessage(KickChannel *channel,
+                                                         BoostJsonObject data)
+{
+    const auto username = data["sender"]["username"].toQString();
+    const auto gift = data["gift"].toObject();
+    const auto giftName = gift["name"].toQString();
+    const auto giftAmount = gift["amount"].toUint64();
+    const auto userInput = data["message"].toQString();
+
+    KickMessageBuilder builder(channel, QDateTime::currentDateTime());
+    builder->flags.set(MessageFlag::RedeemedChannelPointReward);
+
+    QString text;
+    builder.appendMentionedUser(username, text);
+    builder.appendOrEmplaceText(u"gifted"_s, MessageColor::Text);
+    text += u" gifted "_s;
+    builder.emplace<TextElement>(giftName, MessageElementFlag::Text,
+                                 MessageColor::Text, FontStyle::ChatMediumBold);
+    QString kickInfo =
+        '(' % localizeNumbers(giftAmount) % plural(u" Kicks", giftAmount) % ')';
+    builder.appendOrEmplaceText(kickInfo, MessageColor::Text);
+    text += kickInfo;
+
+    if (userInput.isEmpty())
+    {
+        builder->messageText = text;
+        builder->searchText = text;
+    }
+    else
+    {
+        builder.emplace<LinebreakElement>(
+            MessageElementFlag::ChannelPointReward);
+        builder.appendUsernameAsSender(username);
+        QString redeemedText;
+        parseContent(builder, redeemedText, userInput);
+        builder->messageText = text;
+        builder->searchText = text % ' ' % username % u": " % redeemedText;
+    }
+    builder->loginName = username;
+    return builder.release();
+}
+
 void KickMessageBuilder::appendChannelName()
 {
     QString channelName('#' + this->channel()->getName());
@@ -581,6 +843,19 @@ void KickMessageBuilder::appendUsername(BoostJsonObject senderObj,
     this->emplace<TextElement>(usernameText, MessageElementFlag::Username,
                                userColor, FontStyle::ChatMediumBold)
         ->setLink({Link::UserInfo, this->message().displayName});
+}
+
+void KickMessageBuilder::appendUsernameAsSender(const QString &username)
+{
+    auto userColor = this->channel()->getUserColor(username);
+    MessageColor userMessageColor(userColor);
+    if (!userColor.isValid())
+    {
+        userMessageColor = MessageColor::Text;
+    }
+    this->emplace<TextElement>(username + ':', MessageElementFlag::Username,
+                               userMessageColor, FontStyle::ChatMediumBold)
+        ->setLink({Link::UserInfo, username});
 }
 
 void KickMessageBuilder::appendMentionedUser(const QString &username,

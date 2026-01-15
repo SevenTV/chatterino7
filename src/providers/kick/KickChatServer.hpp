@@ -69,6 +69,17 @@ private:
     void onUserUnbanned(KickChannel *channel, BoostJsonObject data);
     void onMessageDeleted(KickChannel *channel, BoostJsonObject data);
     void onChatroomClear(KickChannel *channel, BoostJsonObject data);
+    void onPinnedMessageCreatedEvent(KickChannel *channel,
+                                     BoostJsonObject data);
+    void onPinnedMessageDeletedEvent(KickChannel *channel,
+                                     BoostJsonObject data);
+    void onStreamHostEvent(KickChannel *channel, BoostJsonObject data);
+    void onSubscriptionEvent(KickChannel *channel, BoostJsonObject data);
+    void onGiftedSubscriptionEvent(KickChannel *channel, BoostJsonObject data);
+    void onRewardRedeemedEvent(KickChannel *channel, BoostJsonObject data);
+    void onKicksGiftedEvent(KickChannel *channel, BoostJsonObject data);
+
+    void onKnownIgnoredMessage(KickChannel *channel, BoostJsonObject data);
 
     void loadGlobalEmotesIfNeeded();
 

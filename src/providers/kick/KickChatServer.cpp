@@ -163,12 +163,36 @@ bool KickChatServer::onAppEvent(uint64_t roomID, std::string_view event,
 {
     using Fn = void (KickChatServer::*)(KickChannel *, BoostJsonObject);
     auto fn = stringSwitch<Fn>(
-        event,                                                     //
-        "ChatMessageEvent", &KickChatServer::onChatMessage,        //
-        "MessageDeletedEvent", &KickChatServer::onMessageDeleted,  //
-        "ChatroomClearEvent", &KickChatServer::onChatroomClear,    //
-        "UserBannedEvent", &KickChatServer::onUserBanned,          //
-        "UserUnbannedEvent", &KickChatServer::onUserUnbanned);
+        event,                                                      //
+        "ChatMessageEvent", &KickChatServer::onChatMessage,         //
+        "MessageDeletedEvent", &KickChatServer::onMessageDeleted,   //
+        "ChatroomClearEvent", &KickChatServer::onChatroomClear,     //
+        "UserBannedEvent", &KickChatServer::onUserBanned,           //
+        "UserUnbannedEvent", &KickChatServer::onUserUnbanned,       //
+        "SubscriptionEvent", &KickChatServer::onSubscriptionEvent,  //
+        "GiftedSubscriptionsEvent",
+        &KickChatServer::onGiftedSubscriptionEvent,  //
+        "PinnedMessageCreatedEvent",
+        &KickChatServer::onPinnedMessageCreatedEvent,  //
+        "PinnedMessageDeletedEvent",
+        &KickChatServer::onPinnedMessageDeletedEvent,                   //
+        "RewardRedeemedEvent", &KickChatServer::onRewardRedeemedEvent,  //
+        "KicksGifted", &KickChatServer::onKicksGiftedEvent,             //
+        "StreamHostEvent", &KickChatServer::onStreamHostEvent,          //
+
+        // ignored
+        "KicksLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
+        "GiftsLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
+        "PredictionUpdated", &KickChatServer::onKnownIgnoredMessage,        //
+        // old sub events
+        "ChannelSubscriptionEvent", &KickChatServer::onKnownIgnoredMessage,  //
+        "LuckyUsersWhoGotGiftSubscriptionsEvent",
+        &KickChatServer::onKnownIgnoredMessage,  //
+        // v1 stream host event
+        "StreamHostedEvent", &KickChatServer::onKnownIgnoredMessage,  //
+        // seems to be for subscriptions too
+        "ChatMessageSentEvent", &KickChatServer::onKnownIgnoredMessage  //
+    );
 
     if (!fn)
     {
@@ -258,6 +282,83 @@ void KickChatServer::onChatroomClear(KickChannel *channel,
     auto clear = KickMessageBuilder::makeClearChatMessage(now, {});
     channel->disableAllMessages();
     channel->addOrReplaceClearChat(clear, now);
+}
+
+void KickChatServer::onPinnedMessageCreatedEvent(KickChannel *channel,
+                                                 BoostJsonObject data)
+{
+    qCDebug(chatterinoKick) << *channel << "UNTESTED Pinned message created";
+    channel->addMessage(KickMessageBuilder::makePinnedMessage(channel, data),
+                        MessageContext::Original);
+}
+
+void KickChatServer::onPinnedMessageDeletedEvent(KickChannel *channel,
+                                                 BoostJsonObject /*data*/)
+{
+    channel->addSystemMessage(u"The pinned message was unpinned."_s);
+}
+
+void KickChatServer::onStreamHostEvent(KickChannel *channel,
+                                       BoostJsonObject data)
+{
+    qCDebug(chatterinoKick) << *channel << "UNTESTED Stream host";
+    channel->addMessage(KickMessageBuilder::makeHostMessage(channel, data),
+                        MessageContext::Original);
+}
+
+void KickChatServer::onSubscriptionEvent(KickChannel *channel,
+                                         BoostJsonObject data)
+{
+    qCDebug(chatterinoKick) << *channel << "UNTESTED Sub";
+
+    auto [first, second, alert] =
+        KickMessageBuilder::makeSubscriptionMessage(channel, data);
+    if (first)
+    {
+        MessageBuilder::triggerHighlights(channel, alert);
+        channel->addMessage(first, MessageContext::Original);
+    }
+    channel->addMessage(second, MessageContext::Original);
+}
+
+void KickChatServer::onGiftedSubscriptionEvent(KickChannel *channel,
+                                               BoostJsonObject data)
+{
+    qCDebug(chatterinoKick) << *channel << "UNTESTED Gift";
+
+    auto msg = KickMessageBuilder::makeGiftedSubscriptionMessage(channel, data);
+    if (msg)
+    {
+        channel->addMessage(msg, MessageContext::Original);
+    }
+}
+
+void KickChatServer::onRewardRedeemedEvent(KickChannel *channel,
+                                           BoostJsonObject data)
+{
+    auto msg = KickMessageBuilder::makeRewardRedeemedMessage(channel, data);
+    if (msg)
+    {
+        channel->addMessage(msg, MessageContext::Original);
+    }
+}
+
+void KickChatServer::onKicksGiftedEvent(KickChannel *channel,
+                                        BoostJsonObject data)
+{
+    qCDebug(chatterinoKick) << *channel << "UNTESTED Kicks";
+
+    auto msg = KickMessageBuilder::makeKicksGiftedMessage(channel, data);
+    if (msg)
+    {
+        channel->addMessage(msg, MessageContext::Original);
+    }
+}
+
+void KickChatServer::onKnownIgnoredMessage(KickChannel * /*channel*/,
+                                           BoostJsonObject /*data*/)
+{
+    // nop
 }
 
 // NOLINTEND(readability-convert-member-functions-to-static)

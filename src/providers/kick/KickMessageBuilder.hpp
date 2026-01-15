@@ -14,6 +14,7 @@ class KickMessageBuilder : public MessageBuilder
 public:
     KickMessageBuilder(SystemMessageTag, KickChannel *channel,
                        const QDateTime &time);
+    KickMessageBuilder(KickChannel *channel, const QDateTime &time);
     KickMessageBuilder(KickChannel *channel);
 
     static std::pair<MessagePtrMut, HighlightAlert> makeChatMessage(
@@ -26,6 +27,24 @@ public:
     static MessagePtrMut makeUntimeoutMessage(KickChannel *channel,
                                               BoostJsonObject data);
 
+    static MessagePtrMut makePinnedMessage(KickChannel *channel,
+                                           BoostJsonObject data);
+
+    static MessagePtrMut makeHostMessage(KickChannel *channel,
+                                         BoostJsonObject data);
+
+    static std::tuple<MessagePtrMut, MessagePtrMut, HighlightAlert>
+        makeSubscriptionMessage(KickChannel *channel, BoostJsonObject data);
+
+    static MessagePtrMut makeGiftedSubscriptionMessage(KickChannel *channel,
+                                                       BoostJsonObject data);
+
+    static MessagePtrMut makeRewardRedeemedMessage(KickChannel *channel,
+                                                   BoostJsonObject data);
+
+    static MessagePtrMut makeKicksGiftedMessage(KickChannel *channel,
+                                                BoostJsonObject data);
+
     KickChannel *channel() const
     {
         return this->channel_;
@@ -34,6 +53,7 @@ public:
 private:
     void appendChannelName();
     void appendUsername(BoostJsonObject senderObj, BoostJsonObject identityObj);
+    void appendUsernameAsSender(const QString &username);
     void appendMentionedUser(const QString &username, QString &text,
                              bool trailingSpace = true);
 
