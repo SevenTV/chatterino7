@@ -32,14 +32,16 @@ EmotePtr KickEmotes::emoteForID(QStringView id, QStringView name)
     }
 
     auto nameStr = name.toString();
+    auto idStr = id.toString();
     QString tooltip = nameStr.toHtmlEscaped() % u"<br>Kick Emote";
     auto emote = std::make_shared<const Emote>(Emote{
         .name = {std::move(nameStr)},
         .images = ImageSet(Image::fromAutoscaledUrl(
             {u"https://files.kick.com/emotes/" % id % u"/fullsize"}, 28)),
         .tooltip = {std::move(tooltip)},
+        .id = {idStr},
     });
-    CACHE.emplace(id.toString(), emote);
+    CACHE.emplace(idStr, emote);
     return emote;
 }
 

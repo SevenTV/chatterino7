@@ -79,7 +79,7 @@ std::optional<TabCompletionModel::SourceKind>
     TabCompletionModel::deduceSourceKind(const QString &query,
                                          bool isFirstWord) const
 {
-    if (query.length() < 2 || !this->channel_.isTwitchChannel())
+    if (query.length() < 2 || !this->channel_.isTwitchOrKickChannel())
     {
         return std::nullopt;
     }

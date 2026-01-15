@@ -14,6 +14,8 @@ namespace chatterino {
 class BoostJsonObject;
 class NetworkRequest;
 
+// Private API
+
 struct KickPrivateUserInfo {
     KickPrivateUserInfo(BoostJsonObject obj);
 
@@ -46,6 +48,24 @@ struct KickPrivateUserInChannelInfo {
     std::optional<uint16_t> subscriptionMonths;
     std::optional<QString> profilePictureURL;
 };
+
+struct KickPrivateEmoteInfo {
+    KickPrivateEmoteInfo(BoostJsonObject obj);
+
+    uint64_t emoteID = 0;
+    QString name;
+    bool subscribersOnly = false;
+};
+
+struct KickPrivateEmoteSetInfo {
+    KickPrivateEmoteSetInfo(BoostJsonObject obj);
+
+    // if this is set, it's a user set - otherwise it's global
+    std::optional<uint64_t> userID;
+    std::vector<KickPrivateEmoteInfo> emotes;
+};
+
+// Public API
 
 struct KickCategoryInfo {
     KickCategoryInfo(BoostJsonObject obj);
@@ -85,6 +105,10 @@ public:
     static void privateUserInChannelInfo(
         const QString &userUsername, const QString &channelUsername,
         Callback<KickPrivateUserInChannelInfo> cb);
+
+    static void privateEmotesInChannel(
+        const QString &username,
+        Callback<std::vector<KickPrivateEmoteSetInfo>> cb);
 
     void sendMessage(uint64_t broadcasterUserID, const QString &message,
                      const QString &replyToMessageID, Callback<void> cb);

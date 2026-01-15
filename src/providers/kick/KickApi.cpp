@@ -86,13 +86,7 @@ void getJsonNoAuth(const QString &url, std::function<void(ExpectedStr<T>)> cb)
             }
 
             BoostJsonValue ref(jv);
-            if (!ref.isObject())
-            {
-                qCWarning(chatterinoKick) << "Root value was not an object";
-                cb(makeUnexpected(u"Root value was not an object"_s));
-                return;
-            }
-            cb(T(ref.toObject()));
+            callDeserialize<T>(cb, ref);
         })
         .execute();
 }
@@ -178,6 +172,28 @@ KickChannelInfo::KickChannelInfo(BoostJsonObject obj)
 {
 }
 
+KickPrivateEmoteInfo::KickPrivateEmoteInfo(BoostJsonObject obj)
+    : emoteID(obj["id"].toUint64())
+    , name(obj["name"].toQString())
+    , subscribersOnly(obj["subscribers_only"].toBool())
+{
+}
+
+KickPrivateEmoteSetInfo::KickPrivateEmoteSetInfo(BoostJsonObject obj)
+{
+    auto userIDVal = obj["user_id"];
+    if (userIDVal.isString())
+    {
+        this->userID = userIDVal.toUint64();
+    }
+    auto emotesArr = obj["emotes"].toArray();
+    this->emotes.reserve(emotesArr.size());
+    for (auto emoteVal : emotesArr)
+    {
+        this->emotes.emplace_back(emoteVal.toObject());
+    }
+}
+
 KickApi *KickApi::instance()
 {
     static std::unique_ptr<KickApi> api;
@@ -203,6 +219,12 @@ void KickApi::privateUserInChannelInfo(
         u"https://kick.com/api/v2/channels/" % channelUsername % "/users/" %
             userUsername,
         std::move(cb));
+}
+
+void KickApi::privateEmotesInChannel(
+    const QString &username, Callback<std::vector<KickPrivateEmoteSetInfo>> cb)
+{
+    getJsonNoAuth(u"https://kick.com/emotes/" % username, std::move(cb));
 }
 
 void KickApi::sendMessage(uint64_t broadcasterUserID, const QString &message,

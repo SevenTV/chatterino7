@@ -1,5 +1,6 @@
 #pragma once
 
+#include "messages/Emote.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/kick/KickLiveController.hpp"
 #include "providers/kick/KickLiveUpdates.hpp"
@@ -56,6 +57,8 @@ public:
         return this->channelsByRoomID;
     }
 
+    std::shared_ptr<const EmoteMap> globalEmotes() const;
+
 private:
     void registerRoomID(uint64_t roomID, std::weak_ptr<KickChannel> chan);
 
@@ -66,6 +69,8 @@ private:
     void onUserUnbanned(KickChannel *channel, BoostJsonObject data);
     void onMessageDeleted(KickChannel *channel, BoostJsonObject data);
     void onChatroomClear(KickChannel *channel, BoostJsonObject data);
+
+    void loadGlobalEmotesIfNeeded();
 
     boost::unordered_flat_map<uint64_t, std::weak_ptr<KickChannel>>
         channelsByRoomID;
@@ -78,6 +83,9 @@ private:
     KickLiveController liveController_;
 
     pajlada::Signals::SignalHolder signalHolder_;
+
+    std::shared_ptr<const EmoteMap> globalEmotes_;
+    bool loadingGlobalEmotes_ = false;
 
     friend class ChatServerListener;
     friend KickChannel;

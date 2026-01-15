@@ -11,6 +11,8 @@
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/kick/KickChannel.hpp"
+#include "providers/kick/KickChatServer.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -131,7 +133,18 @@ void EmoteSource::initializeFromChannel(const Channel *channel)
                 addEmotes(emotes, *seventv, "Channel 7TV");
             }
         }
+    }
 
+    const auto *kickChannel = dynamic_cast<const KickChannel *>(channel);
+    if (kickChannel)
+    {
+        addEmotes(emotes, *kickChannel->seventvEmotes(), "Channel 7TV");
+        addEmotes(emotes, *getApp()->getKickChatServer()->globalEmotes(),
+                  "Kick Emote");
+    }
+
+    if (channel->isTwitchOrKickChannel())
+    {
         if (auto bttvG = app->getBttvEmotes()->emotes())
         {
             addEmotes(emotes, *bttvG, "Global BetterTTV");
