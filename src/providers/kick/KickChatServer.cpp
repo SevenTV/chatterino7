@@ -13,6 +13,8 @@
 #include "util/BoostJsonWrap.hpp"
 #include "util/PostToThread.hpp"
 
+#include <QPointer>
+
 #include <utility>
 
 namespace {
