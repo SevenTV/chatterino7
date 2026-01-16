@@ -405,7 +405,8 @@ void KickChannel::setUserInfo(UserInit init)
         }
 
         auto *srv = getApp()->getKickChatServer();
-        srv->registerRoomID(this->roomID(), this->weakFromThis());
+        srv->registerRoomID(this->roomID(), this->channelID(),
+                            this->weakFromThis());
         srv->liveUpdates().joinRoom(this->roomID(), this->channelID());
     }
 

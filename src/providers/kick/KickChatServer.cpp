@@ -65,6 +65,17 @@ std::shared_ptr<KickChannel> KickChatServer::findByRoomID(uint64_t roomID) const
     return nullptr;
 }
 
+std::shared_ptr<KickChannel> KickChatServer::findByChannelID(
+    uint64_t channelID) const
+{
+    auto it = this->channelsByChannelID.find(channelID);
+    if (it != this->channelsByChannelID.end())
+    {
+        return it->second.lock();
+    }
+    return nullptr;
+}
+
 std::shared_ptr<KickChannel> KickChatServer::findByUserID(uint64_t userID) const
 {
     auto it = this->channelsByUserID.find(userID);
@@ -144,6 +155,10 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
     {
         this->channelsByRoomID[init.roomID] = chan;
     }
+    if (init.channelID != 0)
+    {
+        this->channelsByChannelID[init.channelID] = chan;
+    }
     this->signalHolder_.managedConnect(
         chan->userIDChanged, [this, weak{chan->weakFromThis()}] {
             auto chan = weak.lock();
@@ -158,8 +173,8 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
     return chan;
 }
 
-bool KickChatServer::onAppEvent(uint64_t roomID, std::string_view event,
-                                BoostJsonObject data)
+bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
+                                std::string_view event, BoostJsonObject data)
 {
     using Fn = void (KickChatServer::*)(KickChannel *, BoostJsonObject);
     auto fn = stringSwitch<Fn>(
@@ -199,10 +214,20 @@ bool KickChatServer::onAppEvent(uint64_t roomID, std::string_view event,
         return false;  // no handler
     }
 
-    auto channel = this->findByRoomID(roomID);
+    std::shared_ptr<KickChannel> channel;
+    if (roomID != 0)
+    {
+        channel = this->findByRoomID(roomID);
+    }
+    else
+    {
+        channel = this->findByChannelID(channelID);
+    }
+
     if (!channel)
     {
-        qCWarning(chatterinoKick) << "No channel found for room" << roomID;
+        qCWarning(chatterinoKick)
+            << "No channel found for room" << roomID << "channel" << channelID;
         return true;  // technically it's handled, we just don't have a channel
     }
 
@@ -287,7 +312,6 @@ void KickChatServer::onChatroomClear(KickChannel *channel,
 void KickChatServer::onPinnedMessageCreatedEvent(KickChannel *channel,
                                                  BoostJsonObject data)
 {
-    qCDebug(chatterinoKick) << *channel << "UNTESTED Pinned message created";
     channel->addMessage(KickMessageBuilder::makePinnedMessage(channel, data),
                         MessageContext::Original);
 }
@@ -309,8 +333,6 @@ void KickChatServer::onStreamHostEvent(KickChannel *channel,
 void KickChatServer::onSubscriptionEvent(KickChannel *channel,
                                          BoostJsonObject data)
 {
-    qCDebug(chatterinoKick) << *channel << "UNTESTED Sub";
-
     auto [first, second, alert] =
         KickMessageBuilder::makeSubscriptionMessage(channel, data);
     if (first)
@@ -430,10 +452,11 @@ void KickChatServer::loadGlobalEmotesIfNeeded()
         });
 }
 
-void KickChatServer::registerRoomID(uint64_t roomID,
+void KickChatServer::registerRoomID(uint64_t roomID, uint64_t channelID,
                                     std::weak_ptr<KickChannel> chan)
 {
-    this->channelsByRoomID[roomID] = std::move(chan);
+    this->channelsByRoomID[roomID] = chan;
+    this->channelsByChannelID[channelID] = std::move(chan);
 }
 
 void KickChatServer::initializeSeventvEventApi(SeventvEventAPI *api)

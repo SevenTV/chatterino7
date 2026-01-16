@@ -692,7 +692,7 @@ MessagePtrMut KickMessageBuilder::makeGiftedSubscriptionMessage(
     const auto gifted = data["gifted_usernames"].toArray();
     auto total = data["gifter_total"].toUint64();
 
-    if (gifted.size() == 0)
+    if (gifted.empty())
     {
         return nullptr;
     }
