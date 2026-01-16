@@ -17,7 +17,7 @@ modules:
   - name: boost
     buildsystem: simple
     build-commands:
-      - ./bootstrap.sh --prefix=/app --with-libraries=filesystem,locale,iostreams,program_options,regex,random,thread,headers,filesystem,container
+      - ./bootstrap.sh --prefix=/app --with-libraries=headers
       - ./b2 -j $FLATPAK_BUILDER_N_JOBS install link=static variant=release cxxflags='-fPIE
         -fstack-protector-strong -D_FORTIFY_SOURCE=2' --layout=system
     sources:
