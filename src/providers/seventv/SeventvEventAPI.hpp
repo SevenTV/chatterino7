@@ -39,11 +39,12 @@ public:
     ~SeventvEventAPI();
 
     struct {
-        Signal<seventv::eventapi::EmoteAddDispatch> emoteAdded;
-        Signal<seventv::eventapi::EmoteUpdateDispatch> emoteUpdated;
-        Signal<seventv::eventapi::EmoteRemoveDispatch> emoteRemoved;
-        Signal<seventv::eventapi::UserConnectionUpdateDispatch> userUpdated;
-        Signal<std::pair<QString, std::shared_ptr<const EmoteMap>>>
+        Signal<const seventv::eventapi::EmoteAddDispatch &> emoteAdded;
+        Signal<const seventv::eventapi::EmoteUpdateDispatch &> emoteUpdated;
+        Signal<const seventv::eventapi::EmoteRemoveDispatch &> emoteRemoved;
+        Signal<const seventv::eventapi::UserConnectionUpdateDispatch &>
+            userUpdated;
+        Signal<const std::pair<QString, std::shared_ptr<const EmoteMap>> &>
             personalEmoteSetAdded;
     } signals_;  // NOLINT(readability-identifier-naming)
 
