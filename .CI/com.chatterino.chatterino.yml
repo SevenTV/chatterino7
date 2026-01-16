@@ -53,6 +53,14 @@ modules:
       - -DLIB_INSTALL_DIR=/app/lib
       - -DBUILD_TRANSLATIONS=NO
       - -DBUILD_WITH_QT6=ON
+  - name: hunspell
+    buildsystem: autotools
+    make-install-args:
+      - PREFIX=/app
+    sources:
+      - type: archive
+        url: https://github.com/hunspell/hunspell/archive/refs/tags/v1.7.2.tar.gz
+        sha256: 69fa312d3586c988789266eaf7ffc9861d9f6396c31fc930a014d551b59bbd6e
   - name: chatterino
     buildsystem: cmake
     config-opts:
@@ -60,6 +68,7 @@ modules:
       - -DUSE_SYSTEM_QTKEYCHAIN=ON
       - -DBUILD_WITH_QT6=ON
       - -DCHATTERINO_UPDATER=OFF
+      - -DCHATTERINO_SPELLCHECK=On
     sources:
       - type: dir
         path: ..
