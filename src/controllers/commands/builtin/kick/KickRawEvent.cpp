@@ -16,11 +16,14 @@ QString debugKickRawEvent(const CommandContext &ctx)
 {
     if (!ctx.kickChannel)
     {
-        return u"Not a Kick channel."_s;
+        ctx.channel->addSystemMessage(u"Not a Kick channel."_s);
+        return {};
     }
     if (ctx.words.length() <= 2)
     {
-        return u"Usage: /debug-kick-raw-event <event-name> <event-data>"_s;
+        ctx.channel->addSystemMessage(
+            u"Usage: /debug-kick-raw-event <event-name> <event-data>"_s);
+        return {};
     }
 
     auto eventName = ctx.words.at(1).toStdString();

@@ -88,8 +88,15 @@ public:
     bool canSendMessage() const override;
     void sendMessage(const QString &message) override;
     void sendReply(const QString &message, const QString &replyToID);
+
+    void deleteMessage(const QString &messageID);
+
     bool isMod() const override;
+    void setMod(bool mod);
+
     bool isVip() const;
+    void setVip(bool vip);
+
     bool isBroadcaster() const override;
     bool hasModRights() const override;
     bool hasHighRateLimit() const override;
@@ -110,6 +117,8 @@ public:
     pajlada::Signals::NoArgSignal liveStatusChanged;
 
     pajlada::Signals::NoArgSignal userIDChanged;
+    pajlada::Signals::NoArgSignal userStateChanged;
+    pajlada::Signals::NoArgSignal roomModesChanged;
 
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
 

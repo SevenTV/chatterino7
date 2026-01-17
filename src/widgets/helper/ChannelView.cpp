@@ -22,6 +22,7 @@
 #include "messages/MessageElement.hpp"
 #include "messages/MessageThread.hpp"
 #include "providers/colors/ColorProvider.hpp"
+#include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/links/LinkInfo.hpp"
 #include "providers/links/LinkResolver.hpp"
@@ -2719,19 +2720,27 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
         }
     }
 
-    auto *twitchChannel =
-        dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get());
-    if (!layout->getMessage()->id.isEmpty() && twitchChannel &&
-        twitchChannel->hasModRights())
+    if (!layout->getMessage()->id.isEmpty() &&
+        this->underlyingChannel_->hasModRights())
     {
         menu->addSeparator();
         auto *moderateAction = menu->addAction("Mo&derate");
         auto *moderateMenu = new QMenu(menu);
         moderateAction->setMenu(moderateMenu);
         moderateMenu->addAction(
-            "&Delete message", [twitchChannel, id = layout->getMessage()->id] {
-                twitchChannel->deleteMessagesAs(
-                    id, getApp()->getAccounts()->twitch.getCurrent().get());
+            "&Delete message", [this, id = layout->getMessage()->id] {
+                auto *twitchChannel = dynamic_cast<TwitchChannel *>(
+                    this->underlyingChannel_.get());
+                if (twitchChannel)
+                {
+                    twitchChannel->deleteMessagesAs(
+                        id, getApp()->getAccounts()->twitch.getCurrent().get());
+                }
+                else if (auto *kc = dynamic_cast<KickChannel *>(
+                             this->underlyingChannel_.get()))
+                {
+                    kc->deleteMessage(id);
+                }
             });
     }
 

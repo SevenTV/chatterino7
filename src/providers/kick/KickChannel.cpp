@@ -259,14 +259,47 @@ void KickChannel::sendReply(const QString &message, const QString &replyToId)
         });
 }
 
+void KickChannel::deleteMessage(const QString &messageID)
+{
+    getKickApi()->deleteChatMessage(
+        messageID, [weak = this->weakFromThis()](const auto &res) {
+            auto self = weak.lock();
+            if (!self || res)
+            {
+                return;
+            }
+            self->addSystemMessage(u"Failed to delete message: " % res.error());
+        });
+}
+
 bool KickChannel::isMod() const
 {
     return this->isMod_;
 }
 
+void KickChannel::setMod(bool mod)
+{
+    if (this->isMod_ == mod)
+    {
+        return;
+    }
+    this->isMod_ = mod;
+    this->userStateChanged.invoke();
+}
+
 bool KickChannel::isVip() const
 {
     return this->isVip_;
+}
+
+void KickChannel::setVip(bool vip)
+{
+    if (this->isVip_ == vip)
+    {
+        return;
+    }
+    this->isVip_ = vip;
+    this->userStateChanged.invoke();
 }
 
 bool KickChannel::isBroadcaster() const

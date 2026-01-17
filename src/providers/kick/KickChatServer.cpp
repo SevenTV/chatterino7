@@ -2,7 +2,9 @@
 
 #include "Application.hpp"
 #include "common/QLogging.hpp"
+#include "controllers/accounts/AccountController.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/kick/KickMessageBuilder.hpp"
@@ -239,28 +241,30 @@ bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
 void KickChatServer::onChatMessage(KickChannel *channel, BoostJsonObject data)
 {
     auto [msg, highlight] = KickMessageBuilder::makeChatMessage(channel, data);
-    if (msg)
+    if (!msg)
     {
-        channel->applySimilarityFilters(msg);
-
-        if (!msg->flags.has(MessageFlag::Similar) ||
-            (!getSettings()->hideSimilar &&
-             getSettings()->shownSimilarTriggerHighlights))
-        {
-            MessageBuilder::triggerHighlights(channel, highlight);
-        }
-
-        const auto highlighted = msg->flags.has(MessageFlag::Highlighted);
-        const auto showInMentions = msg->flags.has(MessageFlag::ShowInMentions);
-
-        if (highlighted && showInMentions)
-        {
-            // yes, we add this to the Twitch channel
-            getApp()->getTwitch()->getMentionsChannel()->addMessage(
-                msg, MessageContext::Original);
-        }
-        channel->addMessage(msg, MessageContext::Original);
+        return;
     }
+
+    channel->applySimilarityFilters(msg);
+
+    if (!msg->flags.has(MessageFlag::Similar) ||
+        (!getSettings()->hideSimilar &&
+         getSettings()->shownSimilarTriggerHighlights))
+    {
+        MessageBuilder::triggerHighlights(channel, highlight);
+    }
+
+    const auto highlighted = msg->flags.has(MessageFlag::Highlighted);
+    const auto showInMentions = msg->flags.has(MessageFlag::ShowInMentions);
+
+    if (highlighted && showInMentions)
+    {
+        // yes, we add this to the Twitch channel
+        getApp()->getTwitch()->getMentionsChannel()->addMessage(
+            msg, MessageContext::Original);
+    }
+    channel->addMessage(msg, MessageContext::Original);
 }
 
 void KickChatServer::onUserBanned(KickChannel *channel, BoostJsonObject data)

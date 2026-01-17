@@ -52,7 +52,7 @@ public:
 
 private:
     void appendChannelName();
-    void appendUsername(BoostJsonObject senderObj, BoostJsonObject identityObj);
+    void appendUsername(BoostJsonObject identityObj);
     void appendUsernameAsSender(const QString &username);
     void appendMentionedUser(const QString &username, QString &text,
                              bool trailingSpace = true);

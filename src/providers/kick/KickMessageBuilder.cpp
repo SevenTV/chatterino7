@@ -12,6 +12,7 @@
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickBadges.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/kick/KickEmotes.hpp"
@@ -305,6 +306,8 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
 
 void appendKickBadges(KickMessageBuilder &builder, BoostJsonArray badges)
 {
+    bool hasMod = false;
+    bool hasVip = false;
     for (auto badgeObj : badges)
     {
         auto ty = badgeObj["type"].toStringView();
@@ -313,7 +316,25 @@ void appendKickBadges(KickMessageBuilder &builder, BoostJsonArray badges)
         {
             continue;
         }
+
+        if (ty == "moderator")
+        {
+            hasMod = true;
+        }
+        else if (ty == "vip")
+        {
+            hasVip = true;
+        }
+
         builder.emplace<BadgeElement>(emote, flag);
+    }
+
+    bool isSelf = builder->loginName ==
+                  getApp()->getAccounts()->kick.current()->username();
+    if (isSelf)
+    {
+        builder.channel()->setMod(hasMod);
+        builder.channel()->setVip(hasVip);
     }
 }
 
@@ -405,7 +426,8 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     builder->serverReceivedTime =
         QDateTime::fromString(createdAt, Qt::DateFormat::ISODate);
     builder->parseTime = QTime::currentTime();
-    builder->loginName = sender["slug"].toQString();
+    builder->displayName = sender["username"].toQString();
+    builder->loginName = builder->displayName.toLower();
     builder->userID = QString::number(sender["id"].toUint64());
 
     if (data["type"].toStringView() == "reply")
@@ -421,7 +443,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     appendKickBadges(builder, identity["badges"].toArray());
     // FIXME: append seventv badges
 
-    builder.appendUsername(sender, identity);
+    builder.appendUsername(identity);
     kickChannel->setUserColor(builder->displayName, builder->usernameColor);
     kickChannel->addRecentChatter(builder->displayName);
 
@@ -847,11 +869,8 @@ void KickMessageBuilder::appendChannelName()
         ->setLink(link);
 }
 
-void KickMessageBuilder::appendUsername(BoostJsonObject senderObj,
-                                        BoostJsonObject identityObj)
+void KickMessageBuilder::appendUsername(BoostJsonObject identityObj)
 {
-    this->message().displayName = senderObj["username"].toQString();
-
     QString usernameText = displayedUsername(this->message()) + ':';
 
     auto userColor = QColor::fromString(identityObj["color"].toStringView());
