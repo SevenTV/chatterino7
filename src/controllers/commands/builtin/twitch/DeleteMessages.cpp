@@ -16,7 +16,6 @@
 
 #include <QUuid>
 
-
 namespace {
 
 using namespace chatterino;
