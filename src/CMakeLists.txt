@@ -79,6 +79,8 @@ set(SOURCE_FILES
         controllers/commands/builtin/chatterino/Debugging.hpp
         controllers/commands/builtin/Misc.cpp
         controllers/commands/builtin/Misc.hpp
+        controllers/commands/builtin/kick/KickRawEvent.cpp
+        controllers/commands/builtin/kick/KickRawEvent.hpp
         controllers/commands/builtin/twitch/AddModerator.cpp
         controllers/commands/builtin/twitch/AddModerator.hpp
         controllers/commands/builtin/twitch/AddVIP.cpp

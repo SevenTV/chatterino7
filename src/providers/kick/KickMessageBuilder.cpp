@@ -721,7 +721,7 @@ MessagePtrMut KickMessageBuilder::makeGiftedSubscriptionMessage(
                     builder->elements.back()->setTrailingSpace(true);
                     text.append(' ');
                 }
-                builder.appendOrEmplaceSystemTextAndUpdate(text, text);
+                builder.appendOrEmplaceSystemTextAndUpdate(toAdd, text);
             }
             else
             {
@@ -753,9 +753,17 @@ MessagePtrMut KickMessageBuilder::makeRewardRedeemedMessage(
     builder->flags.set(MessageFlag::RedeemedChannelPointReward);
 
     QString text;
-    builder.appendMentionedUser(username, text);
-    builder.appendOrEmplaceText(u"redeemed"_s, MessageColor::Text);
-    text += u" redeemed ";
+    if (userInput.isEmpty())
+    {
+        builder.appendMentionedUser(username, text);
+        builder.appendOrEmplaceText(u"redeemed"_s, MessageColor::Text);
+        text += u" redeemed ";
+    }
+    else
+    {
+        builder.appendOrEmplaceText(u"Redeemed"_s, MessageColor::Text);
+        text += u"Redeemed ";
+    }
     builder.emplace<TextElement>(reward, MessageElementFlag::Text,
                                  MessageColor::Text, FontStyle::ChatMediumBold);
     text += reward;
@@ -792,9 +800,17 @@ MessagePtrMut KickMessageBuilder::makeKicksGiftedMessage(KickChannel *channel,
     builder->flags.set(MessageFlag::RedeemedChannelPointReward);
 
     QString text;
-    builder.appendMentionedUser(username, text);
-    builder.appendOrEmplaceText(u"gifted"_s, MessageColor::Text);
-    text += u" gifted "_s;
+    if (userInput.isEmpty())
+    {
+        builder.appendMentionedUser(username, text);
+        builder.appendOrEmplaceText(u"gifted"_s, MessageColor::Text);
+        text += u" gifted ";
+    }
+    else
+    {
+        builder.appendOrEmplaceText(u"Gifted"_s, MessageColor::Text);
+        text += u"Gifted ";
+    }
     builder.emplace<TextElement>(giftName, MessageElementFlag::Text,
                                  MessageColor::Text, FontStyle::ChatMediumBold);
     QString kickInfo =

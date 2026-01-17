@@ -325,7 +325,6 @@ void KickChatServer::onPinnedMessageDeletedEvent(KickChannel *channel,
 void KickChatServer::onStreamHostEvent(KickChannel *channel,
                                        BoostJsonObject data)
 {
-    qCDebug(chatterinoKick) << *channel << "UNTESTED Stream host";
     channel->addMessage(KickMessageBuilder::makeHostMessage(channel, data),
                         MessageContext::Original);
 }
@@ -346,8 +345,6 @@ void KickChatServer::onSubscriptionEvent(KickChannel *channel,
 void KickChatServer::onGiftedSubscriptionEvent(KickChannel *channel,
                                                BoostJsonObject data)
 {
-    qCDebug(chatterinoKick) << *channel << "UNTESTED Gift";
-
     auto msg = KickMessageBuilder::makeGiftedSubscriptionMessage(channel, data);
     if (msg)
     {
@@ -368,8 +365,6 @@ void KickChatServer::onRewardRedeemedEvent(KickChannel *channel,
 void KickChatServer::onKicksGiftedEvent(KickChannel *channel,
                                         BoostJsonObject data)
 {
-    qCDebug(chatterinoKick) << *channel << "UNTESTED Kicks";
-
     auto msg = KickMessageBuilder::makeKicksGiftedMessage(channel, data);
     if (msg)
     {
