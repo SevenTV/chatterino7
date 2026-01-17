@@ -331,7 +331,7 @@ void KickApi::banUser(uint64_t broadcasterUserID, uint64_t userID,
     };
     if (duration)
     {
-        json.insert("duration"_L1, duration->count());
+        json.insert("duration"_L1, static_cast<qint64>(duration->count()));
     }
     if (!reason.isEmpty())
     {
