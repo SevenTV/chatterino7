@@ -14,7 +14,6 @@
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 
-
 namespace {
 
 using namespace chatterino;
