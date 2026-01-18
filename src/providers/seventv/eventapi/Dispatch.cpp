@@ -130,7 +130,7 @@ EntitlementCreateDeleteDispatch::EntitlementCreateDeleteDispatch(
             this->twitchUserID = connection["id"].toString();
             this->twitchUserName = connection["username"].toString();
         }
-        else
+        else if (platform == u"KICK")
         {
             this->kickUserID = connection["id"].toString().toULongLong();
             this->kickUserName = connection["username"].toString().toLower();
@@ -140,10 +140,12 @@ EntitlementCreateDeleteDispatch::EntitlementCreateDeleteDispatch(
 
 bool EntitlementCreateDeleteDispatch::validate() const
 {
-    return ((!this->twitchUserID.isEmpty() &&
-             !this->twitchUserName.isEmpty()) ||
-            (this->kickUserID != 0 && !this->kickUserName.isEmpty())) &&
-           !this->refID.isEmpty() && this->kind != CosmeticKind::INVALID;
+    bool hasTwitch =
+        !this->twitchUserID.isEmpty() && !this->twitchUserName.isEmpty();
+    bool hasKick = this->kickUserID != 0 && !this->kickUserName.isEmpty();
+
+    return (hasTwitch || hasKick) && !this->refID.isEmpty() &&
+           this->kind != CosmeticKind::INVALID;
 }
 
 EmoteSetCreateDispatch::EmoteSetCreateDispatch(const QJsonObject &emoteSet)

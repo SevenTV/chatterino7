@@ -39,6 +39,7 @@ std::optional<std::shared_ptr<const EmoteMap>>
 {
     std::unique_lock<std::shared_mutex> lock(this->mutex_);
 
+    int64_t additions = 0;
     if (!userTwitchID.isEmpty())
     {
         auto &twitch = this->twitchEmoteSets_[userTwitchID];
@@ -49,6 +50,7 @@ std::optional<std::shared_ptr<const EmoteMap>>
             return std::nullopt;
         }
         twitch.append(emoteSetID);
+        additions++;
     }
     if (userKickID != 0)
     {
@@ -58,9 +60,10 @@ std::optional<std::shared_ptr<const EmoteMap>>
             return std::nullopt;
         }
         kick.append(emoteSetID);
+        additions++;
     }
 
-    DebugCount::increase(u"7TV Personal Emote Assignments"_s);
+    DebugCount::increase(u"7TV Personal Emote Assignments"_s, additions);
 
     auto set = this->emoteSets_.find(emoteSetID);
     if (set == this->emoteSets_.end())
