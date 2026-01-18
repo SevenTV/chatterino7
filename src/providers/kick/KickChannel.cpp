@@ -46,8 +46,11 @@ KickChannel::~KickChannel()
     {
         app->getKickChatServer()->liveUpdates().leaveRoom(this->roomID(),
                                                           this->channelID());
-        app->getSeventvEventAPI()->unsubscribeKickChannel(
-            QString::number(this->userID()));
+        auto *eventApi = app->getSeventvEventAPI();
+        if (eventApi)
+        {
+            eventApi->unsubscribeKickChannel(QString::number(this->userID()));
+        }
     }
 }
 
