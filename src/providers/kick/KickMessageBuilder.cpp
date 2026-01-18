@@ -16,7 +16,9 @@
 #include "providers/kick/KickBadges.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/kick/KickEmotes.hpp"
+#include "providers/seventv/SeventvBadges.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
+#include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
 #include "singletons/Settings.hpp"
@@ -30,7 +32,8 @@ namespace {
 using namespace chatterino;
 using namespace Qt::Literals;
 
-EmotePtr lookupEmote(const KickChannel &channel, QStringView word)
+EmotePtr lookupEmote(const KickChannel &channel, uint64_t senderID,
+                     QStringView word)
 {
     EmoteName wordStr(word.toString());  // FIXME: don't do this...
     const auto *globalFfzEmotes = getApp()->getFfzEmotes();
@@ -38,6 +41,13 @@ EmotePtr lookupEmote(const KickChannel &channel, QStringView word)
     const auto *globalSeventvEmotes = getApp()->getSeventvEmotes();
 
     EmotePtr emote;
+
+    emote = getApp()->getSeventvPersonalEmotes()->getEmoteForKickUser(senderID,
+                                                                      wordStr);
+    if (emote)
+    {
+        return emote;
+    }
 
     emote = channel.seventvEmote(wordStr);
     if (emote)
@@ -69,7 +79,7 @@ EmotePtr lookupEmote(const KickChannel &channel, QStringView word)
 
 void appendWord(KickMessageBuilder &builder, QStringView word)
 {
-    auto emote = lookupEmote(*builder.channel(), word);
+    auto emote = lookupEmote(*builder.channel(), builder.senderID, word);
     if (emote)
     {
         builder.appendEmote(emote);
@@ -338,6 +348,15 @@ void appendKickBadges(KickMessageBuilder &builder, BoostJsonArray badges)
     }
 }
 
+void appendSeventvBadge(KickMessageBuilder &builder)
+{
+    auto badge = getApp()->getSeventvBadges()->getKickBadge(builder.senderID);
+    if (badge)
+    {
+        builder.emplace<BadgeElement>(*badge, MessageElementFlag::BadgeSevenTV);
+    }
+}
+
 HighlightAlert processHighlights(KickMessageBuilder &builder,
                                  const MessageParseArgs &args)
 {
@@ -428,7 +447,8 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     builder->parseTime = QTime::currentTime();
     builder->displayName = sender["username"].toQString();
     builder->loginName = builder->displayName.toLower();
-    builder->userID = QString::number(sender["id"].toUint64());
+    builder.senderID = sender["id"].toUint64();
+    builder->userID = QString::number(builder.senderID);
 
     if (data["type"].toStringView() == "reply")
     {
@@ -441,7 +461,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     builder.emplace<TwitchModerationElement>();
 
     appendKickBadges(builder, identity["badges"].toArray());
-    // FIXME: append seventv badges
+    appendSeventvBadge(builder);
 
     builder.appendUsername(identity);
     kickChannel->setUserColor(builder->displayName, builder->usernameColor);
@@ -875,7 +895,11 @@ void KickMessageBuilder::appendUsername(BoostJsonObject identityObj)
 
     auto userColor = QColor::fromString(identityObj["color"].toStringView());
     this->message().usernameColor = userColor;
-    this->emplace<TextElement>(usernameText, MessageElementFlag::Username,
+    this->emplace<TextElement>(usernameText,
+                               MessageElementFlags{
+                                   MessageElementFlag::Username,
+                                   MessageElementFlag::KickUsername,
+                               },
                                userColor, FontStyle::ChatMediumBold)
         ->setLink({Link::UserInfo, this->message().displayName});
 }
@@ -888,7 +912,11 @@ void KickMessageBuilder::appendUsernameAsSender(const QString &username)
     {
         userMessageColor = MessageColor::Text;
     }
-    this->emplace<TextElement>(username + ':', MessageElementFlag::Username,
+    this->emplace<TextElement>(username + ':',
+                               MessageElementFlags{
+                                   MessageElementFlag::Username,
+                                   MessageElementFlag::KickUsername,
+                               },
                                userMessageColor, FontStyle::ChatMediumBold)
         ->setLink({Link::UserInfo, username});
 }
@@ -899,6 +927,7 @@ void KickMessageBuilder::appendMentionedUser(const QString &username,
     auto *el =
         this->emplace<MentionElement>(username, username, MessageColor::System,
                                       this->channel()->getUserColor(username));
+    el->addFlags(MessageElementFlag::KickUsername);
     text.append(username);
 
     if (trailingSpace)

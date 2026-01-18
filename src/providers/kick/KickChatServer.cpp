@@ -166,6 +166,8 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
             {
                 this->channelsByUserID[chan->userID()] = weak;
                 this->liveController_.queueNewChannel(chan->userID());
+                getApp()->getSeventvEventAPI()->subscribeKickChannel(
+                    QString::number(chan->userID()));
             }
         });
     chan->initialize(init);
@@ -504,9 +506,13 @@ void KickChatServer::initializeSeventvEventApi(SeventvEventAPI *api)
         api->signals_.personalEmoteSetAdded, [&](const auto &data) {
             postToThread(
                 [this, data] {
+                    if (data.kickUserName.isEmpty())
+                    {
+                        return;
+                    }
                     this->forEachChannel([data](auto &chan) {
-                        chan.upsertPersonalSeventvEmotes(data.first,
-                                                         data.second);
+                        chan.upsertPersonalSeventvEmotes(data.kickUserName,
+                                                         data.emoteSet);
                     });
                 },
                 this);

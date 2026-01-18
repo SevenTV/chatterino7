@@ -38,14 +38,19 @@ public:
                         std::chrono::milliseconds(25000));
     ~SeventvEventAPI();
 
+    struct PersonalEmoteSetAdded {
+        QString twitchUserName;
+        QString kickUserName;
+        std::shared_ptr<const EmoteMap> emoteSet;
+    };
+
     struct {
         Signal<const seventv::eventapi::EmoteAddDispatch &> emoteAdded;
         Signal<const seventv::eventapi::EmoteUpdateDispatch &> emoteUpdated;
         Signal<const seventv::eventapi::EmoteRemoveDispatch &> emoteRemoved;
         Signal<const seventv::eventapi::UserConnectionUpdateDispatch &>
             userUpdated;
-        Signal<const std::pair<QString, std::shared_ptr<const EmoteMap>> &>
-            personalEmoteSetAdded;
+        Signal<const PersonalEmoteSetAdded &> personalEmoteSetAdded;
     } signals_;  // NOLINT(readability-identifier-naming)
 
     /**
@@ -63,6 +68,10 @@ public:
      * @param id Twitch channel id
      */
     void subscribeTwitchChannel(const QString &id);
+    void subscribeKickChannel(const QString &id);
+
+    void subscribePlatformChannel(const QString &userID,
+                                  const QString &platform);
 
     /** Unsubscribes from a user by its 7TV user id */
     void unsubscribeUser(const QString &id);
@@ -70,6 +79,10 @@ public:
     void unsubscribeEmoteSet(const QString &id);
     /** Unsubscribes from cosmetics and entitlements in a Twitch channel */
     void unsubscribeTwitchChannel(const QString &id);
+    void unsubscribeKickChannel(const QString &id);
+
+    void unsubscribePlatformChannel(const QString &userID,
+                                    const QString &platform);
 
     /// Stop the manager
     ///

@@ -50,6 +50,8 @@ public:
         return this->channel_;
     }
 
+    uint64_t senderID = 0;
+
 private:
     void appendChannelName();
     void appendUsername(BoostJsonObject identityObj);

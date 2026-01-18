@@ -24,27 +24,58 @@ std::optional<EmotePtr> BadgeRegistry::getBadge(const UserId &id) const
     return std::nullopt;
 }
 
+std::optional<EmotePtr> BadgeRegistry::getKickBadge(uint64_t id) const
+{
+    std::shared_lock lock(this->mutex_);
+
+    auto it = this->kickBadgeMap_.find(id);
+    if (it != this->kickBadgeMap_.end())
+    {
+        return it->second;
+    }
+    return std::nullopt;
+}
+
 void BadgeRegistry::assignBadgeToUser(const QString &badgeID,
-                                      const UserId &userID)
+                                      const UserId &userID, uint64_t kickUserID)
 {
     const std::unique_lock lock(this->mutex_);
 
     const auto badgeIt = this->knownBadges_.find(badgeID);
     if (badgeIt != this->knownBadges_.end())
     {
-        this->badgeMap_[userID.string] = badgeIt->second;
+        if (!userID.string.isEmpty())
+        {
+            this->badgeMap_[userID.string] = badgeIt->second;
+        }
+        if (kickUserID != 0)
+        {
+            this->kickBadgeMap_[kickUserID] = badgeIt->second;
+        }
     }
 }
 
 void BadgeRegistry::clearBadgeFromUser(const QString &badgeID,
-                                       const UserId &userID)
+                                       const UserId &userID,
+                                       uint64_t kickUserID)
 {
     const std::unique_lock lock(this->mutex_);
 
-    const auto it = this->badgeMap_.find(userID.string);
-    if (it != this->badgeMap_.end() && it->second->id.string == badgeID)
+    if (!userID.string.isEmpty())
     {
-        this->badgeMap_.erase(userID.string);
+        const auto it = this->badgeMap_.find(userID.string);
+        if (it != this->badgeMap_.end() && it->second->id.string == badgeID)
+        {
+            this->badgeMap_.erase(userID.string);
+        }
+    }
+    if (kickUserID != 0)
+    {
+        const auto it = this->kickBadgeMap_.find(kickUserID);
+        if (it != this->kickBadgeMap_.end() && it->second->id.string == badgeID)
+        {
+            this->kickBadgeMap_.erase(kickUserID);
+        }
     }
 }
 

@@ -18,18 +18,23 @@ public:
     SeventvPaints();
 
     void addPaint(const QJsonObject &paintJson);
-    void assignPaintToUser(const QString &paintID, const UserName &userName);
-    void clearPaintFromUser(const QString &paintID, const UserName &userName);
+    void assignPaintToUser(const QString &paintID,
+                           const UserName &twitchUserName,
+                           const UserName &kickUserName);
+    void clearPaintFromUser(const QString &paintID,
+                            const UserName &twitchUserName,
+                            const UserName &kickUserName);
 
-    std::optional<std::shared_ptr<Paint>> getPaint(
-        const QString &userName) const;
+    std::shared_ptr<Paint> getPaint(const QString &userName, bool kick) const;
 
 private:
     // Mutex for both `paintMap_` and `knownPaints_`
     mutable std::shared_mutex mutex_;
 
     // user-name => paint
-    std::unordered_map<QString, std::shared_ptr<Paint>> paintMap_;
+    std::unordered_map<QString, std::shared_ptr<Paint>> kickPaintMap_;
+    // user-name => paint
+    std::unordered_map<QString, std::shared_ptr<Paint>> twitchPaintMap_;
     // paint-id => paint
     std::unordered_map<QString, std::shared_ptr<Paint>> knownPaints_;
 };

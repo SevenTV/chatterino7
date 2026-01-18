@@ -7,6 +7,7 @@
 #include "common/ChatterSet.hpp"
 #include "common/UniqueAccess.hpp"
 #include "lrucache/lrucache.hpp"
+#include "messages/MessageElement.hpp"
 #include "util/QStringHash.hpp"
 
 #include <QColor>
@@ -36,6 +37,13 @@ public:
     // NOTE: This function is only meant to be used in tests and benchmarks
     size_t colorsSize() const;
 
+    MessageElementFlag mentionFlag() const
+    {
+        return this->mentionFlags_;
+    }
+
+    void setMentionFlag(MessageElementFlag flag);
+
     static constexpr int maxChatterColorCount = 5000;
 
 private:
@@ -50,6 +58,8 @@ private:
     bool joinedUsersMergeQueued_ = false;
     UniqueAccess<QStringList> partedUsers_;
     bool partedUsersMergeQueued_ = false;
+
+    MessageElementFlag mentionFlags_ = MessageElementFlag::None;
 
     QObject lifetimeGuard_;
 };

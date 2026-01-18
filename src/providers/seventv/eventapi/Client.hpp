@@ -53,7 +53,8 @@ private:
     SeventvEventAPI &manager_;
 
     struct LastPersonalEmoteAssignment {
-        QString userName;
+        QString twitchUserName;
+        QString kickUserName;
         QString emoteSetID;
         std::shared_ptr<const EmoteMap> emoteSet;
     };

@@ -120,6 +120,11 @@ size_t ChannelChatters::colorsSize() const
     return size;
 }
 
+void ChannelChatters::setMentionFlag(MessageElementFlag flag)
+{
+    this->mentionFlags_ = flag;
+}
+
 QColor ChannelChatters::getUserColor(const QString &user) const
 {
     const auto chatterColors = this->chatterColors_.access();

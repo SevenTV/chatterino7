@@ -83,8 +83,10 @@ struct CosmeticCreateDispatch {
 
 struct EntitlementCreateDeleteDispatch {
     /** id of the user */
-    QString userID;
-    QString userName;
+    QString twitchUserID;
+    QString twitchUserName;
+    uint64_t kickUserID;
+    QString kickUserName;
     /** id of the entitlement */
     QString refID;
     CosmeticKind kind;

@@ -138,6 +138,7 @@ private:
     bool checkMessageRatelimit();
 
     QString prepareMessage(const QString &message) const;
+    void updateSevenTVActivity();
 
     void addLoginMessage();
 
@@ -162,6 +163,7 @@ private:
     std::weak_ptr<const Message> lastSeventvMessage_;
     /// A list of the emotes listed in the lat 7TV emote update message.
     std::vector<QString> lastSeventvEmoteNames_;
+    QDateTime nextSeventvActivity_;
 
     std::queue<std::chrono::steady_clock::time_point> lastMessageTimestamps_;
     std::chrono::steady_clock::time_point lastMessageSpeedErrorTs_;
