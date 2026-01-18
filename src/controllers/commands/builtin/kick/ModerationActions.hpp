@@ -16,7 +16,7 @@ QString doKickBan(const CommandContext &ctx);
 /// /timeout (Kick)
 QString doKickTimeout(const CommandContext &ctx);
 
-/// /unbanban (Kick)
+/// /unban (Kick)
 QString doKickUnban(const CommandContext &ctx);
 
 /// /delete (Kick)

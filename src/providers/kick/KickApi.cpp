@@ -55,16 +55,9 @@ void callDeserialize(auto &&cb, BoostJsonValue data)
 }
 
 template <std::same_as<void> T>
-void callDeserialize(auto &&cb, BoostJsonValue data)
+void callDeserialize(auto &&cb, BoostJsonValue /* data */)
 {
-    if (data.isObject())
-    {
-        cb(ExpectedStr<void>{});
-    }
-    else
-    {
-        cb(makeUnexpected(u"'data' is not an object"_s));
-    }
+    cb(ExpectedStr<void>{});
 }
 
 template <IsCollection T>
