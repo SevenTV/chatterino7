@@ -21,7 +21,6 @@
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "widgets/splits/InputCompletionItem.hpp"
 
-
 namespace chatterino::completion {
 
 namespace {
