@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <shared_mutex>
+#include <span>
 #include <unordered_map>
 
 namespace chatterino {
