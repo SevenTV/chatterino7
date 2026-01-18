@@ -139,8 +139,9 @@ void EmoteSource::initializeFromChannel(const Channel *channel)
     const auto *kickChannel = dynamic_cast<const KickChannel *>(channel);
     if (kickChannel)
     {
-        auto list = app->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
-            app->getAccounts()->kick.current()->userID());
+        const auto list =
+            app->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
+                app->getAccounts()->kick.current()->userID());
         for (const auto &map : list)
         {
             addEmotes(emotes, *map, "Personal 7TV");
