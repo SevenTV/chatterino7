@@ -201,7 +201,7 @@ void openStreamlinkForChannel(const QString &channel, QStringView prefixURL)
         }
     }
 
-    QString channelURL = prefixURL + channel;
+    QString channelURL = prefixURL % channel;
 
     auto preferredQuality = getSettings()->preferredQuality.getEnum();
 
