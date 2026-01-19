@@ -11,6 +11,7 @@
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
@@ -113,7 +114,7 @@ void EmoteSource::initializeFromChannel(const Channel *channel)
             addEmotes(emotes, **user->accessEmotes(), "Twitch Emote");
 
             for (const auto &map :
-                 app->getSeventvPersonalEmotes()->getEmoteSetsForUser(
+                 app->getSeventvPersonalEmotes()->getEmoteSetsForTwitchUser(
                      app->getAccounts()->twitch.getCurrent()->getUserId()))
             {
                 addEmotes(emotes, *map, "Personal 7TV");
@@ -138,6 +139,14 @@ void EmoteSource::initializeFromChannel(const Channel *channel)
     const auto *kickChannel = dynamic_cast<const KickChannel *>(channel);
     if (kickChannel)
     {
+        const auto list =
+            app->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
+                app->getAccounts()->kick.current()->userID());
+        for (const auto &map : list)
+        {
+            addEmotes(emotes, *map, "Personal 7TV");
+        }
+
         addEmotes(emotes, *kickChannel->seventvEmotes(), "Channel 7TV");
         addEmotes(emotes, *getApp()->getKickChatServer()->globalEmotes(),
                   "Kick Emote");

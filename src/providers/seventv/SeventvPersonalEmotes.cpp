@@ -1,6 +1,5 @@
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 
-#include "common/Literals.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "singletons/Settings.hpp"
 #include "util/DebugCount.hpp"
@@ -11,7 +10,7 @@
 
 namespace chatterino {
 
-using namespace literals;
+using namespace Qt::Literals;
 
 SeventvPersonalEmotes::SeventvPersonalEmotes()
 {
@@ -35,18 +34,36 @@ void SeventvPersonalEmotes::createEmoteSet(const QString &id)
 
 std::optional<std::shared_ptr<const EmoteMap>>
     SeventvPersonalEmotes::assignUserToEmoteSet(const QString &emoteSetID,
-                                                const QString &userTwitchID)
+                                                const QString &userTwitchID,
+                                                uint64_t userKickID)
 {
     std::unique_lock<std::shared_mutex> lock(this->mutex_);
 
-    auto &list = this->userEmoteSets_[userTwitchID];
-
-    if (list.contains(emoteSetID))
+    int64_t additions = 0;
+    if (!userTwitchID.isEmpty())
     {
-        return std::nullopt;
+        auto &twitch = this->twitchEmoteSets_[userTwitchID];
+        // checking for one is enough because we always update both
+        // ...unless the user changed their connections
+        if (twitch.contains(emoteSetID))
+        {
+            return std::nullopt;
+        }
+        twitch.append(emoteSetID);
+        additions++;
     }
-    list.append(emoteSetID);
-    DebugCount::increase(u"7TV Personal Emote Assignments"_s);
+    if (userKickID != 0)
+    {
+        auto &kick = this->kickEmoteSets_[userKickID];
+        if (kick.contains(emoteSetID))
+        {
+            return std::nullopt;
+        }
+        kick.append(emoteSetID);
+        additions++;
+    }
+
+    DebugCount::increase(u"7TV Personal Emote Assignments"_s, additions);
 
     auto set = this->emoteSets_.find(emoteSetID);
     if (set == this->emoteSets_.end())
@@ -95,9 +112,8 @@ void SeventvPersonalEmotes::updateEmoteSet(
     }
 }
 
-void SeventvPersonalEmotes::addEmoteSetForUser(const QString &emoteSetID,
-                                               EmoteMap &&map,
-                                               const QString &userTwitchID)
+void SeventvPersonalEmotes::addEmoteSetForTwitchUser(
+    const QString &emoteSetID, EmoteMap &&map, const QString &userTwitchID)
 {
     std::unique_lock<std::shared_mutex> lock(this->mutex_);
     bool added = this->emoteSets_
@@ -108,7 +124,24 @@ void SeventvPersonalEmotes::addEmoteSetForUser(const QString &emoteSetID,
     {
         DebugCount::increase(u"7TV Personal Emote Sets"_s);
     }
-    this->userEmoteSets_[userTwitchID].append(emoteSetID);
+    this->twitchEmoteSets_[userTwitchID].append(emoteSetID);
+    DebugCount::increase(u"7TV Personal Emote Assignments"_s);
+}
+
+void SeventvPersonalEmotes::addEmoteSetForKickUser(const QString &emoteSetID,
+                                                   EmoteMap &&map,
+                                                   uint64_t kickUserID)
+{
+    std::unique_lock<std::shared_mutex> lock(this->mutex_);
+    bool added = this->emoteSets_
+                     .emplace(emoteSetID,
+                              std::make_shared<const EmoteMap>(std::move(map)))
+                     .second;
+    if (added)
+    {
+        DebugCount::increase(u"7TV Personal Emote Sets"_s);
+    }
+    this->kickEmoteSets_[kickUserID].append(emoteSetID);
     DebugCount::increase(u"7TV Personal Emote Assignments"_s);
 }
 
@@ -119,7 +152,8 @@ bool SeventvPersonalEmotes::hasEmoteSet(const QString &id) const
 }
 
 QList<std::shared_ptr<const EmoteMap>>
-    SeventvPersonalEmotes::getEmoteSetsForUser(const QString &userID) const
+    SeventvPersonalEmotes::getEmoteSetsForTwitchUser(
+        const QString &userID) const
 {
     std::shared_lock<std::shared_mutex> lock(this->mutex_);
     if (!this->enabled_)
@@ -127,28 +161,34 @@ QList<std::shared_ptr<const EmoteMap>>
         return {};
     }
 
-    auto ids = this->userEmoteSets_.find(userID);
-    if (ids == this->userEmoteSets_.end())
+    auto ids = this->twitchEmoteSets_.find(userID);
+    if (ids == this->twitchEmoteSets_.end())
     {
         return {};
     }
 
-    QList<std::shared_ptr<const EmoteMap>> sets;
-    sets.reserve(ids->second.length());
-    for (const auto &id : ids->second)
-    {
-        auto set = this->emoteSets_.find(id);
-        if (set == this->emoteSets_.end())
-        {
-            continue;
-        }
-        sets.append(set->second.get());  // copy the shared_ptr
-    }
-
-    return sets;
+    return this->collectEmoteSets(ids->second);
 }
 
-std::optional<EmotePtr> SeventvPersonalEmotes::getEmoteForUser(
+QList<std::shared_ptr<const EmoteMap>>
+    SeventvPersonalEmotes::getEmoteSetsForKickUser(uint64_t userID) const
+{
+    std::shared_lock<std::shared_mutex> lock(this->mutex_);
+    if (!this->enabled_)
+    {
+        return {};
+    }
+
+    auto ids = this->kickEmoteSets_.find(userID);
+    if (ids == this->kickEmoteSets_.end())
+    {
+        return {};
+    }
+
+    return this->collectEmoteSets(ids->second);
+}
+
+EmotePtr SeventvPersonalEmotes::getEmoteForTwitchUser(
     const QString &userID, const EmoteName &emoteName) const
 {
     std::shared_lock<std::shared_mutex> lock(this->mutex_);
@@ -157,30 +197,31 @@ std::optional<EmotePtr> SeventvPersonalEmotes::getEmoteForUser(
         return {};
     }
 
-    auto ids = this->userEmoteSets_.find(userID);
-    if (ids == this->userEmoteSets_.end())
+    auto ids = this->twitchEmoteSets_.find(userID);
+    if (ids == this->twitchEmoteSets_.end())
     {
         return {};
     }
 
-    for (const auto &id : ids->second)
-    {
-        auto setIt = this->emoteSets_.find(id);
-        if (setIt == this->emoteSets_.end())
-        {
-            continue;  // set doesn't exist
-        }
+    return this->findInEmoteSets(ids->second, emoteName);
+}
 
-        const auto &set = setIt->second.get();
-        auto it = set->find(emoteName);
-        if (it == set->end())
-        {
-            continue;  // not in this set
-        }
-        return it->second;  // found the emote
+EmotePtr SeventvPersonalEmotes::getEmoteForKickUser(
+    uint64_t userID, const EmoteName &emoteName) const
+{
+    std::shared_lock<std::shared_mutex> lock(this->mutex_);
+    if (!this->enabled_)
+    {
+        return {};
     }
 
-    return std::nullopt;
+    auto ids = this->kickEmoteSets_.find(userID);
+    if (ids == this->kickEmoteSets_.end())
+    {
+        return {};
+    }
+
+    return this->findInEmoteSets(ids->second, emoteName);
 }
 
 std::optional<std::shared_ptr<const EmoteMap>>
@@ -198,6 +239,46 @@ std::optional<std::shared_ptr<const EmoteMap>>
         return std::nullopt;
     }
     return id->second.get();
+}
+
+QList<std::shared_ptr<const EmoteMap>> SeventvPersonalEmotes::collectEmoteSets(
+    std::span<const QString> emoteSetIDs) const
+{
+    QList<std::shared_ptr<const EmoteMap>> sets;
+    sets.reserve(static_cast<qsizetype>(emoteSetIDs.size()));
+    for (const auto &id : emoteSetIDs)
+    {
+        auto set = this->emoteSets_.find(id);
+        if (set == this->emoteSets_.end())
+        {
+            continue;
+        }
+        sets.append(set->second.get());  // copy the shared_ptr
+    }
+    return sets;
+}
+
+EmotePtr SeventvPersonalEmotes::findInEmoteSets(
+    std::span<const QString> emoteSetIDs, const EmoteName &name) const
+{
+    for (const auto &id : emoteSetIDs)
+    {
+        auto setIt = this->emoteSets_.find(id);
+        if (setIt == this->emoteSets_.end())
+        {
+            continue;  // set doesn't exist
+        }
+
+        const auto &set = setIt->second.get();
+        auto it = set->find(name);
+        if (it == set->end())
+        {
+            continue;  // not in this set
+        }
+        return it->second;  // found the emote
+    }
+
+    return {};
 }
 
 }  // namespace chatterino

@@ -5,6 +5,9 @@
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
+#include "providers/seventv/SeventvAPI.hpp"
+#include "providers/seventv/SeventvEmotes.hpp"
+#include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "singletons/Settings.hpp"
 
 #include <pajlada/settings/setting.hpp>
@@ -199,6 +202,73 @@ void KickAccount::refreshIfNeeded()
                                       << "error:" << res.formatError();
         })
         .execute();
+}
+
+void KickAccount::loadSeventvUser()
+{
+    if (this->isAnonymous())
+    {
+        return;
+    }
+    if (!this->seventvUserID_.isEmpty())
+    {
+        return;
+    }
+
+    const auto loadPersonalEmotes = [](uint64_t userID,
+                                       const QString &emoteSetID) {
+        SeventvEmotes::getEmoteSet(
+            emoteSetID,
+            [userID, emoteSetID](auto &&emoteMap,
+                                 const auto & /*emoteSetName*/) {
+                getApp()->getSeventvPersonalEmotes()->addEmoteSetForKickUser(
+                    emoteSetID, std::forward<decltype(emoteMap)>(emoteMap),
+                    userID);
+            },
+            [userID, emoteSetID](const auto &error) {
+                qCDebug(chatterinoSeventv)
+                    << "Failed to fetch personal emote-set. emote-set-id:"
+                    << emoteSetID << "kick-user-id" << userID
+                    << "error:" << error;
+            });
+    };
+
+    auto *seventv = getApp()->getSeventvAPI();
+    if (!seventv)
+    {
+        qCWarning(chatterinoSeventv)
+            << "Not loading 7TV User ID because the 7TV API is not initialized";
+        return;
+    }
+
+    seventv->getUserByKickID(
+        this->userID(),
+        [this, loadPersonalEmotes](const auto &json) {
+            const auto user = json["user"].toObject();
+            const auto id = user["id"].toString();
+            if (id.isEmpty())
+            {
+                return;
+            }
+            this->seventvUserID_ = id;
+
+            for (const auto &emoteSetJson : user["emote_sets"].toArray())
+            {
+                const auto emoteSet = emoteSetJson.toObject();
+                if (SeventvEmoteSetFlags(
+                        SeventvEmoteSetFlag(emoteSet["flags"].toInt()))
+                        .has(SeventvEmoteSetFlag::Personal))
+                {
+                    loadPersonalEmotes(this->userID(),
+                                       emoteSet["id"].toString());
+                    break;
+                }
+            }
+        },
+        [](const auto &result) {
+            qCDebug(chatterinoSeventv)
+                << "Failed to load your 7TV user-id:" << result.formatError();
+        });
 }
 
 }  // namespace chatterino

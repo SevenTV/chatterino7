@@ -72,7 +72,13 @@ public:
         return this->refreshToken_;
     }
 
+    QString seventvUserID() const
+    {
+        return this->seventvUserID_;
+    }
+
     void refreshIfNeeded();
+    void loadSeventvUser();
 
     pajlada::Signals::NoArgSignal authUpdated;
 
@@ -84,6 +90,8 @@ private:
     QString authToken_;
     QString refreshToken_;
     QDateTime expiresAt_;
+
+    QString seventvUserID_;
 };
 
 }  // namespace chatterino

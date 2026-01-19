@@ -29,6 +29,7 @@ public:
     void initialize();
 
     std::shared_ptr<KickChannel> findByRoomID(uint64_t roomID) const;
+    std::shared_ptr<KickChannel> findByChannelID(uint64_t channelID) const;
     std::shared_ptr<KickChannel> findByUserID(uint64_t userID) const;
     std::shared_ptr<KickChannel> findBySlug(const QString &slug) const;
 
@@ -41,7 +42,7 @@ public:
     std::shared_ptr<Channel> getOrCreate(
         const QString &slug, const KickChannel::UserInit &init = {});
 
-    bool onAppEvent(uint64_t roomID, std::string_view event,
+    bool onAppEvent(uint64_t roomID, uint64_t channelID, std::string_view event,
                     BoostJsonObject data);
 
     void onJoin(uint64_t roomID) const;
@@ -60,7 +61,8 @@ public:
     std::shared_ptr<const EmoteMap> globalEmotes() const;
 
 private:
-    void registerRoomID(uint64_t roomID, std::weak_ptr<KickChannel> chan);
+    void registerRoomID(uint64_t roomID, uint64_t channelID,
+                        std::weak_ptr<KickChannel> chan);
 
     void initializeSeventvEventApi(SeventvEventAPI *api);
 
@@ -69,11 +71,24 @@ private:
     void onUserUnbanned(KickChannel *channel, BoostJsonObject data);
     void onMessageDeleted(KickChannel *channel, BoostJsonObject data);
     void onChatroomClear(KickChannel *channel, BoostJsonObject data);
+    void onPinnedMessageCreatedEvent(KickChannel *channel,
+                                     BoostJsonObject data);
+    void onPinnedMessageDeletedEvent(KickChannel *channel,
+                                     BoostJsonObject data);
+    void onStreamHostEvent(KickChannel *channel, BoostJsonObject data);
+    void onSubscriptionEvent(KickChannel *channel, BoostJsonObject data);
+    void onGiftedSubscriptionEvent(KickChannel *channel, BoostJsonObject data);
+    void onRewardRedeemedEvent(KickChannel *channel, BoostJsonObject data);
+    void onKicksGiftedEvent(KickChannel *channel, BoostJsonObject data);
+
+    void onKnownIgnoredMessage(KickChannel *channel, BoostJsonObject data);
 
     void loadGlobalEmotesIfNeeded();
 
     boost::unordered_flat_map<uint64_t, std::weak_ptr<KickChannel>>
         channelsByRoomID;
+    boost::unordered_flat_map<uint64_t, std::weak_ptr<KickChannel>>
+        channelsByChannelID;
     boost::unordered_flat_map<uint64_t, std::weak_ptr<KickChannel>>
         channelsByUserID;
     boost::unordered_flat_map<QString, std::weak_ptr<KickChannel>>

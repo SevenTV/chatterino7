@@ -114,24 +114,35 @@ void SeventvEventAPI::subscribeUser(const QString &userID,
     }
 }
 
+void SeventvEventAPI::subscribeKickChannel(const QString &id)
+{
+    this->subscribePlatformChannel(id, "KICK");
+}
+
 void SeventvEventAPI::subscribeTwitchChannel(const QString &id)
 {
-    if (this->private_->subscribedTwitchChannels.insert(id).second)
+    this->subscribePlatformChannel(id, "TWITCH");
+}
+
+void SeventvEventAPI::subscribePlatformChannel(const QString &userID,
+                                               const QString &platform)
+{
+    if (this->private_->subscribedTwitchChannels.insert(userID).second)
     {
         this->private_->subscribe({
-            ChannelCondition{id},
+            ChannelCondition{userID, platform},
             SubscriptionType::CreateCosmetic,
         });
         this->private_->subscribe({
-            ChannelCondition{id},
+            ChannelCondition{userID, platform},
             SubscriptionType::CreateEntitlement,
         });
         this->private_->subscribe({
-            ChannelCondition{id},
+            ChannelCondition{userID, platform},
             SubscriptionType::DeleteEntitlement,
         });
         this->private_->subscribe({
-            ChannelCondition{id},
+            ChannelCondition{userID, platform},
             SubscriptionType::AnyEmoteSet,
         });
     }
@@ -157,22 +168,33 @@ void SeventvEventAPI::unsubscribeUser(const QString &id)
 
 void SeventvEventAPI::unsubscribeTwitchChannel(const QString &id)
 {
-    if (this->private_->subscribedTwitchChannels.erase(id) > 0)
+    this->unsubscribePlatformChannel(id, "TWITCH");
+}
+
+void SeventvEventAPI::unsubscribeKickChannel(const QString &id)
+{
+    this->unsubscribePlatformChannel(id, "KICK");
+}
+
+void SeventvEventAPI::unsubscribePlatformChannel(const QString &userID,
+                                                 const QString &platform)
+{
+    if (this->private_->subscribedTwitchChannels.erase(userID) > 0)
     {
         this->private_->unsubscribe({
-            ChannelCondition{id},
+            ChannelCondition{userID, platform},
             SubscriptionType::CreateCosmetic,
         });
         this->private_->unsubscribe({
-            ChannelCondition{id},
+            ChannelCondition{userID, platform},
             SubscriptionType::CreateEntitlement,
         });
         this->private_->unsubscribe({
-            ChannelCondition{id},
+            ChannelCondition{userID, platform},
             SubscriptionType::DeleteEntitlement,
         });
         this->private_->unsubscribe({
-            ChannelCondition{id},
+            ChannelCondition{userID, platform},
             SubscriptionType::AnyEmoteSet,
         });
     }

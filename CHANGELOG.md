@@ -18,7 +18,7 @@
 - Minor: Added a setting to show the stream title in live messages. (#6572)
 - Minor: Add categories to the emoji viewer. (#6598)
 - Minor: Added broadcaster-only `/poll`, `/cancelpoll`, and `/endpoll` commands. (#6583, #6605)
-- Minor: Added broadcaster-only `/prediction`, `/cancelprediction`, `/lockprediction`, and `/completeprediction` commands. (#6583, #6612, #6632)
+- Minor: Added broadcaster-only `/prediction`, `/cancelprediction`, `/lockprediction`, and `/completeprediction` commands. (#6583, #6612, #6632, #6749)
 - Minor: Added support for BetterTTV Pro subscriber badges. (#6625, #6724)
 - Minor: Added `debug.traceback` for plugins. (#6652)
 - Minor: Added title and duration options for `/clip` command. (#6669)
@@ -44,7 +44,7 @@
 - Bugfix: Fixed <kbd>CMD</kbd> + <kbd>DELETE</kbd> behavior in the user notes editing dialog for macOS. (#6676)
 - Bugfix: Fixed a potential crash when closing Chatterino with a slow network connection. (#6645)
 - Bugfix: Disable "Sort Tabs Alphabetically" action when notebook layout is locked. (#6710)
-- Bugfix: Fix highlight mentions not updating when username changes. (#6723)
+- Bugfix: Fix highlight mentions not updating when username changes. (#6723, #6739)
 - Bugfix: Fixed Return and Enter being treated as different keys on Mac OS. (#6726)
 - Dev: Update release documentation. (#6498)
 - Dev: Make code sanitizers opt in with the `CHATTERINO_SANITIZER_SUPPORT` CMake option. After that's enabled, use the `SANITIZE_*` flag to enable individual sanitizers. (#6493)
@@ -89,6 +89,7 @@
 - Dev: Refactored types used for emoji parsing. (#6714)
 - Dev: `LinkParser` now parses `QStringView`s. (#6715)
 - Dev: Cleaned up `AccountController` connections. (#6735)
+- Dev: Removed unused variables. (#6748)
 
 ## 2.5.4
 

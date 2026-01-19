@@ -1,6 +1,7 @@
 #include "providers/kick/KickChannel.hpp"
 
 #include "Application.hpp"
+#include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/emotes/EmoteController.hpp"
@@ -17,9 +18,11 @@
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/kick/KickLiveUpdates.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"
+#include "providers/seventv/SeventvAPI.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "singletons/Settings.hpp"
 #include "util/Helpers.hpp"
 #include "util/PostToThread.hpp"
 
@@ -33,6 +36,7 @@ KickChannel::KickChannel(const QString &name)
     , ChannelChatters(static_cast<Channel &>(*this))
     , seventvEmotes_(std::make_shared<const EmoteMap>())
 {
+    this->setMentionFlag(MessageElementFlag::KickUsername);
 }
 
 KickChannel::~KickChannel()
@@ -42,6 +46,11 @@ KickChannel::~KickChannel()
     {
         app->getKickChatServer()->liveUpdates().leaveRoom(this->roomID(),
                                                           this->channelID());
+        auto *eventApi = app->getSeventvEventAPI();
+        if (eventApi)
+        {
+            eventApi->unsubscribeKickChannel(QString::number(this->userID()));
+        }
     }
 }
 
@@ -243,6 +252,7 @@ void KickChannel::sendReply(const QString &message, const QString &replyToId)
         return;
     }
 
+    this->updateSevenTVActivity();
     getKickApi()->sendMessage(
         this->userID(), prepared, replyToId,
         [weak = this->weakFromThis()](const auto &res) {
@@ -259,14 +269,47 @@ void KickChannel::sendReply(const QString &message, const QString &replyToId)
         });
 }
 
+void KickChannel::deleteMessage(const QString &messageID)
+{
+    getKickApi()->deleteChatMessage(
+        messageID, [weak = this->weakFromThis()](const auto &res) {
+            auto self = weak.lock();
+            if (!self || res)
+            {
+                return;
+            }
+            self->addSystemMessage(u"Failed to delete message: " % res.error());
+        });
+}
+
 bool KickChannel::isMod() const
 {
     return this->isMod_;
 }
 
+void KickChannel::setMod(bool mod)
+{
+    if (this->isMod_ == mod)
+    {
+        return;
+    }
+    this->isMod_ = mod;
+    this->userStateChanged.invoke();
+}
+
 bool KickChannel::isVip() const
 {
     return this->isVip_;
+}
+
+void KickChannel::setVip(bool vip)
+{
+    if (this->isVip_ == vip)
+    {
+        return;
+    }
+    this->isVip_ = vip;
+    this->userStateChanged.invoke();
 }
 
 bool KickChannel::isBroadcaster() const
@@ -405,7 +448,8 @@ void KickChannel::setUserInfo(UserInit init)
         }
 
         auto *srv = getApp()->getKickChatServer();
-        srv->registerRoomID(this->roomID(), this->weakFromThis());
+        srv->registerRoomID(this->roomID(), this->channelID(),
+                            this->weakFromThis());
         srv->liveUpdates().joinRoom(this->roomID(), this->channelID());
     }
 
@@ -529,6 +573,48 @@ QString KickChannel::prepareMessage(const QString &message) const
         outMessage = baseMessage;
     }
     return outMessage;
+}
+
+void KickChannel::updateSevenTVActivity()
+{
+    const auto currentSeventvUserID =
+        getApp()->getAccounts()->kick.current()->seventvUserID();
+    if (currentSeventvUserID.isEmpty())
+    {
+        return;
+    }
+
+    if (!getSettings()->enableSevenTVEventAPI ||
+        !getSettings()->sendSevenTVActivity)
+    {
+        return;
+    }
+
+    if (this->nextSeventvActivity_.isValid() &&
+        QDateTime::currentDateTimeUtc() < this->nextSeventvActivity_)
+    {
+        return;
+    }
+    // Make sure to not send activity again before receiving the response
+    this->nextSeventvActivity_ = this->nextSeventvActivity_.addSecs(300);
+
+    qCDebug(chatterinoSeventv) << "Sending activity in" << this->getName();
+
+    getApp()->getSeventvAPI()->updateKickPresence(
+        this->userID(), currentSeventvUserID,
+        [weak = this->weakFromThis()]() {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            self->nextSeventvActivity_ =
+                QDateTime::currentDateTimeUtc().addSecs(60);
+        },
+        [](const auto &result) {
+            qCDebug(chatterinoSeventv)
+                << "Failed to update 7TV activity:" << result.formatError();
+        });
 }
 
 void KickChannel::addLoginMessage()

@@ -339,7 +339,7 @@ void TwitchAccount::loadSeventvUserID()
             emoteSetID,
             [twitchUserID, emoteSetID](auto &&emoteMap,
                                        const auto & /*emoteSetName*/) {
-                getApp()->getSeventvPersonalEmotes()->addEmoteSetForUser(
+                getApp()->getSeventvPersonalEmotes()->addEmoteSetForTwitchUser(
                     emoteSetID, std::forward<decltype(emoteMap)>(emoteMap),
                     twitchUserID);
             },

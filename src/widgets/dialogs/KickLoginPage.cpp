@@ -232,7 +232,7 @@ private:
                                      .toArray()
                                      .at(0)
                                      .toObject();
-                KickAccountData{
+                KickAccountData data{
                     .username = obj["name"].toString(),
                     .userID =
                         static_cast<uint64_t>(obj["user_id"_L1].toInteger()),
@@ -241,9 +241,10 @@ private:
                     .authToken = tokenData["access_token"_L1].toString(),
                     .refreshToken = tokenData["refresh_token"_L1].toString(),
                     .expiresAt = expiresAt,
-                }
-                    .save();
+                };
+                data.save();
                 getApp()->getAccounts()->kick.reloadUsers();
+                getApp()->getAccounts()->kick.currentUsername = data.username;
                 this->accept();
                 this->close();
             })

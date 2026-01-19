@@ -65,6 +65,17 @@ std::shared_ptr<KickChannel> KickChatServer::findByRoomID(uint64_t roomID) const
     return nullptr;
 }
 
+std::shared_ptr<KickChannel> KickChatServer::findByChannelID(
+    uint64_t channelID) const
+{
+    auto it = this->channelsByChannelID.find(channelID);
+    if (it != this->channelsByChannelID.end())
+    {
+        return it->second.lock();
+    }
+    return nullptr;
+}
+
 std::shared_ptr<KickChannel> KickChatServer::findByUserID(uint64_t userID) const
 {
     auto it = this->channelsByUserID.find(userID);
@@ -144,6 +155,10 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
     {
         this->channelsByRoomID[init.roomID] = chan;
     }
+    if (init.channelID != 0)
+    {
+        this->channelsByChannelID[init.channelID] = chan;
+    }
     this->signalHolder_.managedConnect(
         chan->userIDChanged, [this, weak{chan->weakFromThis()}] {
             auto chan = weak.lock();
@@ -151,6 +166,8 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
             {
                 this->channelsByUserID[chan->userID()] = weak;
                 this->liveController_.queueNewChannel(chan->userID());
+                getApp()->getSeventvEventAPI()->subscribeKickChannel(
+                    QString::number(chan->userID()));
             }
         });
     chan->initialize(init);
@@ -158,27 +175,61 @@ std::shared_ptr<Channel> KickChatServer::getOrCreate(
     return chan;
 }
 
-bool KickChatServer::onAppEvent(uint64_t roomID, std::string_view event,
-                                BoostJsonObject data)
+bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
+                                std::string_view event, BoostJsonObject data)
 {
     using Fn = void (KickChatServer::*)(KickChannel *, BoostJsonObject);
     auto fn = stringSwitch<Fn>(
-        event,                                                     //
-        "ChatMessageEvent", &KickChatServer::onChatMessage,        //
-        "MessageDeletedEvent", &KickChatServer::onMessageDeleted,  //
-        "ChatroomClearEvent", &KickChatServer::onChatroomClear,    //
-        "UserBannedEvent", &KickChatServer::onUserBanned,          //
-        "UserUnbannedEvent", &KickChatServer::onUserUnbanned);
+        event,                                                      //
+        "ChatMessageEvent", &KickChatServer::onChatMessage,         //
+        "MessageDeletedEvent", &KickChatServer::onMessageDeleted,   //
+        "ChatroomClearEvent", &KickChatServer::onChatroomClear,     //
+        "UserBannedEvent", &KickChatServer::onUserBanned,           //
+        "UserUnbannedEvent", &KickChatServer::onUserUnbanned,       //
+        "SubscriptionEvent", &KickChatServer::onSubscriptionEvent,  //
+        "GiftedSubscriptionsEvent",
+        &KickChatServer::onGiftedSubscriptionEvent,  //
+        "PinnedMessageCreatedEvent",
+        &KickChatServer::onPinnedMessageCreatedEvent,  //
+        "PinnedMessageDeletedEvent",
+        &KickChatServer::onPinnedMessageDeletedEvent,                   //
+        "RewardRedeemedEvent", &KickChatServer::onRewardRedeemedEvent,  //
+        "KicksGifted", &KickChatServer::onKicksGiftedEvent,             //
+        "StreamHostEvent", &KickChatServer::onStreamHostEvent,          //
+
+        // ignored
+        "KicksLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
+        "GiftsLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
+        "PredictionUpdated", &KickChatServer::onKnownIgnoredMessage,        //
+        // old sub events
+        "ChannelSubscriptionEvent", &KickChatServer::onKnownIgnoredMessage,  //
+        "LuckyUsersWhoGotGiftSubscriptionsEvent",
+        &KickChatServer::onKnownIgnoredMessage,  //
+        // v1 stream host event
+        "StreamHostedEvent", &KickChatServer::onKnownIgnoredMessage,  //
+        // seems to be for subscriptions too
+        "ChatMessageSentEvent", &KickChatServer::onKnownIgnoredMessage  //
+    );
 
     if (!fn)
     {
         return false;  // no handler
     }
 
-    auto channel = this->findByRoomID(roomID);
+    std::shared_ptr<KickChannel> channel;
+    if (roomID != 0)
+    {
+        channel = this->findByRoomID(roomID);
+    }
+    else
+    {
+        channel = this->findByChannelID(channelID);
+    }
+
     if (!channel)
     {
-        qCWarning(chatterinoKick) << "No channel found for room" << roomID;
+        qCWarning(chatterinoKick)
+            << "No channel found for room" << roomID << "channel" << channelID;
         return true;  // technically it's handled, we just don't have a channel
     }
 
@@ -260,6 +311,75 @@ void KickChatServer::onChatroomClear(KickChannel *channel,
     channel->addOrReplaceClearChat(clear, now);
 }
 
+void KickChatServer::onPinnedMessageCreatedEvent(KickChannel *channel,
+                                                 BoostJsonObject data)
+{
+    channel->addMessage(KickMessageBuilder::makePinnedMessage(channel, data),
+                        MessageContext::Original);
+}
+
+void KickChatServer::onPinnedMessageDeletedEvent(KickChannel *channel,
+                                                 BoostJsonObject /*data*/)
+{
+    channel->addSystemMessage(u"The pinned message was unpinned."_s);
+}
+
+void KickChatServer::onStreamHostEvent(KickChannel *channel,
+                                       BoostJsonObject data)
+{
+    channel->addMessage(KickMessageBuilder::makeHostMessage(channel, data),
+                        MessageContext::Original);
+}
+
+void KickChatServer::onSubscriptionEvent(KickChannel *channel,
+                                         BoostJsonObject data)
+{
+    auto [first, second, alert] =
+        KickMessageBuilder::makeSubscriptionMessage(channel, data);
+    if (first)
+    {
+        MessageBuilder::triggerHighlights(channel, alert);
+        channel->addMessage(first, MessageContext::Original);
+    }
+    channel->addMessage(second, MessageContext::Original);
+}
+
+void KickChatServer::onGiftedSubscriptionEvent(KickChannel *channel,
+                                               BoostJsonObject data)
+{
+    auto msg = KickMessageBuilder::makeGiftedSubscriptionMessage(channel, data);
+    if (msg)
+    {
+        channel->addMessage(msg, MessageContext::Original);
+    }
+}
+
+void KickChatServer::onRewardRedeemedEvent(KickChannel *channel,
+                                           BoostJsonObject data)
+{
+    auto msg = KickMessageBuilder::makeRewardRedeemedMessage(channel, data);
+    if (msg)
+    {
+        channel->addMessage(msg, MessageContext::Original);
+    }
+}
+
+void KickChatServer::onKicksGiftedEvent(KickChannel *channel,
+                                        BoostJsonObject data)
+{
+    auto msg = KickMessageBuilder::makeKicksGiftedMessage(channel, data);
+    if (msg)
+    {
+        channel->addMessage(msg, MessageContext::Original);
+    }
+}
+
+void KickChatServer::onKnownIgnoredMessage(KickChannel * /*channel*/,
+                                           BoostJsonObject /*data*/)
+{
+    // nop
+}
+
 // NOLINTEND(readability-convert-member-functions-to-static)
 
 void KickChatServer::onJoin(uint64_t roomID) const
@@ -329,10 +449,11 @@ void KickChatServer::loadGlobalEmotesIfNeeded()
         });
 }
 
-void KickChatServer::registerRoomID(uint64_t roomID,
+void KickChatServer::registerRoomID(uint64_t roomID, uint64_t channelID,
                                     std::weak_ptr<KickChannel> chan)
 {
-    this->channelsByRoomID[roomID] = std::move(chan);
+    this->channelsByRoomID[roomID] = chan;
+    this->channelsByChannelID[channelID] = std::move(chan);
 }
 
 void KickChatServer::initializeSeventvEventApi(SeventvEventAPI *api)
@@ -385,9 +506,13 @@ void KickChatServer::initializeSeventvEventApi(SeventvEventAPI *api)
         api->signals_.personalEmoteSetAdded, [&](const auto &data) {
             postToThread(
                 [this, data] {
+                    if (data.kickUserName.isEmpty())
+                    {
+                        return;
+                    }
                     this->forEachChannel([data](auto &chan) {
-                        chan.upsertPersonalSeventvEmotes(data.first,
-                                                         data.second);
+                        chan.upsertPersonalSeventvEmotes(data.kickUserName,
+                                                         data.emoteSet);
                     });
                 },
                 this);

@@ -33,10 +33,31 @@ void callDeserialize(auto &&cb, BoostJsonValue data)
     {
         cb(T(data.toObject()));
     }
+    else if (data.isArray())
+    {
+        auto arr = data.toArray();
+        if (arr.empty())
+        {
+            cb(makeUnexpected(u"Not found (no item returned)"_s));
+            return;
+        }
+        if (!arr[0].isObject())
+        {
+            cb(makeUnexpected(u"'data[0]' is not an object"_s));
+            return;
+        }
+        cb(T(arr[0].toObject()));
+    }
     else
     {
         cb(makeUnexpected(u"'data' is not an object"_s));
     }
+}
+
+template <std::same_as<void> T>
+void callDeserialize(auto &&cb, BoostJsonValue /* data */)
+{
+    cb(ExpectedStr<void>{});
 }
 
 template <IsCollection T>
@@ -94,6 +115,13 @@ void getJsonNoAuth(const QString &url, std::function<void(ExpectedStr<T>)> cb)
 QString makePublicV1Url(QStringView endpoint)
 {
     return u"https://api.kick.com/public/v1/" % endpoint;
+}
+
+QString slugify(const QString &username)
+{
+    auto slugified = username;
+    slugified.replace('_', '-');
+    return slugified;
 }
 
 }  // namespace
@@ -208,7 +236,8 @@ void KickApi::privateChannelInfo(const QString &username,
                                  Callback<KickPrivateChannelInfo> cb)
 {
     getJsonNoAuth<KickPrivateChannelInfo>(
-        u"https://kick.com/api/v2/channels/" % username, std::move(cb));
+        u"https://kick.com/api/v2/channels/" % slugify(username),
+        std::move(cb));
 }
 
 void KickApi::privateUserInChannelInfo(
@@ -216,15 +245,16 @@ void KickApi::privateUserInChannelInfo(
     Callback<KickPrivateUserInChannelInfo> cb)
 {
     getJsonNoAuth<KickPrivateUserInChannelInfo>(
-        u"https://kick.com/api/v2/channels/" % channelUsername % "/users/" %
-            userUsername,
+        u"https://kick.com/api/v2/channels/" % slugify(channelUsername) %
+            "/users/" % slugify(userUsername),
         std::move(cb));
 }
 
 void KickApi::privateEmotesInChannel(
     const QString &username, Callback<std::vector<KickPrivateEmoteSetInfo>> cb)
 {
-    getJsonNoAuth(u"https://kick.com/emotes/" % username, std::move(cb));
+    getJsonNoAuth(u"https://kick.com/emotes/" % slugify(username),
+                  std::move(cb));
 }
 
 void KickApi::sendMessage(uint64_t broadcasterUserID, const QString &message,
@@ -276,6 +306,51 @@ void KickApi::getChannels(std::span<uint64_t> userIDs,
     this->getJson(path, std::move(cb));
 }
 
+void KickApi::getChannelByName(const QString &usernameOrSlug,
+                               Callback<KickChannelInfo> cb)
+{
+    QString path =
+        u"channels?slug=" % QUrl::toPercentEncoding(slugify(usernameOrSlug));
+    this->getJson(path, std::move(cb));
+}
+
+void KickApi::banUser(uint64_t broadcasterUserID, uint64_t userID,
+                      std::optional<std::chrono::minutes> duration,
+                      const QString &reason, Callback<void> cb)
+{
+    QJsonObject json{
+        {"broadcaster_user_id"_L1, static_cast<qint64>(broadcasterUserID)},
+        {"user_id"_L1, static_cast<qint64>(userID)},
+    };
+    if (duration)
+    {
+        json.insert("duration"_L1, static_cast<qint64>(duration->count()));
+    }
+    if (!reason.isEmpty())
+    {
+        json.insert("reason"_L1, reason);
+    }
+    this->postJson(u"moderation/bans"_s, json, std::move(cb));
+}
+
+void KickApi::unbanUser(uint64_t broadcasterUserID, uint64_t userID,
+                        Callback<void> cb)
+{
+    this->deleteJson(
+        u"moderation/bans"_s,
+        {
+            {"broadcaster_user_id"_L1, static_cast<qint64>(broadcasterUserID)},
+            {"user_id"_L1, static_cast<qint64>(userID)},
+        },
+        std::move(cb));
+}
+
+void KickApi::deleteChatMessage(const QString &messageID, Callback<void> cb)
+{
+    QString path = u"chat/" % QUrl::toPercentEncoding(messageID);
+    this->deleteEmptyBody(path, std::move(cb));
+}
+
 void KickApi::setAuth(const QString &authToken)
 {
     this->authToken = authToken.toUtf8();
@@ -298,6 +373,24 @@ void KickApi::postJson(const QString &endpoint, const QJsonObject &json,
 }
 
 template <typename T>
+void KickApi::deleteJson(const QString &endpoint, const QJsonObject &json,
+                         Callback<T> cb)
+{
+    this->doRequest(
+        NetworkRequest(makePublicV1Url(endpoint), NetworkRequestType::Delete)
+            .json(json),
+        std::move(cb));
+}
+
+template <typename T>
+void KickApi::deleteEmptyBody(const QString &endpoint, Callback<T> cb)
+{
+    this->doRequest(
+        NetworkRequest(makePublicV1Url(endpoint), NetworkRequestType::Delete),
+        std::move(cb));
+}
+
+template <typename T>
 void KickApi::doRequest(NetworkRequest &&req, Callback<T> cb)
 {
     std::move(req)
@@ -314,6 +407,12 @@ void KickApi::doRequest(NetworkRequest &&req, Callback<T> cb)
             }
         })
         .onSuccess([cb = std::move(cb)](const NetworkResult &res) {
+            if constexpr (std::is_void_v<T>)
+            {
+                cb(ExpectedStr<T>{});
+                return;
+            }
+
             const auto &ba = res.getData();
             boost::system::error_code ec;
             auto jv =

@@ -100,5 +100,32 @@ void SeventvAPI::updatePresence(const QString &twitchChannelID,
         .execute();
 }
 
+void SeventvAPI::updateKickPresence(uint64_t kickUserID,
+                                    const QString &seventvUserID,
+                                    SuccessCallback<> &&onSuccess,
+                                    ErrorCallback &&onError)
+{
+    QJsonObject payload{
+        {u"kind"_s, 1},  // UserPresenceKindChannel
+        {u"data"_s,
+         QJsonObject{
+             {u"id"_s, QString::number(kickUserID)},
+             {u"platform"_s, u"KICK"_s},
+         }},
+    };
+
+    NetworkRequest(API_URL_PRESENCES.arg(seventvUserID),
+                   NetworkRequestType::Post)
+        .json(payload)
+        .timeout(10000)
+        .onSuccess([callback = std::move(onSuccess)](const auto &) {
+            callback();
+        })
+        .onError([callback = std::move(onError)](const NetworkResult &result) {
+            callback(result);
+        })
+        .execute();
+}
+
 }  // namespace chatterino
 // NOLINTEND(readability-convert-member-functions-to-static)

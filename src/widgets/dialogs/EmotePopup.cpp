@@ -18,6 +18,8 @@
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/kick/KickAccount.hpp"
+#include "providers/kick/KickChatServer.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -458,6 +460,7 @@ void EmotePopup::loadChannel(ChannelPtr channel)
 
     this->channel_ = std::move(channel);
     this->twitchChannel_ = dynamic_cast<TwitchChannel *>(this->channel_.get());
+    this->kickChannel_ = dynamic_cast<KickChannel *>(this->channel_.get());
 
     this->setWindowTitle("Emotes in #" + this->channel_->getName());
 
@@ -511,10 +514,32 @@ void EmotePopup::reloadEmotes()
 
         // personal
         for (const auto &map :
-             getApp()->getSeventvPersonalEmotes()->getEmoteSetsForUser(
+             getApp()->getSeventvPersonalEmotes()->getEmoteSetsForTwitchUser(
                  getApp()->getAccounts()->twitch.getCurrent()->getUserId()))
         {
-            addEmotes(*subChannel, *map, "7TV");
+            addEmotes(*subChannel, *map, "7TV (Personal)");
+        }
+    }
+    if (this->kickChannel_)
+    {
+        // Kick
+        addEmotes(*globalChannel,
+                  *getApp()->getKickChatServer()->globalEmotes(), "Kick");
+
+        // channel
+        if (Settings::instance().enableSevenTVChannelEmotes)
+        {
+            addEmotes(*channelChannel, *this->kickChannel_->seventvEmotes(),
+                      "7TV");
+        }
+
+        // personal
+        const auto personalEmotes =
+            getApp()->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
+                getApp()->getAccounts()->kick.current()->userID());
+        for (const auto &map : personalEmotes)
+        {
+            addEmotes(*subChannel, *map, "7TV (Personal)");
         }
     }
     // global
@@ -584,6 +609,15 @@ void EmotePopup::filterTwitchEmotes(std::shared_ptr<Channel> searchChannel,
             }
         }
     }
+    if (this->kickChannel_)
+    {
+        auto globalEmotes = filterEmoteMap(
+            searchText, getApp()->getKickChatServer()->globalEmotes());
+        if (!globalEmotes.empty())
+        {
+            addEmotes(*searchChannel, std::move(globalEmotes), "Kick");
+        }
+    }
 
     auto bttvGlobalEmotes =
         filterEmoteMap(searchText, getApp()->getBttvEmotes()->emotes());
@@ -604,6 +638,30 @@ void EmotePopup::filterTwitchEmotes(std::shared_ptr<Channel> searchChannel,
     if (!seventvGlobalEmotes.empty())
     {
         addEmotes(*searchChannel, seventvGlobalEmotes, "7TV (Global)");
+    }
+
+    if (this->kickChannel_)
+    {
+        auto seventvChannelEmotes =
+            filterEmoteMap(searchText, this->kickChannel_->seventvEmotes());
+
+        if (!seventvChannelEmotes.empty())
+        {
+            addEmotes(*searchChannel, seventvChannelEmotes, "7TV (Channel)");
+        }
+
+        const auto personalEmotes =
+            getApp()->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
+                getApp()->getAccounts()->kick.current()->userID());
+        for (const auto &map : personalEmotes)
+        {
+            auto seventvPersonalEmotes = filterEmoteMap(searchText, map);
+            if (!seventvPersonalEmotes.empty())
+            {
+                addEmotes(*searchChannel, seventvPersonalEmotes,
+                          "SevenTV (Personal)");
+            }
+        }
     }
 
     if (this->twitchChannel_ == nullptr)
@@ -633,7 +691,7 @@ void EmotePopup::filterTwitchEmotes(std::shared_ptr<Channel> searchChannel,
     }
 
     for (const auto &map :
-         getApp()->getSeventvPersonalEmotes()->getEmoteSetsForUser(
+         getApp()->getSeventvPersonalEmotes()->getEmoteSetsForTwitchUser(
              getApp()->getAccounts()->twitch.getCurrent()->getUserId()))
     {
         auto seventvPersonalEmotes = filterEmoteMap(searchText, map);
@@ -658,7 +716,7 @@ void EmotePopup::filterEmotes(const QString &searchText)
     searchChannel->clearMessages();
 
     // true in special channels like /mentions
-    if (this->channel_->isTwitchChannel())
+    if (this->channel_->isTwitchOrKickChannel())
     {
         this->filterTwitchEmotes(searchChannel, searchText);
     }

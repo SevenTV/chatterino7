@@ -42,6 +42,10 @@ public:
     void updatePresence(const QString &twitchChannelID,
                         const QString &seventvUserID,
                         SuccessCallback<> &&onSuccess, ErrorCallback &&onError);
+
+    void updateKickPresence(uint64_t kickUserID, const QString &seventvUserID,
+                            SuccessCallback<> &&onSuccess,
+                            ErrorCallback &&onError);
 };
 
 }  // namespace chatterino

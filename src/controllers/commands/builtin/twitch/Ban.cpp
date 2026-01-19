@@ -7,6 +7,7 @@
 #include "Application.hpp"
 #include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
+#include "controllers/commands/builtin/kick/ModerationActions.hpp"
 #include "controllers/commands/CommandContext.hpp"
 #include "controllers/commands/common/ChannelAction.hpp"
 #include "providers/twitch/api/Helix.hpp"
@@ -123,6 +124,11 @@ namespace chatterino::commands {
 
 QString sendBan(const CommandContext &ctx)
 {
+    if (ctx.kickChannel)
+    {
+        return doKickBan(ctx);
+    }
+
     const auto command = QStringLiteral("/ban");
     const auto usage = QStringLiteral(
         R"(Usage: "/ban [options...] <username> [reason]" - Permanently prevent a user from chatting via their username. Reason is optional and will be shown to the target user and other moderators. Options: --channel <channel> to override which channel the ban takes place in (can be specified multiple times).)");
@@ -274,6 +280,11 @@ QString sendBanById(const CommandContext &ctx)
 
 QString sendTimeout(const CommandContext &ctx)
 {
+    if (ctx.kickChannel)
+    {
+        return doKickTimeout(ctx);
+    }
+
     const auto command = QStringLiteral("/timeout");
     const auto usage = QStringLiteral(
         R"(Usage: "/timeout [options...] <username> [duration][time unit] [reason]" - Temporarily prevent a user from chatting. Duration (optional, default=10 minutes) must be a positive integer; time unit (optional, default=s) must be one of s, m, h, d, w; maximum duration is 2 weeks. Combinations like 1d2h are also allowed. Reason is optional and will be shown to the target user and other moderators. Use "/untimeout" to remove a timeout. Options: --channel <channel> to override which channel the timeout takes place in (can be specified multiple times).)");

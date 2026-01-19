@@ -7,6 +7,7 @@
 #include "Application.hpp"
 #include "common/Channel.hpp"
 #include "controllers/accounts/AccountController.hpp"
+#include "controllers/commands/builtin/kick/ModerationActions.hpp"
 #include "controllers/commands/CommandContext.hpp"
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
@@ -65,6 +66,11 @@ QString deleteOneMessage(const CommandContext &ctx)
     if (ctx.channel == nullptr)
     {
         return "";
+    }
+
+    if (ctx.kickChannel)
+    {
+        return doKickDelete(ctx);
     }
 
     // This is a wrapper over the Helix delete messages endpoint

@@ -14,9 +14,9 @@ KickAccountManager::KickAccountManager()
     : accounts(SharedPtrElementLess<KickAccount>{})
     , anonymousUser_(std::make_shared<KickAccount>(KickAccountData{}))
 {
-    std::ignore = this->currentUserChanged.connect([] {
-        // auto currentUser = this->current();
-        // FIXME: load 7tv user
+    std::ignore = this->currentUserChanged.connect([this] {
+        auto currentUser = this->current();
+        currentUser->loadSeventvUser();
     });
 
     std::ignore = this->accounts.itemRemoved.connect([this](const auto &acc) {

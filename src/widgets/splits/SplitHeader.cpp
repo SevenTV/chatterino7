@@ -987,9 +987,8 @@ void SplitHeader::updateChannelText()
 void SplitHeader::updateIcons()
 {
     auto channel = this->split_->getChannel();
-    auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get());
 
-    if (twitchChannel != nullptr)
+    if (channel->isTwitchOrKickChannel())
     {
         auto moderationMode = this->split_->getModerationMode() &&
                               !getSettings()->moderationActions.empty();
@@ -1009,7 +1008,7 @@ void SplitHeader::updateIcons()
             });
         }
 
-        if (twitchChannel->hasModRights() || moderationMode)
+        if (channel->hasModRights() || moderationMode)
         {
             this->moderationButton_->show();
         }
@@ -1018,7 +1017,7 @@ void SplitHeader::updateIcons()
             this->moderationButton_->hide();
         }
 
-        if (twitchChannel->hasModRights())
+        if (channel->hasModRights() && channel->isTwitchChannel())
         {
             this->chattersButton_->show();
         }

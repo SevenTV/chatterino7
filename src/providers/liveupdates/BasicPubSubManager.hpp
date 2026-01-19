@@ -165,7 +165,7 @@ private:
                 qCDebug(chatterinoLiveupdates)
                     << "Failed to subscribe to" << last << "on new client.";
                 // TODO: should we try to add a new client here?
-                return;
+                break;
             }
             DebugCount::decrease("LiveUpdates subscription backlog");
             pendingSubsToTake--;

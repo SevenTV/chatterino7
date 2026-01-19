@@ -88,8 +88,15 @@ public:
     bool canSendMessage() const override;
     void sendMessage(const QString &message) override;
     void sendReply(const QString &message, const QString &replyToID);
+
+    void deleteMessage(const QString &messageID);
+
     bool isMod() const override;
+    void setMod(bool mod);
+
     bool isVip() const;
+    void setVip(bool vip);
+
     bool isBroadcaster() const override;
     bool hasModRights() const override;
     bool hasHighRateLimit() const override;
@@ -110,6 +117,8 @@ public:
     pajlada::Signals::NoArgSignal liveStatusChanged;
 
     pajlada::Signals::NoArgSignal userIDChanged;
+    pajlada::Signals::NoArgSignal userStateChanged;
+    pajlada::Signals::NoArgSignal roomModesChanged;
 
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
 
@@ -129,6 +138,7 @@ private:
     bool checkMessageRatelimit();
 
     QString prepareMessage(const QString &message) const;
+    void updateSevenTVActivity();
 
     void addLoginMessage();
 
@@ -153,6 +163,7 @@ private:
     std::weak_ptr<const Message> lastSeventvMessage_;
     /// A list of the emotes listed in the lat 7TV emote update message.
     std::vector<QString> lastSeventvEmoteNames_;
+    QDateTime nextSeventvActivity_;
 
     std::queue<std::chrono::steady_clock::time_point> lastMessageTimestamps_;
     std::chrono::steady_clock::time_point lastMessageSpeedErrorTs_;

@@ -124,19 +124,28 @@ EntitlementCreateDeleteDispatch::EntitlementCreateDeleteDispatch(
     for (const auto &connectionJson : userConnections)
     {
         const auto connection = connectionJson.toObject();
-        if (connection["platform"].toString() == "TWITCH")
+        auto platform = connection["platform"].toString();
+        if (platform == u"TWITCH")
         {
-            this->userID = connection["id"].toString();
-            this->userName = connection["username"].toString();
-            break;
+            this->twitchUserID = connection["id"].toString();
+            this->twitchUserName = connection["username"].toString();
+        }
+        else if (platform == u"KICK")
+        {
+            this->kickUserID = connection["id"].toString().toULongLong();
+            this->kickUserName = connection["username"].toString().toLower();
         }
     }
 }
 
 bool EntitlementCreateDeleteDispatch::validate() const
 {
-    return !this->userID.isEmpty() && !this->userName.isEmpty() &&
-           !this->refID.isEmpty() && this->kind != CosmeticKind::INVALID;
+    bool hasTwitch =
+        !this->twitchUserID.isEmpty() && !this->twitchUserName.isEmpty();
+    bool hasKick = this->kickUserID != 0 && !this->kickUserName.isEmpty();
+
+    return (hasTwitch || hasKick) && !this->refID.isEmpty() &&
+           this->kind != CosmeticKind::INVALID;
 }
 
 EmoteSetCreateDispatch::EmoteSetCreateDispatch(const QJsonObject &emoteSet)

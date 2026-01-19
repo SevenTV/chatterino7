@@ -41,22 +41,33 @@ bool stripSuffix(std::string_view &str, std::string_view suffix)
     return false;
 }
 
-uint64_t parseRoomID(std::string_view channel)
+struct IDs {
+    uint64_t roomID = 0;
+    uint64_t channelID = 0;
+};
+
+IDs parseIDs(std::string_view channel)
 {
-    if (stripPrefix(channel, "chatrooms."))
+    bool isChannel = false;
+    if (stripPrefix(channel, "chatrooms.") || stripPrefix(channel, "chatroom_"))
     {
         stripSuffix(channel, ".v2");
     }
-    else
+    else if (stripPrefix(channel, "channel_") ||
+             stripPrefix(channel, "channel.") ||
+             stripPrefix(channel, "predictions-channel-"))
     {
-        stripPrefix(channel, "chatroom_") || stripPrefix(channel, "channel_") ||
-            stripPrefix(channel, "channel.") ||
-            stripPrefix(channel, "predictions-channel-");
+        isChannel = true;
     }
 
     uint64_t v = 0;
     std::from_chars(channel.data(), channel.data() + channel.size(), v);
-    return v;
+
+    if (isChannel)
+    {
+        return IDs{.channelID = v};
+    }
+    return IDs{.roomID = v};
 }
 
 }  // namespace
@@ -69,7 +80,7 @@ class KickLiveUpdatesClient
 {
 public:
     KickLiveUpdatesClient(QPointer<KickChatServer> chatServer)
-        : BasicPubSubClient(500)
+        : BasicPubSubClient(100)
         , lastHeartbeat_(std::chrono::steady_clock::now())
         , heartbeatInterval_(MAX_HEARTBEAT_INTERVAL)
         , chatServer_(std::move(chatServer))
@@ -151,10 +162,10 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
         // that's the main chat subscription
         if (channel.starts_with("chatrooms.") && channel.ends_with(".v2"))
         {
-            uint64_t roomID = parseRoomID(channel);
-            if (this->chatServer_ && roomID > 0)
+            auto ids = parseIDs(channel);
+            if (this->chatServer_ && ids.roomID > 0)
             {
-                this->chatServer_->onJoin(roomID);
+                this->chatServer_->onJoin(ids.roomID);
             }
         }
     }
@@ -177,11 +188,11 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
         bool isApp = stripPrefix(event, "App\\Events\\");
 
         auto channel = rootObj["channel"].toStringView();
-        auto roomID = parseRoomID(channel);
-        if (this->chatServer_ && roomID > 0)
+        auto ids = parseIDs(channel);
+        if (this->chatServer_ && (ids.roomID > 0 || ids.channelID > 0))
         {
-            bool handled =
-                this->chatServer_->onAppEvent(roomID, event, data.toObject());
+            bool handled = this->chatServer_->onAppEvent(
+                ids.roomID, ids.channelID, event, data.toObject());
             if (!handled)
             {
                 qCWarning(chatterinoKick).noquote()

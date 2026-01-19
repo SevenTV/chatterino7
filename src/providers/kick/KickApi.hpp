@@ -116,6 +116,18 @@ public:
     void getChannels(std::span<uint64_t> userIDs,
                      Callback<std::vector<KickChannelInfo>> cb);
 
+    void getChannelByName(const QString &usernameOrSlug,
+                          Callback<KickChannelInfo> cb);
+
+    void banUser(uint64_t broadcasterUserID, uint64_t userID,
+                 std::optional<std::chrono::minutes> duration,
+                 const QString &reason, Callback<void> cb);
+
+    void unbanUser(uint64_t broadcasterUserID, uint64_t userID,
+                   Callback<void> cb);
+
+    void deleteChatMessage(const QString &messageID, Callback<void> cb);
+
     void setAuth(const QString &authToken);
 
 private:
@@ -127,6 +139,13 @@ private:
     template <typename T>
     void postJson(const QString &endpoint, const QJsonObject &json,
                   Callback<T> cb);
+
+    template <typename T>
+    void deleteJson(const QString &endpoint, const QJsonObject &json,
+                    Callback<T> cb);
+
+    template <typename T>
+    void deleteEmptyBody(const QString &endpoint, Callback<T> cb);
 
     template <typename T>
     void doRequest(NetworkRequest &&req, Callback<T> cb);

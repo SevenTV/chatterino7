@@ -91,7 +91,8 @@ QNetworkReply *NetworkTask::createReply()
             return accessManager->put(request, data->payload);
 
         case NetworkRequestType::Delete:
-            return accessManager->deleteResource(data->request);
+            return NetworkManager::accessManager->sendCustomRequest(
+                request, "DELETE", data->payload);
 
         case NetworkRequestType::Post:
             if (data->multiPartPayload)

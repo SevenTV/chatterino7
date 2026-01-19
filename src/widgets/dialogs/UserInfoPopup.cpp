@@ -18,6 +18,7 @@
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "providers/IvrApi.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/pronouns/Pronouns.hpp"
@@ -572,26 +573,34 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
 
         // We can safely ignore this signal connection since this is a private signal, and
         // we only connect once
-        std::ignore =
-            this->userStateChanged_.connect([this, lineMod, timeout]() mutable {
-                TwitchChannel *twitchChannel = dynamic_cast<TwitchChannel *>(
-                    this->underlyingChannel_.get());
+        std::ignore = this->userStateChanged_.connect([this, lineMod,
+                                                       timeout]() mutable {
+            TwitchChannel *twitchChannel =
+                dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get());
 
-                bool visible = false;
-                if (twitchChannel)
-                {
-                    bool isMyself =
-                        getApp()
-                            ->getAccounts()
-                            ->twitch.getCurrent()
-                            ->getUserName()
-                            .compare(this->userName_, Qt::CaseInsensitive) == 0;
-                    bool hasModRights = twitchChannel->hasModRights();
-                    visible = hasModRights && !isMyself;
-                }
-                lineMod->setVisible(visible);
-                timeout->setVisible(visible);
-            });
+            bool visible = false;
+            if (twitchChannel)
+            {
+                bool isMyself =
+                    getApp()
+                        ->getAccounts()
+                        ->twitch.getCurrent()
+                        ->getUserName()
+                        .compare(this->userName_, Qt::CaseInsensitive) == 0;
+                bool hasModRights = twitchChannel->hasModRights();
+                visible = hasModRights && !isMyself;
+            }
+            else if (auto *kickChannel = dynamic_cast<KickChannel *>(
+                         this->underlyingChannel_.get()))
+            {
+                bool isMyself =
+                    getApp()->getAccounts()->kick.current()->username().compare(
+                        this->userName_, Qt::CaseInsensitive) == 0;
+                visible = kickChannel->hasModRights() && !isMyself;
+            }
+            lineMod->setVisible(visible);
+            timeout->setVisible(visible);
+        });
 
         // We can safely ignore this signal connection since we own the button, and
         // the button will always be destroyed before the UserInfoPopup
@@ -628,7 +637,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                     if (this->underlyingChannel_)
                     {
                         QString value = "/timeout " + this->userName_ + " " +
-                                        QString::number(arg);
+                                        QString::number(arg) + 's';
 
                         value = getApp()->getCommands()->execCommand(
                             value, this->underlyingChannel_, false);

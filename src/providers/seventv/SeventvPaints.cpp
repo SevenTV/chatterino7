@@ -135,17 +135,28 @@ namespace chatterino {
 
 SeventvPaints::SeventvPaints() = default;
 
-std::optional<std::shared_ptr<Paint>> SeventvPaints::getPaint(
-    const QString &userName) const
+std::shared_ptr<Paint> SeventvPaints::getPaint(const QString &userName,
+                                               bool kick) const
 {
     std::shared_lock lock(this->mutex_);
 
-    const auto it = this->paintMap_.find(userName);
-    if (it != this->paintMap_.end())
+    if (kick)
     {
-        return it->second;
+        const auto it = this->kickPaintMap_.find(userName);
+        if (it != this->kickPaintMap_.end())
+        {
+            return it->second;
+        }
     }
-    return std::nullopt;
+    else
+    {
+        const auto it = this->twitchPaintMap_.find(userName);
+        if (it != this->twitchPaintMap_.end())
+        {
+            return it->second;
+        }
+    }
+    return nullptr;
 }
 
 void SeventvPaints::addPaint(const QJsonObject &paintJson)
@@ -170,46 +181,85 @@ void SeventvPaints::addPaint(const QJsonObject &paintJson)
 }
 
 void SeventvPaints::assignPaintToUser(const QString &paintID,
-                                      const UserName &userName)
+                                      const UserName &twitchUserName,
+                                      const UserName &kickUserName)
 {
     std::unique_lock lock(this->mutex_);
 
     const auto paintIt = this->knownPaints_.find(paintID);
-    if (paintIt != this->knownPaints_.end())
+    if (paintIt == this->knownPaints_.end())
     {
-        auto it = this->paintMap_.find(userName.string);
-        bool changed = false;
-        if (it == this->paintMap_.end())
+        return;
+    }
+
+    bool changed = false;
+    int64_t nAdded = 0;
+    auto addToMap = [&](auto &map, const QString &username) {
+        auto it = map.find(twitchUserName.string);
+        if (it == map.end())
         {
-            this->paintMap_.emplace(userName.string, paintIt->second);
-            DebugCount::increase(u"7TV Paint Assignments"_s);
+            map.emplace(username, paintIt->second);
             changed = true;
+            nAdded++;
         }
         else if (it->second != paintIt->second)
         {
             it->second = paintIt->second;
             changed = true;
         }
+    };
 
-        if (changed)
-        {
-            postToThread([] {
-                getApp()->getWindows()->invalidateChannelViewBuffers();
-            });
-        }
+    if (!twitchUserName.string.isEmpty())
+    {
+        addToMap(this->twitchPaintMap_, twitchUserName.string);
+    }
+    if (!kickUserName.string.isEmpty())
+    {
+        addToMap(this->kickPaintMap_, kickUserName.string);
+    }
+
+    if (nAdded > 0)
+    {
+        DebugCount::increase(u"7TV Paint Assignments"_s, nAdded);
+    }
+
+    if (changed)
+    {
+        postToThread([] {
+            getApp()->getWindows()->invalidateChannelViewBuffers();
+        });
     }
 }
 
 void SeventvPaints::clearPaintFromUser(const QString &paintID,
-                                       const UserName &userName)
+                                       const UserName &twitchUserName,
+                                       const UserName &kickUserName)
 {
     std::unique_lock lock(this->mutex_);
 
-    const auto it = this->paintMap_.find(userName.string);
-    if (it != this->paintMap_.end() && it->second->id == paintID)
+    int64_t nRemoved = 0;
+    if (!twitchUserName.string.isEmpty())
     {
-        this->paintMap_.erase(it);
-        DebugCount::decrease(u"7TV Paint Assignments"_s);
+        const auto it = this->twitchPaintMap_.find(twitchUserName.string);
+        if (it != this->twitchPaintMap_.end() && it->second->id == paintID)
+        {
+            this->twitchPaintMap_.erase(it);
+            nRemoved++;
+        }
+    }
+    if (!kickUserName.string.isEmpty())
+    {
+        const auto it = this->kickPaintMap_.find(kickUserName.string);
+        if (it != this->kickPaintMap_.end() && it->second->id == paintID)
+        {
+            this->kickPaintMap_.erase(it);
+            nRemoved++;
+        }
+    }
+
+    if (nRemoved > 0)
+    {
+        DebugCount::decrease(u"7TV Paint Assignments"_s, nRemoved);
         postToThread([] {
             getApp()->getWindows()->invalidateChannelViewBuffers();
         });
