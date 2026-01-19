@@ -85,6 +85,8 @@ private:
     QString helixAvatarUrl_;
     QString seventvAvatarUrl_;
 
+    QString kickUserSlug_;
+
     // The channel the popup was opened from (e.g. /mentions or #forsen). Can be a special channel.
     ChannelPtr channel_;
 

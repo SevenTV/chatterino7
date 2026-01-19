@@ -36,6 +36,7 @@ struct KickPrivateChannelInfo {
 
     uint64_t channelID = 0;
     uint64_t followersCount = 0;
+    QString slug;
     KickPrivateUserInfo user;
     KickPrivateChatroomInfo chatroom;
 };
@@ -98,6 +99,8 @@ public:
     using Callback = std::function<void(ExpectedStr<T>)>;
 
     static KickApi *instance();
+
+    static QString slugify(const QString &usernameOrSlug);
 
     static void privateChannelInfo(const QString &username,
                                    Callback<KickPrivateChannelInfo> cb);

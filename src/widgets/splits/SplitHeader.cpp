@@ -470,17 +470,22 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
 
     auto *twitchChannel =
         dynamic_cast<TwitchChannel *>(this->split_->getChannel().get());
+    auto *kickChannel =
+        dynamic_cast<KickChannel *>(this->split_->getChannel().get());
 
-    if (twitchChannel)
+    if (twitchChannel || kickChannel)
     {
         menu->addAction(
             OPEN_IN_BROWSER,
             h->getDisplaySequence(HotkeyCategory::Split, "openInBrowser"),
             this->split_, &Split::openInBrowser);
-        menu->addAction(
-            OPEN_PLAYER_IN_BROWSER,
-            h->getDisplaySequence(HotkeyCategory::Split, "openPlayerInBrowser"),
-            this->split_, &Split::openBrowserPlayer);
+        if (twitchChannel)
+        {
+            menu->addAction(OPEN_PLAYER_IN_BROWSER,
+                            h->getDisplaySequence(HotkeyCategory::Split,
+                                                  "openPlayerInBrowser"),
+                            this->split_, &Split::openBrowserPlayer);
+        }
         menu->addAction(
             OPEN_IN_STREAMLINK,
             h->getDisplaySequence(HotkeyCategory::Split, "openInStreamlink"),
@@ -502,14 +507,17 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                 this->split_, &Split::openModViewInBrowser);
         }
 
-        menu->addAction(
-                "Create a clip",
-                h->getDisplaySequence(HotkeyCategory::Split, "createClip"),
-                this->split_,
-                [twitchChannel] {
-                    twitchChannel->createClip({}, {});
-                })
-            ->setVisible(twitchChannel->isLive());
+        if (twitchChannel)
+        {
+            menu->addAction(
+                    "Create a clip",
+                    h->getDisplaySequence(HotkeyCategory::Split, "createClip"),
+                    this->split_,
+                    [twitchChannel] {
+                        twitchChannel->createClip({}, {});
+                    })
+                ->setVisible(twitchChannel->isLive());
+        }
 
         menu->addSeparator();
     }

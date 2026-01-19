@@ -51,6 +51,11 @@ public:
         return this->displayName_;
     }
 
+    const QString &slug() const
+    {
+        return this->slug_;
+    }
+
     uint64_t roomID() const
     {
         return this->roomID_;
@@ -151,6 +156,8 @@ private:
 
     // Kick usually calls this username
     QString displayName_;
+    // The name in the URL (replaces non-alphanumeric characters with dashes)
+    QString slug_;
 
     Atomic<std::shared_ptr<const EmoteMap>> seventvEmotes_;
 

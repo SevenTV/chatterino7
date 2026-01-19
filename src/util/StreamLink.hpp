@@ -32,6 +32,7 @@ void openStreamlink(const QString &channelURL, const QString &quality,
 
 // Start opening streamlink for the given channel, reading settings like quality
 // from settings and opening a quality dialog if the quality is "Choose"
-void openStreamlinkForChannel(const QString &channel);
+void openStreamlinkForChannel(const QString &channel,
+                              QStringView prefixURL = u"twitch.tv/");
 
 }  // namespace chatterino

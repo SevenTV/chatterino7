@@ -9,6 +9,7 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/commands/CommandContext.hpp"
 #include "controllers/userdata/UserDataController.hpp"
+#include "providers/kick/KickChannel.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -337,6 +338,10 @@ QString streamlink(const CommandContext &ctx)
         {
             target = ctx.channel->getName();
         }
+        else if (ctx.kickChannel)
+        {
+            target = ctx.kickChannel->slug();
+        }
         else
         {
             ctx.channel->addSystemMessage(
@@ -348,7 +353,14 @@ QString streamlink(const CommandContext &ctx)
     }
 
     stripChannelName(target);
-    openStreamlinkForChannel(target);
+    if (ctx.kickChannel)
+    {
+        openStreamlinkForChannel(target, u"kick.com/");
+    }
+    else
+    {
+        openStreamlinkForChannel(target);
+    }
 
     return "";
 }

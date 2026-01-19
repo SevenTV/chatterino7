@@ -182,7 +182,7 @@ void openStreamlink(const QString &channelURL, const QString &quality,
     }
 }
 
-void openStreamlinkForChannel(const QString &channel)
+void openStreamlinkForChannel(const QString &channel, QStringView prefixURL)
 {
     static const QString INFO_TEMPLATE("Opening %1 in Streamlink ...");
 
@@ -201,7 +201,7 @@ void openStreamlinkForChannel(const QString &channel)
         }
     }
 
-    QString channelURL = "twitch.tv/" + channel;
+    QString channelURL = prefixURL + channel;
 
     auto preferredQuality = getSettings()->preferredQuality.getEnum();
 

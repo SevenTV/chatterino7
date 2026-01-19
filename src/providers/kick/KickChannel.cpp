@@ -34,6 +34,8 @@ namespace chatterino {
 KickChannel::KickChannel(const QString &name)
     : Channel(name.toLower(), Type::Kick)
     , ChannelChatters(static_cast<Channel &>(*this))
+    , displayName_(name)
+    , slug_(KickApi::slugify(this->getName()))
     , seventvEmotes_(std::make_shared<const EmoteMap>())
 {
     this->setMentionFlag(MessageElementFlag::KickUsername);
@@ -416,6 +418,7 @@ void KickChannel::resolveChannelInfo()
                 return;
             }
 
+            self->slug_ = res->slug;
             self->setUserInfo(UserInit{
                 .roomID = res->chatroom.roomID,
                 .userID = res->user.userID,

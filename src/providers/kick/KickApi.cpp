@@ -117,13 +117,6 @@ QString makePublicV1Url(QStringView endpoint)
     return u"https://api.kick.com/public/v1/" % endpoint;
 }
 
-QString slugify(const QString &username)
-{
-    auto slugified = username;
-    slugified.replace('_', '-');
-    return slugified;
-}
-
 }  // namespace
 
 namespace chatterino {
@@ -149,6 +142,7 @@ KickPrivateChatroomInfo::KickPrivateChatroomInfo(BoostJsonObject obj)
 KickPrivateChannelInfo::KickPrivateChannelInfo(BoostJsonObject obj)
     : channelID(obj["id"].toUint64())
     , followersCount(obj["followers_count"].toUint64())
+    , slug(obj["slug"].toQString())
     , user(obj["user"].toObject())
     , chatroom(obj["chatroom"].toObject())
 {
@@ -230,6 +224,13 @@ KickApi *KickApi::instance()
         api = std::unique_ptr<KickApi>{new KickApi};
     }
     return api.get();
+}
+
+QString KickApi::slugify(const QString &usernameOrSlug)
+{
+    auto slugified = usernameOrSlug;
+    slugified.replace('_', '-');
+    return slugified;
 }
 
 void KickApi::privateChannelInfo(const QString &username,

@@ -14,7 +14,7 @@
 
 namespace chatterino {
 
-void openInCustomPlayer(QStringView channelName)
+void openInCustomPlayer(QStringView channelName, QStringView prefixURL)
 {
     QString scheme = getSettings()->customURIScheme.getValue();
     if (scheme.isEmpty())
@@ -25,8 +25,8 @@ void openInCustomPlayer(QStringView channelName)
         return;
     }
 
-    QString encodedTwitchUrl = QString::fromUtf8(
-        QUrl::toPercentEncoding(u"https://www.twitch.tv/" % channelName));
+    QString encodedTwitchUrl =
+        QString::fromUtf8(QUrl::toPercentEncoding(prefixURL % channelName));
     QDesktopServices::openUrl(QUrl{scheme % encodedTwitchUrl});
 }
 
