@@ -534,9 +534,10 @@ void EmotePopup::reloadEmotes()
         }
 
         // personal
-        for (const auto &map :
-             getApp()->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
-                 getApp()->getAccounts()->kick.current()->userID()))
+        const auto personalEmotes =
+            getApp()->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
+                getApp()->getAccounts()->kick.current()->userID());
+        for (const auto &map : personalEmotes)
         {
             addEmotes(*subChannel, *map, "7TV (Personal)");
         }
@@ -649,9 +650,10 @@ void EmotePopup::filterTwitchEmotes(std::shared_ptr<Channel> searchChannel,
             addEmotes(*searchChannel, seventvChannelEmotes, "7TV (Channel)");
         }
 
-        for (const auto &map :
-             getApp()->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
-                 getApp()->getAccounts()->kick.current()->userID()))
+        const auto personalEmotes =
+            getApp()->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
+                getApp()->getAccounts()->kick.current()->userID());
+        for (const auto &map : personalEmotes)
         {
             auto seventvPersonalEmotes = filterEmoteMap(searchText, map);
             if (!seventvPersonalEmotes.empty())
