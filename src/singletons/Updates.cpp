@@ -83,6 +83,14 @@ bool Updates::isDowngradeOf(const QString &online, const QString &current)
         return false;
     }
 
+    // TODO: remove once chatterino7's major version switches from `7` to `2`
+    if (currentVersion.major == 7 && onlineVersion.major == 2)
+    {
+        currentVersion = {2, currentVersion.minor, currentVersion.patch,
+                          currentVersion.prerelease_type,
+                          currentVersion.prerelease_number};
+    }
+
     return onlineVersion < currentVersion;
 }
 
