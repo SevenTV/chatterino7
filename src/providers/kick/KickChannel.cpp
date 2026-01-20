@@ -101,6 +101,19 @@ std::shared_ptr<MessageThread> KickChannel::getOrCreateThread(
 
 void KickChannel::reloadSeventvEmotes(bool manualRefresh)
 {
+    bool cacheHit = readProviderEmotesCache(
+        u"kick." % QString::number(this->userID()), "seventv",
+        [this](const auto &jsonDoc) {
+            const auto json = jsonDoc.object();
+            const auto emoteSet = json["emote_set"].toObject();
+            const auto parsedEmotes = emoteSet["emotes"].toArray();
+            auto emoteMap = seventv::detail::parseEmotes(
+                parsedEmotes, SeventvEmoteSetKind::Channel);
+            this->seventvEmotes_.set(
+                std::make_shared<const EmoteMap>(emoteMap));
+        });
+
+    qDebug() << "7tv emtoes" << this->getName() << this->userID();
     SeventvEmotes::loadKickChannelEmotes(
         this->weakFromThis(), this->userID(),
         [weak = this->weakFromThis()](EmoteMap &&emotes,
@@ -116,7 +129,7 @@ void KickChannel::reloadSeventvEmotes(bool manualRefresh)
             self->seventvKickConnectionIndex_ = info.twitchConnectionIndex;
             self->updateSeventvData(info.userID, info.emoteSetID);
         },
-        manualRefresh);
+        manualRefresh, cacheHit);
 }
 
 std::shared_ptr<const EmoteMap> KickChannel::seventvEmotes() const

@@ -406,7 +406,8 @@ void SeventvEmotes::loadChannelEmotes(
 // emote refactoring soon (hopefully) after which this can be fixed.
 void SeventvEmotes::loadKickChannelEmotes(
     const std::weak_ptr<KickChannel> &channel, uint64_t userID,
-    std::function<void(EmoteMap &&, ChannelInfo)> callback, bool manualRefresh)
+    std::function<void(EmoteMap &&, ChannelInfo)> callback, bool manualRefresh,
+    bool cacheHit)
 {
     qCDebug(chatterinoSeventv)
         << "Reloading Kick 7TV Channel Emotes" << userID << manualRefresh;
@@ -415,6 +416,8 @@ void SeventvEmotes::loadKickChannelEmotes(
         userID,
         [callback = std::move(callback), channel, manualRefresh,
          userID](const auto &json) {
+            writeProviderEmotesCache(u"kick." % QString::number(userID),
+                                     "seventv", QJsonDocument(json).toJson());
             const auto emoteSet = json["emote_set"].toObject();
             const auto parsedEmotes = emoteSet["emotes"].toArray();
 
@@ -463,7 +466,7 @@ void SeventvEmotes::loadKickChannelEmotes(
                 }
             }
         },
-        [userID, channel, manualRefresh](const auto &result) {
+        [userID, channel, manualRefresh, cacheHit](const auto &result) {
             auto shared = channel.lock();
             if (!shared)
             {
@@ -490,6 +493,11 @@ void SeventvEmotes::loadKickChannelEmotes(
                     QStringLiteral("Failed to fetch 7TV channel "
                                    "emotes. (Error: %1)")
                         .arg(errorString));
+                if (cacheHit)
+                {
+                    shared->addSystemMessage(
+                        "Using cached 7TV emotes as fallback.");
+                }
             }
         });
 }
