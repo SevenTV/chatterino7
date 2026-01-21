@@ -274,7 +274,7 @@ jobs:
           ninja chatterino-crash-handler
           mkdir Chatterino2/crashpad
           cp bin/crashpad/crashpad-handler.exe Chatterino2/crashpad/crashpad-handler.exe
-          7z a bin/chatterino-Qt-${{ matrix.qt-version }}.pdb.7z bin/chatterino.pdb
+          7z a bin/chatterino-Qt-${{ matrix.qt-version }}.pdb.7z bin/chatterino-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb
 
       - name: Prepare build dir (windows)
         if: startsWith(matrix.os, 'windows')
@@ -407,62 +407,9 @@ jobs:
         with:
           fetch-depth: 0 # allows for tags access
 
-      # Windows
       - uses: actions/download-artifact@v7
-        name: Windows Qt6.9.3
+        name: Download artifacts
         with:
-          name: chatterino-windows-x86-64-Qt-6.9.3.zip
-          path: release-artifacts/
-
-      - uses: actions/download-artifact@v7
-        name: Windows Qt6.9.3 symbols
-        with:
-          name: chatterino-windows-x86-64-Qt-6.9.3-symbols.pdb.7z
-          path: release-artifacts/
-
-      # Windows (ARM)
-      - uses: actions/download-artifact@v4
-        name: Windows Qt6.9.1
-        with:
-          name: chatterino-windows-arm-Qt-6.9.1.zip
-          path: release-artifacts/
-
-      - uses: actions/download-artifact@v4
-        name: Windows Qt6.9.1 symbols
-        with:
-          name: chatterino-windows-arm-Qt-6.9.1-symbols.pdb.7z
-          path: release-artifacts/
-
-      # Linux
-      - uses: actions/download-artifact@v7
-        name: Linux AppImage
-        with:
-          name: Chatterino-x86_64-Qt-6.7.2.AppImage
-          path: release-artifacts/
-
-      - uses: actions/download-artifact@v7
-        name: Ubuntu 22.04 deb
-        with:
-          name: Chatterino-ubuntu-22.04-Qt-6.7.2.deb
-          path: release-artifacts/
-
-      - uses: actions/download-artifact@v7
-        name: Ubuntu 24.04 deb
-        with:
-          name: Chatterino-ubuntu-24.04-Qt-6.7.2.deb
-          path: release-artifacts/
-
-      - uses: actions/download-artifact@v7
-        name: Flatpak
-        with:
-          name: chatterino-x86_64.flatpak
-          path: release-artifacts/
-
-      # macOS
-      - uses: actions/download-artifact@v7
-        name: macOS Qt6.9.3 dmg
-        with:
-          name: chatterino-macos-Qt-6.9.3-universal.dmg
           path: release-artifacts/
 
       - name: Rename artifacts
@@ -470,6 +417,8 @@ jobs:
           ls -l
           # Rename the macos build to indicate that it's for macOS 13.0 users
           mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino-macOS-13.0-universal.dmg
+          # Rename Windows ARM64 to indicate that it's not well tested
+          mv chatterino-windows-arm-Qt-6.9.3.zip Experimental-ARM64-chatterino-windows-Qt-6.9.3.zip
         working-directory: release-artifacts
         shell: bash
 

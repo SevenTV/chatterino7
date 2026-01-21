@@ -148,8 +148,6 @@ jobs:
 
           mv Chatterino-x86_64-Qt-6.7.2.AppImage Chatterino-x86_64-Qt6.AppImage
 
-          # mv chatterino-windows-x86-64-Qt-6.9.3-symbols.pdb.7z Chatterino-Windows-x86-64-debug-symbols.pdb.7z
-
           mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino.dmg
 
       - name: Hash files
