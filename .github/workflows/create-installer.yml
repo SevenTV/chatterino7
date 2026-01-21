@@ -5,7 +5,7 @@ on:
     workflows: ["Build"]
     types: [completed]
     # make sure this only runs on the default branch
-    # branches: [chatterino7, "bugfix-release/**", "release/*"]
+    branches: [chatterino7, "bugfix-release/**", "release/*"]
   workflow_dispatch:
 
 env:
