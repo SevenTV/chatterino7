@@ -119,19 +119,6 @@ jobs:
 
       - uses: actions/download-artifact@v7
         with:
-          name: Chatterino7${{ needs.check-release.outputs.IS_TAGGED != '0' && '.Nightly' || '' }}.Installer.exe
-          path: build/
-      - uses: actions/download-artifact@v7
-        with:
-          name: Chatterino7${{ needs.check-release.outputs.IS_TAGGED != '0' && '.Nightly' || '' }}.Portable.zip
-          path: build/
-      - uses: actions/download-artifact@v7
-        with:
-          name: Experimental-ARM64-Chatterino7${{ needs.check-release.outputs.IS_TAGGED != '0' && '.Nightly' || '' }}.Installer.exe
-          path: build/
-      - uses: actions/download-artifact@v7
-        with:
-          name: Experimental-ARM64-Chatterino7${{ needs.check-release.outputs.IS_TAGGED != '0' && '.Nightly' || '' }}.Portable.zip
           path: build/
 
       - name: Download artifact

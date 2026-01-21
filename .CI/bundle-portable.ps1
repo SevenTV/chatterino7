@@ -2,8 +2,8 @@ if (-not (Test-Path -PathType Container Chatterino2)) {
     Write-Error "Couldn't find a folder called 'Chatterino2' in the current directory.";
     exit 1
 }
-if (-not $Env:C2_PORTABLE_INSTALLER_VERSION -or -not $Env:C2_PORTABLE_INSTALLER_SHA256) {
-    Write-Error "C2_PORTABLE_INSTALLER_VERSION or C2_PORTABLE_INSTALLER_SHA256 not defined.";
+if (-not $Env:C2_PORTABLE_INSTALLER_VERSION -or -not $Env:C2_PORTABLE_INSTALLER_SHA256_X64 -or -not $Env:C2_PORTABLE_INSTALLER_SHA256_ARM64) {
+    Write-Error "C2_PORTABLE_INSTALLER_VERSION or C2_PORTABLE_INSTALLER_SHA256_{X64,ARM64} not defined.";
     exit 1
 }
 

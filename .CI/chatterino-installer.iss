@@ -13,6 +13,10 @@
 #define WORKING_DIR ""
 #endif
 
+#ifndef VCRT_ARCH
+#define VCRT_ARCH "x64"
+#endif
+
 ; Set to the build part of the VCRT version
 #ifndef SHIPPED_VCRT_BUILD
 #define SHIPPED_VCRT_BUILD 0
@@ -36,7 +40,10 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DisableProgramGroupPage=yes
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
+#ifdef IS_ARM
+ArchitecturesAllowed=arm64
+#endif
 ;Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
@@ -73,7 +80,7 @@ Name: "freshinstall"; Description: "Fresh install (delete old settings/logs)"; F
 
 [Files]
 Source: "{#WORKING_DIR}Chatterino2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#WORKING_DIR}vc_redist.x64.exe"; DestDir: "{tmp}"; Tasks: vcredist;
+Source: "{#WORKING_DIR}vc_redist.{#VCRT_ARCH}.exe"; DestDir: "{tmp}"; Tasks: vcredist;
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -82,7 +89,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; AppUserMo
 
 [Run]
 ; VC++ redistributable
-Filename: {tmp}\vc_redist.x64.exe; Parameters: "/install /passive /norestart"; StatusMsg: "Installing 64-bit Windows Universal Runtime..."; Flags: waituntilterminated; Tasks: vcredist
+Filename: {tmp}\vc_redist.{#VCRT_ARCH}.exe; Parameters: "/install /passive /norestart"; StatusMsg: "Installing 64-bit Windows Universal Runtime..."; Flags: waituntilterminated; Tasks: vcredist
 ; Run chatterino
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
@@ -103,7 +110,7 @@ var
   VCRTVersion: String;
 begin
   Result := Null;
-  if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64', 'Version', VCRTVersion) then
+  if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\{#VCRT_ARCH}', 'Version', VCRTVersion) then
     Result := VCRTVersion;
 end;
 
@@ -126,7 +133,7 @@ var
   VCRTBuild: Cardinal;
 begin
   Result := True;
-  if RegQueryDWordValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64', 'Minor', VCRTBuild) then
+  if RegQueryDWordValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\{#VCRT_ARCH}', 'Minor', VCRTBuild) then
   begin
     if VCRTBuild >= {#SHIPPED_VCRT_MINOR} then
         Result := False;

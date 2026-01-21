@@ -27,6 +27,7 @@ else {
 $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
 if ($architecture -eq 'arm64') {
     $installerBaseName = "Experimental-ARM64-$installerBaseName"
+    $defines = "$defines /DIS_ARM=1"
 }
 
 if ($Env:GITHUB_OUTPUT) {
@@ -49,6 +50,7 @@ ISCC `
     /DINSTALLER_BASE_NAME="$installerBaseName" `
     /DSHIPPED_VCRT_MINOR="$($VCRTVersion.FileMinorPart)" `
     /DSHIPPED_VCRT_VERSION="$($VCRTVersion.FileDescription)" `
+    /DVCRT_ARCH="$architecture" `
     $defines `
     /O. `
     "$PSScriptRoot\chatterino-installer.iss";
