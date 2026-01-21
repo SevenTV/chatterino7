@@ -87,12 +87,24 @@ QNetworkReply *NetworkTask::createReply()
         case NetworkRequestType::Get:
             return accessManager->get(request);
 
-        case NetworkRequestType::Put:
-            return accessManager->put(request, data->payload);
-
         case NetworkRequestType::Delete:
             return NetworkManager::accessManager->sendCustomRequest(
                 request, "DELETE", data->payload);
+
+        case NetworkRequestType::Put:
+            if (data->multiPartPayload)
+            {
+                assert(data->payload.isNull());
+
+                return accessManager->put(request,
+                                          data->multiPartPayload.get());
+            }
+            else
+            {
+                assert(data->multiPartPayload == nullptr);
+
+                return accessManager->put(request, data->payload);
+            }
 
         case NetworkRequestType::Post:
             if (data->multiPartPayload)
@@ -104,8 +116,11 @@ QNetworkReply *NetworkTask::createReply()
             }
             else
             {
+                assert(data->multiPartPayload == nullptr);
+
                 return accessManager->post(request, data->payload);
             }
+
         case NetworkRequestType::Patch:
             if (data->multiPartPayload)
             {
@@ -116,6 +131,8 @@ QNetworkReply *NetworkTask::createReply()
             }
             else
             {
+                assert(data->multiPartPayload == nullptr);
+
                 return NetworkManager::accessManager->sendCustomRequest(
                     request, "PATCH", data->payload);
             }
