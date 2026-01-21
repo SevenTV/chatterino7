@@ -274,7 +274,7 @@ jobs:
           ninja chatterino-crash-handler
           mkdir Chatterino2/crashpad
           cp bin/crashpad/crashpad-handler.exe Chatterino2/crashpad/crashpad-handler.exe
-          7z a bin/chatterino-Qt-${{ matrix.qt-version }}.pdb.7z bin/chatterino-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb
+          7z a bin/chatterino-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z bin/chatterino.pdb
 
       - name: Prepare build dir (windows)
         if: startsWith(matrix.os, 'windows')
