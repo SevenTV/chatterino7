@@ -113,7 +113,6 @@ void KickChannel::reloadSeventvEmotes(bool manualRefresh)
                 std::make_shared<const EmoteMap>(emoteMap));
         });
 
-    qDebug() << "7tv emtoes" << this->getName() << this->userID();
     SeventvEmotes::loadKickChannelEmotes(
         this->weakFromThis(), this->userID(),
         [weak = this->weakFromThis()](EmoteMap &&emotes,
