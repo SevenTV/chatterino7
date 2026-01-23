@@ -502,7 +502,7 @@ size_t KickChannel::maxBurstMessages() const
     // FIXME: this isn't fully tested (maybe these are higher?)
     if (this->hasHighRateLimit())
     {
-        return 10;
+        return 20;
     }
     return 5;
 }
@@ -514,6 +514,10 @@ std::chrono::milliseconds KickChannel::minMessageOffset() const
     {
         return 50ms;
     }
+    if (this->roomModes().slowModeDuration)
+    {
+        return 500ms;
+    }
     return 100ms;
 }
 
@@ -523,7 +527,7 @@ bool KickChannel::checkMessageRatelimit()
     auto &timestamps = this->lastMessageTimestamps_;
 
     // FIXME: haven't tested this fully
-    const auto cooldown = 30s;
+    const auto cooldown = 5s;
 
     // This is mostly identical to the logic in TwitchIrcServer
     if (!timestamps.empty() &&
