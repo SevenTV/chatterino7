@@ -105,7 +105,8 @@ QString formatRoomModeUnclean(const KickChannel::RoomModes &modes)
     };
     if (modes.followersModeDuration)
     {
-        twitch.followerOnly = modes.followersModeDuration->count();
+        twitch.followerOnly =
+            static_cast<int>(modes.followersModeDuration->count());
     }
     if (modes.slowModeDuration)
     {
