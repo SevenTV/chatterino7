@@ -38,6 +38,15 @@ public:
         uint64_t channelID = 0;
     };
 
+    struct RoomModes {
+        bool subscribersMode = false;
+        bool emotesMode = false;
+        std::optional<std::chrono::seconds> slowModeDuration;
+        std::optional<std::chrono::minutes> followersModeDuration;
+
+        auto operator<=>(const RoomModes &other) const = default;
+    };
+
     KickChannel(const QString &name);
     ~KickChannel() override;
 
@@ -123,6 +132,9 @@ public:
 
     pajlada::Signals::NoArgSignal userIDChanged;
     pajlada::Signals::NoArgSignal userStateChanged;
+
+    const RoomModes &roomModes() const;
+    void updateRoomModes(const RoomModes &modes);
     pajlada::Signals::NoArgSignal roomModesChanged;
 
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
@@ -175,6 +187,8 @@ private:
     std::queue<std::chrono::steady_clock::time_point> lastMessageTimestamps_;
     std::chrono::steady_clock::time_point lastMessageSpeedErrorTs_;
     std::chrono::steady_clock::time_point lastMessageAmountErrorTs_;
+
+    RoomModes roomModes_;
 
     bool isMod_ = false;
     bool isVip_ = false;

@@ -879,6 +879,38 @@ MessagePtrMut KickMessageBuilder::makeKicksGiftedMessage(KickChannel *channel,
     return builder.release();
 }
 
+MessagePtrMut KickMessageBuilder::makeRoomModeMessage(
+    KickChannel *channel, const QString &mode, bool enabled,
+    std::optional<std::chrono::seconds> duration)
+{
+    KickMessageBuilder builder(systemMessage, channel,
+                               QDateTime::currentDateTime());
+    builder->flags.set(MessageFlag::ModerationAction);
+    QString text;
+
+    QString enabledText = enabled ? u"enabled"_s : u"disabled"_s;
+
+    builder.emplaceSystemTextAndUpdate(mode, text);
+    builder.emplaceSystemTextAndUpdate(u"mode"_s, text);
+
+    if (duration && duration->count() > 0)
+    {
+        builder.emplaceSystemTextAndUpdate(u'(' % formatTime(*duration) % u')',
+                                           text);
+    }
+
+    builder.emplaceSystemTextAndUpdate(u"has been"_s, text);
+    builder.emplaceSystemTextAndUpdate(enabledText, text);
+
+    text.removeLast();
+    builder->elements.back()->setTrailingSpace(false);
+    builder.emplaceSystemTextAndUpdate(u"."_s, text);
+
+    builder->messageText = text;
+    builder->searchText = text;
+    return builder.release();
+}
+
 void KickMessageBuilder::appendChannelName()
 {
     QString channelName('#' + this->channel()->getName());

@@ -408,6 +408,21 @@ const KickChannel::StreamData &KickChannel::streamData() const
     return this->streamData_;
 }
 
+const KickChannel::RoomModes &KickChannel::roomModes() const
+{
+    return this->roomModes_;
+}
+
+void KickChannel::updateRoomModes(const RoomModes &modes)
+{
+    if (modes == this->roomModes_)
+    {
+        return;
+    }
+    this->roomModes_ = modes;
+    this->roomModesChanged.invoke();
+}
+
 void KickChannel::resolveChannelInfo()
 {
     auto weak = this->weakFromThis();
@@ -442,6 +457,13 @@ void KickChannel::resolveChannelInfo()
             {
                 self->displayNameChanged.invoke();
             }
+
+            self->updateRoomModes(RoomModes{
+                .subscribersMode = res->chatroom.subscribersMode,
+                .emotesMode = res->chatroom.emotesMode,
+                .slowModeDuration = res->chatroom.slowModeDuration,
+                .followersModeDuration = res->chatroom.followersModeDuration,
+            });
         });
 }
 

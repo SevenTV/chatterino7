@@ -192,10 +192,11 @@ bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
         "PinnedMessageCreatedEvent",
         &KickChatServer::onPinnedMessageCreatedEvent,  //
         "PinnedMessageDeletedEvent",
-        &KickChatServer::onPinnedMessageDeletedEvent,                   //
-        "RewardRedeemedEvent", &KickChatServer::onRewardRedeemedEvent,  //
-        "KicksGifted", &KickChatServer::onKicksGiftedEvent,             //
-        "StreamHostEvent", &KickChatServer::onStreamHostEvent,          //
+        &KickChatServer::onPinnedMessageDeletedEvent,                     //
+        "RewardRedeemedEvent", &KickChatServer::onRewardRedeemedEvent,    //
+        "KicksGifted", &KickChatServer::onKicksGiftedEvent,               //
+        "StreamHostEvent", &KickChatServer::onStreamHostEvent,            //
+        "ChatroomUpdatedEvent", &KickChatServer::onChatroomUpdatedEvent,  //
 
         // ignored
         "KicksLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
@@ -372,6 +373,62 @@ void KickChatServer::onKicksGiftedEvent(KickChannel *channel,
     {
         channel->addMessage(msg, MessageContext::Original);
     }
+}
+
+void KickChatServer::onChatroomUpdatedEvent(KickChannel *channel,
+                                            BoostJsonObject data)
+{
+    KickChannel::RoomModes newMode{
+        .subscribersMode = data["subscribers_mode"]["enabled"].toBool(),
+        .emotesMode = data["emotes_mode"]["enabled"].toBool(),
+    };
+    auto slowMode = data["slow_mode"].toObject();
+    if (slowMode["enabled"].toBool())
+    {
+        newMode.slowModeDuration =
+            std::chrono::seconds{slowMode["message_interval"].toInt64()};
+    }
+    auto followersMode = data["followers_mode"].toObject();
+    if (followersMode["enabled"].toBool())
+    {
+        newMode.followersModeDuration =
+            std::chrono::minutes{followersMode["min_duration"].toInt64()};
+    }
+
+    const auto &oldMode = channel->roomModes();
+
+    if (newMode.subscribersMode != oldMode.subscribersMode)
+    {
+        channel->addMessage(KickMessageBuilder::makeRoomModeMessage(
+                                channel, u"Subscribers"_s,
+                                newMode.subscribersMode, std::nullopt),
+                            MessageContext::Original);
+    }
+    if (newMode.emotesMode != oldMode.emotesMode)
+    {
+        channel->addMessage(
+            KickMessageBuilder::makeRoomModeMessage(
+                channel, u"Emote-only"_s, newMode.emotesMode, std::nullopt),
+            MessageContext::Original);
+    }
+    if (newMode.slowModeDuration != oldMode.slowModeDuration)
+    {
+        channel->addMessage(
+            KickMessageBuilder::makeRoomModeMessage(
+                channel, u"Slow"_s, newMode.slowModeDuration.has_value(),
+                newMode.slowModeDuration),
+            MessageContext::Original);
+    }
+    if (newMode.followersModeDuration != oldMode.followersModeDuration)
+    {
+        channel->addMessage(KickMessageBuilder::makeRoomModeMessage(
+                                channel, u"Followers-only"_s,
+                                newMode.followersModeDuration.has_value(),
+                                newMode.followersModeDuration),
+                            MessageContext::Original);
+    }
+
+    channel->updateRoomModes(newMode);
 }
 
 void KickChatServer::onKnownIgnoredMessage(KickChannel * /*channel*/,

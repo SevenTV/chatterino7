@@ -136,7 +136,21 @@ KickPrivateChatroomInfo::KickPrivateChatroomInfo(BoostJsonObject obj)
     : roomID(obj["id"].toUint64())
     , createdAt(QDateTime::fromString(obj["created_at"].toQString(),
                                       Qt::ISODateWithMs))
+    , subscribersMode(obj["subscribers_mode"].toBool())
+    , emotesMode(obj["emotes_mode"].toBool())
 {
+    bool slowMode = obj["slow_mode"].toBool();
+    if (slowMode)
+    {
+        this->slowModeDuration =
+            std::chrono::seconds{obj["message_interval"].toInt64()};
+    }
+    bool followersMode = obj["followers_mode"].toBool();
+    if (followersMode)
+    {
+        this->followersModeDuration =
+            std::chrono::minutes{obj["following_min_duration"].toInt64()};
+    }
 }
 
 KickPrivateChannelInfo::KickPrivateChannelInfo(BoostJsonObject obj)
