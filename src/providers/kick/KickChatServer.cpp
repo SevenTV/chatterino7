@@ -89,7 +89,12 @@ std::shared_ptr<KickChannel> KickChatServer::findByUserID(uint64_t userID) const
 std::shared_ptr<KickChannel> KickChatServer::findBySlug(
     const QString &slug) const
 {
-    auto it = this->channelsBySlug.find(slug);
+    QString searchString = slug.toLower();
+    if (searchString.startsWith('#'))
+    {
+        searchString.removeFirst();
+    }
+    auto it = this->channelsBySlug.find(searchString);
     if (it != this->channelsBySlug.end())
     {
         return it->second.lock();
