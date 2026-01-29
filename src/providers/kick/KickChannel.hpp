@@ -78,9 +78,11 @@ public:
         return this->channelID_;
     }
 
-    /// Get the thread for the given message
-    /// If no thread can be found for the message, create one
-    std::shared_ptr<MessageThread> getOrCreateThread(const QString &messageID);
+    /// Get the thread for the given message.
+    /// If no thread can be found for the message, create one.
+    /// Additionally, this returns the reply parent.
+    std::pair<std::shared_ptr<MessageThread>, MessagePtr> getOrCreateThread(
+        const QString &messageID);
 
     void reloadSeventvEmotes(bool manualRefresh);
 

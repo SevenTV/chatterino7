@@ -21,6 +21,7 @@
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
+#include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "util/BoostJsonWrap.hpp"
 #include "util/FormatTime.hpp"
@@ -251,13 +252,12 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
     auto originalMessage = metadata["original_message"].toObject();
     auto originalSender = metadata["original_sender"]["username"].toQString();
     auto originalMessageID = originalMessage["id"].toQString();
-    auto thread = builder.channel()->getOrCreateThread(originalMessageID);
-    MessagePtr threadRoot;
+    auto [thread, replyParent] =
+        builder.channel()->getOrCreateThread(originalMessageID);
     if (thread)
     {
         builder->replyThread = thread;
-        // there's no replyParent like on Twitch
-        threadRoot = thread->root();
+        builder->replyParent = replyParent;
         thread->addToThread(std::weak_ptr{builder.weakOf()});
         checkThreadSubscription(builder->loginName, originalSender, thread);
         if (thread->subscribed())
@@ -269,9 +269,9 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
     builder->flags.set(MessageFlag::ReplyMessage);
 
     QString usernameText = originalSender;
-    if (threadRoot)
+    if (replyParent)
     {
-        usernameText = displayedUsername(*threadRoot);
+        usernameText = displayedUsername(*replyParent);
     }
 
     builder.emplace<ReplyCurveElement>();
@@ -285,23 +285,23 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
     }
 
     builder
-        .emplace<TextElement>('@' % usernameText % ':',
-                              MessageElementFlag::RepliedMessage,
-                              threadRoot ? threadRoot->usernameColor : QColor{},
-                              FontStyle::ChatMediumSmall)
+        .emplace<TextElement>(
+            '@' % usernameText % ':', MessageElementFlag::RepliedMessage,
+            replyParent ? replyParent->usernameColor : QColor{},
+            FontStyle::ChatMediumSmall)
         ->setLink({Link::UserInfo,
-                   threadRoot ? threadRoot->displayName : usernameText});
+                   replyParent ? replyParent->displayName : usernameText});
 
     MessageColor color = MessageColor::Text;
-    if (threadRoot && threadRoot->flags.has(MessageFlag::Action))
+    if (replyParent && replyParent->flags.has(MessageFlag::Action))
     {
-        color = threadRoot->usernameColor;
+        color = replyParent->usernameColor;
     }
 
     QString messageText = [&] {
-        if (threadRoot)
+        if (replyParent)
         {
-            return threadRoot->messageText;
+            return replyParent->messageText;
         }
         return originalMessage["content"].toQString();
     }();
@@ -311,9 +311,31 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
         MessageElementFlags(
             {MessageElementFlag::RepliedMessage, MessageElementFlag::Text}),
         color, FontStyle::ChatMediumSmall);
-    if (threadRoot)
+    if (thread)
     {
         textEl->setLink({Link::ViewThread, thread->rootId()});
+    }
+}
+
+void appendReplyButtons(KickMessageBuilder &builder)
+{
+    if (builder->replyThread)
+    {
+        auto &img = getResources().buttons.replyThreadDark;
+        builder
+            .emplace<CircularImageElement>(Image::fromResourcePixmap(img, 0.15),
+                                           2, Qt::gray,
+                                           MessageElementFlag::ReplyButton)
+            ->setLink({Link::ViewThread, builder->replyThread->rootId()});
+    }
+    else
+    {
+        auto &img = getResources().buttons.replyDark;
+        builder
+            .emplace<CircularImageElement>(Image::fromResourcePixmap(img, 0.15),
+                                           2, Qt::gray,
+                                           MessageElementFlag::ReplyButton)
+            ->setLink({Link::ReplyToMessage, builder->id});
     }
 }
 
@@ -475,6 +497,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
 
     QString messageText;
     parseContent(builder, messageText, content);
+    appendReplyButtons(builder);
 
     builder->searchText =
         builder->loginName % ' ' % builder->displayName % u": " % messageText;

@@ -72,8 +72,8 @@ std::weak_ptr<KickChannel> KickChannel::weakFromThis()
     return this->sharedFromThis();
 }
 
-std::shared_ptr<MessageThread> KickChannel::getOrCreateThread(
-    const QString &messageID)
+std::pair<std::shared_ptr<MessageThread>, MessagePtr>
+    KickChannel::getOrCreateThread(const QString &messageID)
 {
     auto existingIt = this->threads_.find(messageID);
     if (existingIt != this->threads_.end())
@@ -81,19 +81,24 @@ std::shared_ptr<MessageThread> KickChannel::getOrCreateThread(
         auto existing = existingIt->second.lock();
         if (existing)
         {
-            return existing;
+            return {existing, existing->root()};
         }
     }
 
     auto msg = this->findMessageByID(messageID);
     if (!msg)
     {
-        return nullptr;
+        return {nullptr, nullptr};
+    }
+
+    if (msg->replyThread)
+    {
+        return {msg->replyThread, msg};
     }
 
     auto thread = std::make_shared<MessageThread>(msg);
     this->threads_[messageID] = thread;
-    return thread;
+    return {thread, msg};
 }
 
 // FIXME: These are largely the same as in TwitchChannel. They should be
