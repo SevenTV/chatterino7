@@ -126,6 +126,7 @@ std::shared_ptr<Message> Message::clone() const
     cloned->replyThread = this->replyThread;
     cloned->count = this->count;
     cloned->reward = this->reward;
+    cloned->platform = this->platform;
     std::ranges::transform(this->elements, std::back_inserter(cloned->elements),
                            [](const auto &element) {
                                return element->clone();
@@ -201,6 +202,11 @@ QJsonObject Message::toJson() const
         elements.append(element->toJson());
     }
     msg["elements"_L1] = elements;
+
+    if (this->platform != MessagePlatform::AnyOrTwitch)
+    {
+        msg["platform"_L1] = qmagicenum::enumNameString(this->platform);
+    }
 
     return msg;
 }

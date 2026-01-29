@@ -231,11 +231,14 @@ void checkThreadSubscription(const QString &senderLogin,
 
     if (getSettings()->autoSubToParticipatedThreads)
     {
-        // FIXME: use kick account
-        const auto &currentLogin =
-            getApp()->getAccounts()->twitch.getCurrent()->getUserName();
-
-        if (senderLogin == currentLogin || originalSender == currentLogin)
+        const auto &current = getApp()->getAccounts()->kick.current();
+        if (current->isAnonymous())
+        {
+            return;
+        }
+        auto user = current->username();
+        if (senderLogin.compare(user, Qt::CaseInsensitive) == 0 ||
+            originalSender.compare(user, Qt::CaseInsensitive) == 0)
         {
             thread->markSubscribed();
         }
@@ -367,7 +370,8 @@ HighlightAlert processHighlights(KickMessageBuilder &builder,
     }
 
     auto [highlighted, highlightResult] = getApp()->getHighlights()->check(
-        args, {}, builder->loginName, builder->messageText, builder->flags);
+        args, {}, builder->loginName, builder->messageText, builder->flags,
+        builder->platform);
 
     if (!highlighted)
     {
@@ -412,6 +416,7 @@ KickMessageBuilder::KickMessageBuilder(SystemMessageTag /* tag */,
 {
     this->emplace<TimestampElement>(time.time());
     this->message().flags.set(MessageFlag::System);
+    this->message().platform = MessagePlatform::Kick;
     this->message().serverReceivedTime = time;
 }
 
@@ -420,13 +425,14 @@ KickMessageBuilder::KickMessageBuilder(KickChannel *channel,
     : channel_(channel)
 {
     this->emplace<TimestampElement>(time.time());
+    this->message().platform = MessagePlatform::Kick;
     this->message().serverReceivedTime = time;
 }
 
 KickMessageBuilder::KickMessageBuilder(KickChannel *channel)
     : channel_(channel)
 {
-    // set Kick flag?
+    this->message().platform = MessagePlatform::Kick;
 }
 
 std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
@@ -443,7 +449,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     builder->channelName = kickChannel->getName();
     builder->id = id;
     builder->serverReceivedTime =
-        QDateTime::fromString(createdAt, Qt::DateFormat::ISODate);
+        QDateTime::fromString(createdAt, Qt::DateFormat::ISODate).toLocalTime();
     builder->parseTime = QTime::currentTime();
     builder->displayName = sender["username"].toQString();
     builder->loginName = builder->displayName.toLower();
@@ -561,7 +567,7 @@ MessagePtrMut KickMessageBuilder::makeTimeoutMessage(KickChannel *channel,
     builder.emplaceSystemTextAndUpdate(".", text);
     builder->messageText = text;
     builder->searchText = text;
-    builder->timeoutUser = timedOutUsername;
+    builder->timeoutUser = timedOutUsername.toLower();
 
     return builder.release();
 }
