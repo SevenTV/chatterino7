@@ -3044,6 +3044,10 @@ void ChannelView::showUserInfoPopup(const QString &userName,
     {
         contextChannel =
             getApp()->getKickChatServer()->findBySlug(alternativePopoutChannel);
+        if (!contextChannel)
+        {
+            contextChannel = Channel::getEmpty();
+        }
     }
     else
     {
