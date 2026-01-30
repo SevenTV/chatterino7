@@ -12,6 +12,8 @@
 #include "controllers/spellcheck/SpellChecker.hpp"
 #include "messages/Emote.hpp"
 #include "providers/bttv/BttvEmotes.hpp"
+#include "providers/kick/KickChannel.hpp"
+#include "providers/kick/KickChatServer.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -23,9 +25,12 @@ namespace {
 
 using namespace chatterino;
 
-bool isIgnoredWord(TwitchChannel *twitch, const QString &word)
+bool isIgnoredWord(TwitchChannel *twitch, KickChannel *kick,
+                   const QString &word)
 {
     EmoteName name{word};
+    ChannelChatters *cc =
+        twitch ? static_cast<ChannelChatters *>(twitch) : kick;
     if (twitch)
     {
         if (twitch->bttvEmote(name) || twitch->ffzEmote(name) ||
@@ -38,12 +43,26 @@ bool isIgnoredWord(TwitchChannel *twitch, const QString &word)
         {
             return true;
         }
+    }
+    if (kick)
+    {
+        if (kick->seventvEmote(name))
+        {
+            return true;
+        }
 
-        if (twitch->accessChatters()->contains(word))
+        auto globals = getApp()->getKickChatServer()->globalEmotes();
+        if (globals->contains(name))
         {
             return true;
         }
     }
+
+    if (cc != nullptr && cc->accessChatters()->contains(word))
+    {
+        return true;
+    }
+
     if (getApp()->getBttvEmotes()->emote(name) ||
         getApp()->getFfzEmotes()->emote(name) ||
         getApp()->getSeventvEmotes()->globalEmote(name))
@@ -85,6 +104,8 @@ void InputHighlighter::setChannel(const std::shared_ptr<Channel> &channel)
 {
     auto twitch = std::dynamic_pointer_cast<TwitchChannel>(channel);
     this->channel = twitch;
+    auto kick = std::dynamic_pointer_cast<KickChannel>(channel);
+    this->kickChannel = kick;
     this->rehighlight();
 }
 
@@ -95,6 +116,7 @@ void InputHighlighter::highlightBlock(const QString &text)
         return;
     }
     auto *channel = this->channel.lock().get();
+    auto *kick = this->kickChannel.lock().get();
 
     QStringView textView = text;
 
@@ -112,7 +134,8 @@ void InputHighlighter::highlightBlock(const QString &text)
     {
         auto match = it.next();
         auto text = match.captured();
-        if (!isIgnoredWord(channel, text) && !this->spellChecker.check(text))
+        if (!isIgnoredWord(channel, kick, text) &&
+            !this->spellChecker.check(text))
         {
             this->setFormat(
                 static_cast<int>(match.capturedStart() + cmdTriggerLen),

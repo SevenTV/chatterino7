@@ -13,5 +13,5 @@ jobs:
       - name: Changelog check
         uses: dangoslen/changelog-enforcer@v3
         with:
-          changeLogPath: "CHANGELOG.md"
+          changeLogPath: "CHANGELOG.c7.md"
           skipLabels: "no changelog entry needed, ci, submodules"

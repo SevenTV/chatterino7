@@ -10,6 +10,8 @@
 #include "util/Helpers.hpp"
 #include "widgets/splits/InputCompletionItem.hpp"
 
+#include <algorithm>
+
 namespace chatterino::completion {
 
 UserSource::UserSource(const Channel *channel,
@@ -57,24 +59,25 @@ void UserSource::addToStringList(QStringList &list, size_t maxCount,
 
 void UserSource::initializeFromChannel(const Channel *channel)
 {
-    const auto *tc = dynamic_cast<const TwitchChannel *>(channel);
-    if (!tc)
+    const auto *cc = dynamic_cast<const ChannelChatters *>(channel);
+    if (!cc)
     {
         return;
     }
 
-    this->items_ = tc->accessChatters()->all();
+    this->items_ = cc->accessChatters()->all();
 
     if (getSettings()->alwaysIncludeBroadcasterInUserCompletions)
     {
-        auto it = std::find_if(this->items_.begin(), this->items_.end(),
-                               [tc](const UserItem &user) {
-                                   return user.first == tc->getName();
-                               });
+        auto it =
+            std::ranges::find_if(this->items_, [channel](const UserItem &user) {
+                return user.first == channel->getName();
+            });
 
         if (it == this->items_.end())
         {
-            this->items_.emplace_back(tc->getName(), tc->getDisplayName());
+            this->items_.emplace_back(channel->getName(),
+                                      channel->getDisplayName());
         }
     }
 }

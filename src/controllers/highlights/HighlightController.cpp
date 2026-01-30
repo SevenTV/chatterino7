@@ -499,7 +499,7 @@ void HighlightController::rebuildChecks(Settings &settings)
 std::pair<bool, HighlightResult> HighlightController::check(
     const MessageParseArgs &args, const std::vector<TwitchBadge> &twitchBadges,
     const QString &senderName, const QString &originalMessage,
-    const MessageFlags &messageFlags) const
+    const MessageFlags &messageFlags, MessagePlatform platform) const
 {
     bool highlighted = false;
     auto result = HighlightResult::emptyResult();
@@ -507,11 +507,21 @@ std::pair<bool, HighlightResult> HighlightController::check(
     // Access for checking
     const auto checks = this->checks_.accessConst();
 
-    auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
-    auto kickUser = getApp()->getAccounts()->kick.current();
-    auto self =
-        (senderName == currentUser->getUserName()) ||
-        (!kickUser->isAnonymous() && senderName == kickUser->username());
+    bool self = false;
+    switch (platform)
+    {
+        case MessagePlatform::AnyOrTwitch: {
+            auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
+            self = senderName == currentUser->getUserName();
+        }
+        break;
+        case MessagePlatform::Kick: {
+            auto kickUser = getApp()->getAccounts()->kick.current();
+            self =
+                !kickUser->isAnonymous() && senderName == kickUser->username();
+        }
+        break;
+    }
 
     for (const auto &check : *checks)
     {

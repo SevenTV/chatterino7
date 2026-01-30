@@ -275,9 +275,8 @@ KickLoginPage::KickLoginPage()
         "to authenticate without exposing the client secret or using an "
         "external server that would need to see <i>all</i> tokens of "
         "<i>all</i> users.<br>Because of this, Chatterino7 currently requires "
-        "users to provide their own application credentials. Unfortunately, "
-        "this requires you to enable 2FA.<br><br>Applications "
-        "can be created at <a "
+        "users to provide their own application credentials. "
+        "<br><br>Applications can be created at <a "
         "href=\"https://kick.com/settings/developer\">kick.com/settings/"
         "developer</a>. The following redirect URL <b>must</b> be specified: "
         "<b><code>" %

@@ -7,6 +7,7 @@
 #include "common/FlagsEnum.hpp"
 #include "common/UniqueAccess.hpp"
 #include "controllers/highlights/HighlightCheck.hpp"
+#include "messages/Message.hpp"
 #include "singletons/Settings.hpp"
 
 #include <boost/signals2/connection.hpp>
@@ -39,7 +40,8 @@ public:
     [[nodiscard]] std::pair<bool, HighlightResult> check(
         const MessageParseArgs &args,
         const std::vector<TwitchBadge> &twitchBadges, const QString &senderName,
-        const QString &originalMessage, const MessageFlags &messageFlags) const;
+        const QString &originalMessage, const MessageFlags &messageFlags,
+        MessagePlatform platform = MessagePlatform::AnyOrTwitch) const;
 
 private:
     /**

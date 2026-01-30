@@ -16,6 +16,7 @@ namespace chatterino {
 
 class Channel;
 class TwitchChannel;
+class KickChannel;
 class SpellChecker;
 
 /// This highlights the text in the split input.
@@ -40,6 +41,7 @@ private:
     QTextCharFormat spellFmt;
 
     std::weak_ptr<TwitchChannel> channel;
+    std::weak_ptr<KickChannel> kickChannel;
 
     QRegularExpression wordRegex;
 };
