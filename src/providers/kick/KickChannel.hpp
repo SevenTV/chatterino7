@@ -141,6 +141,9 @@ public:
 
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
 
+protected:
+    void messageRemovedFromStart(const MessagePtr &msg) override;
+
 private:
     /// Message ID -> thread
     std::unordered_map<QString, std::weak_ptr<MessageThread>> threads_;

@@ -428,6 +428,17 @@ void KickChannel::updateRoomModes(const RoomModes &modes)
     this->roomModesChanged.invoke();
 }
 
+void KickChannel::messageRemovedFromStart(const MessagePtr &msg)
+{
+    if (msg->replyThread)
+    {
+        if (msg->replyThread->liveCount(msg) == 0)
+        {
+            this->threads_.erase(msg->replyThread->rootId());
+        }
+    }
+}
+
 void KickChannel::resolveChannelInfo()
 {
     auto weak = this->weakFromThis();
