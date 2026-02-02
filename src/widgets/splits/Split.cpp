@@ -884,6 +884,11 @@ void Split::setChannel(IndirectChannel newChannel)
         this->roomModeChangedConnection_ = kc->roomModesChanged.connect([this] {
             this->header_->updateRoomModes();
         });
+
+        this->channelSignalHolder_.managedConnect(
+            kc->sendWaitUpdate, [this](const QString &text) {
+                this->getInput().setSendWaitStatus(text);
+            });
     }
 
     this->indirectChannelChangedConnection_ =

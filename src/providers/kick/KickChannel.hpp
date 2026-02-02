@@ -139,6 +139,9 @@ public:
     void updateRoomModes(const RoomModes &modes);
     pajlada::Signals::NoArgSignal roomModesChanged;
 
+    pajlada::Signals::Signal<const QString &> sendWaitUpdate;
+    void setSendWait(std::chrono::seconds waitTime);
+
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
 
 protected:
@@ -171,6 +174,8 @@ private:
     bool tryReplaceLastSeventvAddOrRemove(MessageFlag op, const QString &actor,
                                           const QString &emoteName);
 
+    void emitSendWait();
+
     // Kick usually calls this username
     QString displayName_;
     // The name in the URL (replaces non-alphanumeric characters with dashes)
@@ -192,6 +197,10 @@ private:
     std::queue<std::chrono::steady_clock::time_point> lastMessageTimestamps_;
     std::chrono::steady_clock::time_point lastMessageSpeedErrorTs_;
     std::chrono::steady_clock::time_point lastMessageAmountErrorTs_;
+
+    QTimer sendWaitTimer_;
+    // Timepoint at which the user can send messages again
+    std::optional<std::chrono::steady_clock::time_point> sendWaitEnd_;
 
     RoomModes roomModes_;
 

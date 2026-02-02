@@ -195,7 +195,7 @@ void SeventvPaints::assignPaintToUser(const QString &paintID,
     bool changed = false;
     int64_t nAdded = 0;
     auto addToMap = [&](auto &map, const QString &username) {
-        auto it = map.find(twitchUserName.string);
+        auto it = map.find(username);
         if (it == map.end())
         {
             map.emplace(username, paintIt->second);

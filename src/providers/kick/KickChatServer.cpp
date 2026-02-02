@@ -2,7 +2,9 @@
 
 #include "Application.hpp"
 #include "common/QLogging.hpp"
+#include "controllers/accounts/AccountController.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/kick/KickMessageBuilder.hpp"
@@ -279,6 +281,16 @@ void KickChatServer::onUserBanned(KickChannel *channel, BoostJsonObject data)
     {
         channel->addOrReplaceTimeout(msg, now);
     }
+    auto duration = data["duration"].toInt64();
+    auto cur = getApp()->getAccounts()->kick.current();
+    if (!cur->isAnonymous() && duration > 0)
+    {
+        auto userID = data["user"]["id"].toUint64();
+        if (cur->userID() == userID)
+        {
+            channel->setSendWait(std::chrono::minutes{duration});
+        }
+    }
 }
 
 void KickChatServer::onUserUnbanned(KickChannel *channel, BoostJsonObject data)
@@ -287,6 +299,16 @@ void KickChatServer::onUserUnbanned(KickChannel *channel, BoostJsonObject data)
     if (msg)
     {
         channel->addMessage(msg, MessageContext::Original);
+    }
+
+    auto cur = getApp()->getAccounts()->kick.current();
+    if (!cur->isAnonymous())
+    {
+        auto userID = data["user"]["id"].toUint64();
+        if (cur->userID() == userID)
+        {
+            channel->setSendWait(std::chrono::seconds{0});
+        }
     }
 }
 

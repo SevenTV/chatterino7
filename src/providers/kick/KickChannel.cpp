@@ -23,6 +23,7 @@
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Settings.hpp"
+#include "util/FormatTime.hpp"
 #include "util/Helpers.hpp"
 #include "util/PostToThread.hpp"
 
@@ -39,6 +40,12 @@ KickChannel::KickChannel(const QString &name)
     , seventvEmotes_(std::make_shared<const EmoteMap>())
 {
     this->setMentionFlag(MessageElementFlag::KickUsername);
+
+    this->sendWaitTimer_.setInterval(1s);
+    this->sendWaitTimer_.setSingleShot(false);
+    QObject::connect(&this->sendWaitTimer_, &QTimer::timeout, [this] {
+        this->emitSendWait();
+    });
 }
 
 KickChannel::~KickChannel()
@@ -275,11 +282,19 @@ void KickChannel::sendReply(const QString &message, const QString &replyToId)
     getKickApi()->sendMessage(
         this->userID(), prepared, replyToId,
         [weak = this->weakFromThis()](const auto &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
             if (res)
             {
+                if (self->roomModes_.slowModeDuration)
+                {
+                    self->setSendWait(*self->roomModes_.slowModeDuration);
+                }
                 return;  // message sent
             }
-            auto self = weak.lock();
             if (self)
             {
                 self->addSystemMessage(u"Failed to send message: " %
@@ -424,8 +439,34 @@ void KickChannel::updateRoomModes(const RoomModes &modes)
     {
         return;
     }
+
     this->roomModes_ = modes;
     this->roomModesChanged.invoke();
+
+    if (!modes.slowModeDuration || *modes.slowModeDuration == 0s)
+    {
+        this->setSendWait(0s);
+    }
+}
+
+void KickChannel::setSendWait(std::chrono::seconds waitTime)
+{
+    if (waitTime <= 0s)
+    {
+        if (this->sendWaitEnd_)
+        {
+            this->sendWaitEnd_ = std::nullopt;
+            this->emitSendWait();
+        }
+        return;
+    }
+
+    this->sendWaitEnd_ = std::chrono::steady_clock::now() + waitTime;
+    if (!this->sendWaitTimer_.isActive())
+    {
+        this->sendWaitTimer_.start();
+        this->emitSendWait();
+    }
 }
 
 void KickChannel::messageRemovedFromStart(const MessagePtr &msg)
@@ -804,6 +845,26 @@ bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
     this->replaceMessage(last, msg);
 
     return true;
+}
+
+void KickChannel::emitSendWait()
+{
+    auto now = std::chrono::steady_clock::now();
+    std::chrono::seconds remaining = 0s;
+    if (this->sendWaitEnd_)
+    {
+        remaining = std::chrono::duration_cast<std::chrono::seconds>(
+            *this->sendWaitEnd_ - now);
+    }
+    if (remaining <= 0s)
+    {
+        this->sendWaitTimer_.stop();
+        this->sendWaitUpdate.invoke({});
+    }
+    else
+    {
+        this->sendWaitUpdate.invoke(formatTime(remaining, 2));
+    }
 }
 
 QDebug operator<<(QDebug dbg, const KickChannel &chan)
