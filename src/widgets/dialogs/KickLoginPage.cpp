@@ -98,6 +98,7 @@ public:
         , statusLabel("Waiting...")
     {
         this->setAttribute(Qt::WA_DeleteOnClose);
+        this->setWindowTitle("Waiting...");
 
         QUrlQuery query{
             {"response_type", "code"},
