@@ -31,8 +31,9 @@ namespace {
 /// `DeleteOperation` has a special handler that won't use the body.
 void forceCustomOperation(QNetworkReply *reply)
 {
-    auto *d = dynamic_cast<QNetworkReplyHttpImplPrivate *>(
-        QObjectPrivate::get(reply));
+    // We can't use dynamic_cast here, since some Qt builds are without RTTI.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+    auto *d = static_cast<QNetworkReplyPrivate *>(QObjectPrivate::get(reply));
     if (!d)
     {
         return;  // not an HTTP request?
