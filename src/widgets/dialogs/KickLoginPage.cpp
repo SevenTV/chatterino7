@@ -120,6 +120,8 @@ public:
 
         auto *root = new QVBoxLayout(this);
         root->addWidget(&this->statusLabel, 1, Qt::AlignCenter);
+        root->addWidget(new QLabel("This window will close automatically."), 1,
+                        Qt::AlignCenter);
 
         auto *urlButtons = new QWidget;
         auto *urlButtonLayout = new QHBoxLayout(urlButtons);
@@ -275,11 +277,11 @@ KickLoginPage::KickLoginPage()
         "like Chatterino "
         "to authenticate without exposing the client secret or using an "
         "external server that would need to see <i>all</i> tokens of "
-        "<i>all</i> users.<br>Because of this, Chatterino7 currently requires "
-        "users to provide their own application credentials. "
-        "<br><br>Applications can be created at <a "
+        "<i>all</i> users.<br>Because of this, the <b>experimental</b> Kick "
+        "login is intended for developers with application credentials. "
+        "<br><br>Developer applications can be found at <a "
         "href=\"https://kick.com/settings/developer\">kick.com/settings/"
-        "developer</a>. The following redirect URL <b>must</b> be specified: "
+        "developer</a>. The following redirect URL <b>must</b> be added: "
         "<b><code>" %
         REDIRECT_URL % "</code></b>");
     topLabel->setWordWrap(true);
