@@ -140,6 +140,7 @@ find_package(Qt${MAJOR_QT_VERSION} REQUIRED
 )
 
 find_package(Qt${MAJOR_QT_VERSION} COMPONENTS WidgetsPrivate)
+find_package(Qt${MAJOR_QT_VERSION} COMPONENTS NetworkPrivate)
 if(CHATTERINO_ALLOW_PRIVATE_QT_API)
     # Only exists since 6.10 and prints a warning regarding private headers
     find_package(Qt${MAJOR_QT_VERSION} COMPONENTS GuiPrivate)
