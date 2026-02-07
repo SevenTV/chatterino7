@@ -2,7 +2,7 @@
 
 ## Unversioned
 
-- Major: Added experimental Kick support (#351, #353, #354, #355, #356, #357, #360, #362, #367, #368, #369, #371, #373, #378, #379, #380, #381, #382, #383, #386)
+- Major: Added experimental Kick support (#351, #353, #354, #355, #356, #357, #360, #362, #367, #368, #369, #371, #373, #378, #379, #380, #381, #382, #383, #386, #387)
 - Minor: Increased radius of drop-shadows in paints to match the browser extension (#339, a4a86c9ca6e1bccf9253dce75bdfe838c15e71fd)
 - Dev: Bumped Qt to 6.9.3 on Windows and macOS due to CVE-2025-10728 and CVE-2025-10729 (74077350da2d4cfff2ede0ce0ebb11654253b440)
 - Dev: Updated the macOS Homebrew bottles on x86_64 to Sonoma as Ventura was EOL'd 2025-Sep-15 (#336)
