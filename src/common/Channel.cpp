@@ -470,7 +470,7 @@ void Channel::upsertPersonalSeventvEmotes(
     // added emotes are inserted where appropriate.
 
     assertInGuiThread();
-    auto snapshot = this->getMessageSnapshot();
+    auto snapshot = this->getMessageSnapshot(5);
     if (snapshot.empty())
     {
         return;
