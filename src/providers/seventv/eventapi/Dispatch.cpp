@@ -122,7 +122,7 @@ TwitchUser::TwitchUser(const QJsonObject &connection)
 
 KickUser::KickUser(const QJsonObject &connection)
     : id(connection["id"_L1].toString().toULongLong())
-    , userName(connection["username"_L1].toString())
+    , userName(connection["username"_L1].toString().toLower())
 {
 }
 
