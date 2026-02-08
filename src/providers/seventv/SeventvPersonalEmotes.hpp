@@ -14,7 +14,6 @@
 #include <unordered_map>
 #include <variant>
 
-
 namespace chatterino {
 
 namespace seventv::eventapi {

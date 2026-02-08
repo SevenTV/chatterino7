@@ -12,7 +12,6 @@
 
 #include <QPointer>
 
-
 namespace chatterino {
 class SeventvEventAPI;
 class EmoteMap;

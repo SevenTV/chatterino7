@@ -10,7 +10,6 @@
 #include <mutex>
 #include <optional>
 
-
 namespace chatterino {
 
 using namespace Qt::Literals;

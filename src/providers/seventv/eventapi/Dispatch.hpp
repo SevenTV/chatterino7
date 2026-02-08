@@ -12,6 +12,8 @@
 #include <QString>
 #include <QVarLengthArray>
 
+#include <span>
+
 namespace chatterino::seventv::eventapi {
 
 // https://github.com/SevenTV/EventAPI/tree/ca4ff15cc42b89560fa661a76c5849047763d334#message-payload
