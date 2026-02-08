@@ -72,6 +72,11 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
 
+      - name: Add upstream # for version info
+        run: |
+          git remote add upstream https://github.com/Chatterino/chatterino2.git
+          git fetch upstream
+
       - name: Install Python and libclang (24.04)
         if: matrix.os == 'ubuntu-24.04'
         run: |
@@ -177,6 +182,31 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0 # allows for tags access
+
+      - name: Format changes
+        run: |
+          delimiter=$(openssl rand -hex 32)
+          version=$(cmake -DC2_GIT_PRINT_VERSION=On -P cmake/GIT.cmake)
+          echo "changelog<<$delimiter"
+          echo "### $version"
+          python3 ./.CI/format-recent-changes.py
+          echo $delimiter
+        shell: bash
+
+      - name: Add upstream # for version info
+        run: |
+          git remote add upstream https://github.com/Chatterino/chatterino2.git
+          git fetch upstream
+
+      - name: Format changes
+        run: |
+          delimiter=$(openssl rand -hex 32)
+          version=$(cmake -DC2_GIT_PRINT_VERSION=On -P cmake/GIT.cmake)
+          echo "changelog<<$delimiter"
+          echo "### $version"
+          python3 ./.CI/format-recent-changes.py
+          echo $delimiter
+        shell: bash
 
       - name: Install Qt6
         if: startsWith(matrix.qt-version, '6.')
@@ -403,6 +433,11 @@ jobs:
         with:
           fetch-depth: 0 # allows for tags access
 
+      - name: Add upstream # for version info
+        run: |
+          git remote add upstream https://github.com/Chatterino/chatterino2.git
+          git fetch upstream
+
       # Windows
       - uses: actions/download-artifact@v7
         name: Windows Qt6.9.3
@@ -465,8 +500,10 @@ jobs:
         id: format-changes
         run: |
           delimiter=$(openssl rand -hex 32)
+          version=$(cmake -DC2_GIT_PRINT_VERSION=On -P cmake/GIT.cmake)
           {
             echo "changelog<<$delimiter"
+            echo "### $version"
             python3 ./.CI/format-recent-changes.py
             echo $delimiter
           } >> "$GITHUB_OUTPUT"
