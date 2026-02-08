@@ -20,6 +20,7 @@ struct EmoteAddDispatch;
 struct EmoteUpdateDispatch;
 struct EmoteRemoveDispatch;
 struct UserConnectionUpdateDispatch;
+struct PersonalEmoteSetAdded;
 }  // namespace seventv::eventapi
 
 class SeventvBadges;
@@ -38,19 +39,14 @@ public:
                         std::chrono::milliseconds(25000));
     ~SeventvEventAPI();
 
-    struct PersonalEmoteSetAdded {
-        QString twitchUserName;
-        QString kickUserName;
-        std::shared_ptr<const EmoteMap> emoteSet;
-    };
-
     struct {
         Signal<const seventv::eventapi::EmoteAddDispatch &> emoteAdded;
         Signal<const seventv::eventapi::EmoteUpdateDispatch &> emoteUpdated;
         Signal<const seventv::eventapi::EmoteRemoveDispatch &> emoteRemoved;
         Signal<const seventv::eventapi::UserConnectionUpdateDispatch &>
             userUpdated;
-        Signal<const PersonalEmoteSetAdded &> personalEmoteSetAdded;
+        Signal<const seventv::eventapi::PersonalEmoteSetAdded &>
+            personalEmoteSetAdded;
     } signals_;  // NOLINT(readability-identifier-naming)
 
     /**

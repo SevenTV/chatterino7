@@ -1,12 +1,15 @@
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 
+#include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "singletons/Settings.hpp"
 #include "util/DebugCount.hpp"
+#include "util/Variant.hpp"
 
 #include <memory>
 #include <mutex>
 #include <optional>
+
 
 namespace chatterino {
 
@@ -33,34 +36,39 @@ void SeventvPersonalEmotes::createEmoteSet(const QString &id)
 }
 
 std::optional<std::shared_ptr<const EmoteMap>>
-    SeventvPersonalEmotes::assignUserToEmoteSet(const QString &emoteSetID,
-                                                const QString &userTwitchID,
-                                                uint64_t userKickID)
+    SeventvPersonalEmotes::assignUsersToEmoteSet(
+        const QString &emoteSetID,
+        std::span<const seventv::eventapi::User> users)
 {
     std::unique_lock<std::shared_mutex> lock(this->mutex_);
 
     int64_t additions = 0;
-    if (!userTwitchID.isEmpty())
-    {
-        auto &twitch = this->twitchEmoteSets_[userTwitchID];
-        // checking for one is enough because we always update both
-        // ...unless the user changed their connections
-        if (twitch.contains(emoteSetID))
+    auto tryAssign = [&](auto &list) {
+        if (list.contains(emoteSetID))
         {
+            return false;
+        }
+        list.append(emoteSetID);
+        additions++;
+        return true;
+    };
+    for (const auto &user : users)
+    {
+        bool changed =
+            std::visit(variant::Overloaded{
+                           [&](const seventv::eventapi::TwitchUser &u) {
+                               return tryAssign(this->twitchEmoteSets_[u.id]);
+                           },
+                           [&](const seventv::eventapi::KickUser &u) {
+                               return tryAssign(this->kickEmoteSets_[u.id]);
+                           }},
+                       user);
+        if (!changed)
+        {
+            // checking for one is enough because we always update all
+            // ...unless the user changed their connections
             return std::nullopt;
         }
-        twitch.append(emoteSetID);
-        additions++;
-    }
-    if (userKickID != 0)
-    {
-        auto &kick = this->kickEmoteSets_[userKickID];
-        if (kick.contains(emoteSetID))
-        {
-            return std::nullopt;
-        }
-        kick.append(emoteSetID);
-        additions++;
     }
 
     DebugCount::increase(DebugObject::SeventvPersonalEmoteAssignments,

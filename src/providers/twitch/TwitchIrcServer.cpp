@@ -18,7 +18,7 @@
 #include "providers/bttv/liveupdates/BttvLiveUpdateMessages.hpp"  // IWYU pragma: keep
 #include "providers/ffz/FfzEmotes.hpp"
 #include "providers/irc/IrcConnection2.hpp"
-#include "providers/seventv/eventapi/Dispatch.hpp"  // IWYU pragma: keep
+#include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
@@ -961,20 +961,34 @@ void TwitchIrcServer::initEventAPIs(BttvLiveUpdates *bttvLiveUpdates,
             });
         this->signalHolder.managedConnect(
             seventvEventAPI->signals_.personalEmoteSetAdded,
-            [&](const auto &data) {
-                if (data.twitchUserName.isEmpty())
+            [&](const seventv::eventapi::PersonalEmoteSetAdded &data) {
+                QVarLengthArray<QString, 1> names;
+                for (const auto &user : data.connections)
+                {
+                    if (const auto *u =
+                            std::get_if<seventv::eventapi::TwitchUser>(&user))
+                    {
+                        names.emplace_back(u->userName);
+                    }
+                }
+                if (names.empty())
                 {
                     return;
                 }
 
                 postToThread(
-                    [this, data]() {
-                        this->forEachChannelAndSpecialChannels([=](auto chan) {
+                    [this, emoteSet = data.emoteSet,
+                     names{std::move(names)}]() {
+                        this->forEachChannelAndSpecialChannels([&](const auto
+                                                                       &chan) {
                             if (auto *twitchChannel =
                                     dynamic_cast<TwitchChannel *>(chan.get()))
                             {
-                                twitchChannel->upsertPersonalSeventvEmotes(
-                                    data.twitchUserName, data.emoteSet);
+                                for (const auto &name : names)
+                                {
+                                    twitchChannel->upsertPersonalSeventvEmotes(
+                                        name, emoteSet);
+                                }
                             }
                         });
                     },

@@ -8,7 +8,7 @@
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/kick/KickMessageBuilder.hpp"
-#include "providers/seventv/eventapi/Dispatch.hpp"  // IWYU pragma: keep
+#include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Settings.hpp"
@@ -587,16 +587,29 @@ void KickChatServer::initializeSeventvEventApi(SeventvEventAPI *api)
             });
         });
     this->signalHolder_.managedConnect(
-        api->signals_.personalEmoteSetAdded, [&](const auto &data) {
+        api->signals_.personalEmoteSetAdded,
+        [&](const seventv::eventapi::PersonalEmoteSetAdded &data) {
+            QVarLengthArray<QString, 1> names;
+            for (const auto &user : data.connections)
+            {
+                if (const auto *u =
+                        std::get_if<seventv::eventapi::KickUser>(&user))
+                {
+                    names.emplace_back(u->userName);
+                }
+            }
+            if (names.empty())
+            {
+                return;
+            }
+
             postToThread(
-                [this, data] {
-                    if (data.kickUserName.isEmpty())
-                    {
-                        return;
-                    }
-                    this->forEachChannel([data](auto &chan) {
-                        chan.upsertPersonalSeventvEmotes(data.kickUserName,
-                                                         data.emoteSet);
+                [this, emoteSet = data.emoteSet, names{std::move(names)}] {
+                    this->forEachChannel([&](auto &chan) {
+                        for (const auto &name : names)
+                        {
+                            chan.upsertPersonalSeventvEmotes(name, emoteSet);
+                        }
                     });
                 },
                 this);

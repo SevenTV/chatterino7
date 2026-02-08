@@ -1,11 +1,8 @@
 #include "providers/seventv/SeventvPaints.hpp"
 
 #include "Application.hpp"
-#include "common/Literals.hpp"
-#include "common/network/NetworkRequest.hpp"
-#include "common/network/NetworkResult.hpp"
-#include "common/Outcome.hpp"
 #include "messages/Image.hpp"
+#include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/paints/LinearGradientPaint.hpp"
 #include "providers/seventv/paints/PaintDropShadow.hpp"
 #include "providers/seventv/paints/RadialGradientPaint.hpp"
@@ -13,12 +10,13 @@
 #include "singletons/WindowManager.hpp"
 #include "util/DebugCount.hpp"
 #include "util/PostToThread.hpp"
+#include "util/Variant.hpp"
 
 #include <QUrlQuery>
 
 namespace {
 using namespace chatterino;
-using namespace literals;
+using namespace Qt::Literals;
 
 QColor rgbaToQColor(const uint32_t color)
 {
@@ -165,7 +163,7 @@ void SeventvPaints::addPaint(const QJsonObject &paintJson)
 
     std::unique_lock lock(this->mutex_);
 
-    if (this->knownPaints_.find(paintID) != this->knownPaints_.end())
+    if (this->knownPaints_.contains(paintID))
     {
         return;
     }
@@ -180,9 +178,8 @@ void SeventvPaints::addPaint(const QJsonObject &paintJson)
     this->knownPaints_[paintID] = *paint;
 }
 
-void SeventvPaints::assignPaintToUser(const QString &paintID,
-                                      const UserName &twitchUserName,
-                                      const UserName &kickUserName)
+void SeventvPaints::assignPaintToUsers(
+    const QString &paintID, std::span<const seventv::eventapi::User> users)
 {
     std::unique_lock lock(this->mutex_);
 
@@ -208,14 +205,17 @@ void SeventvPaints::assignPaintToUser(const QString &paintID,
             changed = true;
         }
     };
-
-    if (!twitchUserName.string.isEmpty())
+    for (const auto &user : users)
     {
-        addToMap(this->twitchPaintMap_, twitchUserName.string);
-    }
-    if (!kickUserName.string.isEmpty())
-    {
-        addToMap(this->kickPaintMap_, kickUserName.string);
+        std::visit(variant::Overloaded{
+                       [&](const seventv::eventapi::TwitchUser &u) {
+                           addToMap(this->twitchPaintMap_, u.userName);
+                       },
+                       [&](const seventv::eventapi::KickUser &u) {
+                           addToMap(this->kickPaintMap_, u.userName);
+                       },
+                   },
+                   user);
     }
 
     if (nAdded > 0)
@@ -231,30 +231,31 @@ void SeventvPaints::assignPaintToUser(const QString &paintID,
     }
 }
 
-void SeventvPaints::clearPaintFromUser(const QString &paintID,
-                                       const UserName &twitchUserName,
-                                       const UserName &kickUserName)
+void SeventvPaints::clearPaintFromUsers(
+    const QString &paintID, std::span<const seventv::eventapi::User> users)
 {
     std::unique_lock lock(this->mutex_);
 
     int64_t nRemoved = 0;
-    if (!twitchUserName.string.isEmpty())
-    {
-        const auto it = this->twitchPaintMap_.find(twitchUserName.string);
-        if (it != this->twitchPaintMap_.end() && it->second->id == paintID)
+    auto removeFromMap = [&](auto &map, const QString &username) {
+        const auto it = map.find(username);
+        if (it != map.end() && it->second->id == paintID)
         {
-            this->twitchPaintMap_.erase(it);
+            map.erase(it);
             nRemoved++;
         }
-    }
-    if (!kickUserName.string.isEmpty())
+    };
+    for (const auto &user : users)
     {
-        const auto it = this->kickPaintMap_.find(kickUserName.string);
-        if (it != this->kickPaintMap_.end() && it->second->id == paintID)
-        {
-            this->kickPaintMap_.erase(it);
-            nRemoved++;
-        }
+        std::visit(variant::Overloaded{
+                       [&](const seventv::eventapi::TwitchUser &u) {
+                           removeFromMap(this->twitchPaintMap_, u.userName);
+                       },
+                       [&](const seventv::eventapi::KickUser &u) {
+                           removeFromMap(this->kickPaintMap_, u.userName);
+                       },
+                   },
+                   user);
     }
 
     if (nRemoved > 0)
