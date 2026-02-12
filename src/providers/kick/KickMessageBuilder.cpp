@@ -461,7 +461,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     KickChannel *kickChannel, BoostJsonObject data)
 {
     auto id = data["id"].toQString();
-    auto content = data["content"].toQString();
+    auto content = data["content"].toQString().simplified();
     auto createdAt = data["created_at"].toQString();
 
     auto sender = data["sender"].toObject();
@@ -663,7 +663,7 @@ MessagePtrMut KickMessageBuilder::makePinnedMessage(KickChannel *channel,
         {
             return existing->messageText;
         }
-        return jsonMessage["text"].toQString();
+        return jsonMessage["text"].toQString().simplified();
     }();
     auto limit = getSettings()->deletedMessageLengthLimit.getValue();
     if (limit > 0 && messageText.length() > limit)
@@ -717,7 +717,7 @@ std::tuple<MessagePtrMut, MessagePtrMut, HighlightAlert>
 
     auto months = data["months"].toUint64();
     auto username = data["username"].toQString();
-    auto customMessageText = data["custom_message"].toQString();
+    auto customMessageText = data["custom_message"].toQString().simplified();
     if (!customMessageText.isEmpty())
     {
         KickMessageBuilder builder(channel);
@@ -818,7 +818,7 @@ MessagePtrMut KickMessageBuilder::makeRewardRedeemedMessage(
 {
     const auto reward = data["reward_title"].toQString();
     const auto username = data["username"].toQString();
-    const auto userInput = data["user_input"].toQString();
+    const auto userInput = data["user_input"].toQString().simplified();
 
     KickMessageBuilder builder(channel, QDateTime::currentDateTime());
     builder->flags.set(MessageFlag::RedeemedChannelPointReward);
@@ -865,7 +865,7 @@ MessagePtrMut KickMessageBuilder::makeKicksGiftedMessage(KickChannel *channel,
     const auto gift = data["gift"].toObject();
     const auto giftName = gift["name"].toQString();
     const auto giftAmount = gift["amount"].toUint64();
-    const auto userInput = data["message"].toQString();
+    const auto userInput = data["message"].toQString().simplified();
 
     KickMessageBuilder builder(channel, QDateTime::currentDateTime());
     builder->flags.set(MessageFlag::RedeemedChannelPointReward);
