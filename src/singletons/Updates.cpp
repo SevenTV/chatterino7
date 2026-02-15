@@ -50,13 +50,13 @@ QJsonValue getForArchitecture(const QJsonObject &obj, const QString &key)
 {
     auto val = obj[key];
 
-#if defined(Q_PROCESSOR_ARM)
+#ifdef Q_PROCESSOR_ARM
     QString armKey = key % u"_arm";
     if (obj[armKey].isString())
     {
         val = obj[armKey];
     }
-#elif defined(Q_PROCESSOR_X86)
+#elifdef Q_PROCESSOR_X86
     QString x86Key = key % u"_x86";
     if (obj[x86Key].isString())
     {
