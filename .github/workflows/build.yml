@@ -470,6 +470,7 @@ jobs:
         name: Download artifacts
         with:
           path: release-artifacts/
+          merge-multiple: true
 
       - name: Rename artifacts
         run: |

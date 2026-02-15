@@ -120,6 +120,7 @@ jobs:
       - uses: actions/download-artifact@v7
         with:
           path: build/
+          merge-multiple: true
 
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v14
