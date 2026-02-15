@@ -25,7 +25,7 @@ jobs:
         os: [windows-latest, windows-11-arm]
     env:
       # same as in build.yml
-      C2_ARCH: ${{ endsWith(matrix.os, '-arm') && 'arm' || 'x86-64' }}
+      C2_ARCH: ${{ case(endsWith(matrix.os, '-arm'), 'arm', 'x86-64') }}
     steps:
       - uses: actions/checkout@v6
         with:

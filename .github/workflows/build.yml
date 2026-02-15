@@ -212,7 +212,7 @@ jobs:
     env:
       C2_ENABLE_LTO: ${{ matrix.force-lto }}
       C2_ENABLE_CRASHPAD: ${{ matrix.skip-crashpad == false }}
-      C2_ARCH: ${{ (endsWith(matrix.os, '-arm') || startsWith(matrix.os, 'macos')) && 'arm' || 'x86-64' }}
+      C2_ARCH: ${{ case(endsWith(matrix.os, '-arm') || startsWith(matrix.os, 'macos'), 'arm', 'x86-64') }}
 
     steps:
       - uses: actions/checkout@v6
@@ -276,7 +276,7 @@ jobs:
         uses: actions/cache@v5
         with:
           key: ${{ runner.os }}-${{ runner.arch }}-conan-user-${{ hashFiles('**/conanfile.py') }}-QT6
-          path: ~/.conan2/ # sync with save below
+          path: ~/.conan2/
 
       - name: Setup Python (Windows)
         uses: actions/setup-python@v6
