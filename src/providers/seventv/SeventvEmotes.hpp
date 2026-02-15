@@ -118,7 +118,7 @@ public:
     static void loadKickChannelEmotes(
         const std::weak_ptr<KickChannel> &channel, uint64_t userID,
         std::function<void(EmoteMap &&, ChannelInfo)> callback,
-        bool manualRefresh);
+        bool manualRefresh, bool cacheHit);
 
     /**
      * Adds an emote to the `map` if it's valid.

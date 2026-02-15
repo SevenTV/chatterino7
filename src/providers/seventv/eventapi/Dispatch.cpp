@@ -11,6 +11,8 @@
 
 #include <utility>
 
+using namespace Qt::Literals;
+
 namespace chatterino::seventv::eventapi {
 
 Dispatch::Dispatch(QJsonObject obj)
@@ -112,6 +114,18 @@ bool CosmeticCreateDispatch::validate() const
     return !this->data.empty() && this->kind != CosmeticKind::INVALID;
 }
 
+TwitchUser::TwitchUser(const QJsonObject &connection)
+    : id(connection["id"_L1].toString())
+    , userName(connection["username"_L1].toString())
+{
+}
+
+KickUser::KickUser(const QJsonObject &connection)
+    : id(connection["id"_L1].toString().toULongLong())
+    , userName(connection["username"_L1].toString().toLower())
+{
+}
+
 EntitlementCreateDeleteDispatch::EntitlementCreateDeleteDispatch(
     const Dispatch &dispatch)
 {
@@ -120,31 +134,27 @@ EntitlementCreateDeleteDispatch::EntitlementCreateDeleteDispatch(
     this->kind = qmagicenum::enumCast<CosmeticKind>(obj["kind"].toString())
                      .value_or(CosmeticKind::INVALID);
 
-    const auto userConnections = obj["user"]["connections"].toArray();
+    const auto userObj = obj["user"_L1].toObject();
+    this->seventvUsername = userObj["username"_L1].toString();
+    const auto userConnections = userObj["connections"_L1].toArray();
     for (const auto &connectionJson : userConnections)
     {
         const auto connection = connectionJson.toObject();
-        auto platform = connection["platform"].toString();
+        auto platform = connection["platform"_L1].toString();
         if (platform == u"TWITCH")
         {
-            this->twitchUserID = connection["id"].toString();
-            this->twitchUserName = connection["username"].toString();
+            this->connections.emplace_back(TwitchUser(connection));
         }
         else if (platform == u"KICK")
         {
-            this->kickUserID = connection["id"].toString().toULongLong();
-            this->kickUserName = connection["username"].toString().toLower();
+            this->connections.emplace_back(KickUser(connection));
         }
     }
 }
 
 bool EntitlementCreateDeleteDispatch::validate() const
 {
-    bool hasTwitch =
-        !this->twitchUserID.isEmpty() && !this->twitchUserName.isEmpty();
-    bool hasKick = this->kickUserID != 0 && !this->kickUserName.isEmpty();
-
-    return (hasTwitch || hasKick) && !this->refID.isEmpty() &&
+    return !this->connections.empty() && !this->refID.isEmpty() &&
            this->kind != CosmeticKind::INVALID;
 }
 

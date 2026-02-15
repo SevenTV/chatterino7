@@ -18,7 +18,7 @@
 #include "providers/bttv/liveupdates/BttvLiveUpdateMessages.hpp"  // IWYU pragma: keep
 #include "providers/ffz/FfzEmotes.hpp"
 #include "providers/irc/IrcConnection2.hpp"
-#include "providers/seventv/eventapi/Dispatch.hpp"  // IWYU pragma: keep
+#include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
@@ -322,8 +322,7 @@ std::shared_ptr<Channel> TwitchIrcServer::createChannel(
     // no Channel's should live
     // NOTE: CHANNEL_LIFETIME
     std::ignore = channel->sendMessageSignal.connect(
-        [this, channel = std::weak_ptr(channel)](auto &chan, auto &msg,
-                                                 bool &sent) {
+        [this, channel = std::weak_ptr(channel)](auto &msg, bool &sent) {
             auto c = channel.lock();
             if (!c)
             {
@@ -332,8 +331,8 @@ std::shared_ptr<Channel> TwitchIrcServer::createChannel(
             this->onMessageSendRequested(c, msg, sent);
         });
     std::ignore = channel->sendReplySignal.connect(
-        [this, channel = std::weak_ptr(channel)](auto &chan, auto &msg,
-                                                 auto &replyId, bool &sent) {
+        [this, channel = std::weak_ptr(channel)](auto &msg, auto &replyId,
+                                                 bool &sent) {
             auto c = channel.lock();
             if (!c)
             {
@@ -962,20 +961,34 @@ void TwitchIrcServer::initEventAPIs(BttvLiveUpdates *bttvLiveUpdates,
             });
         this->signalHolder.managedConnect(
             seventvEventAPI->signals_.personalEmoteSetAdded,
-            [&](const auto &data) {
-                if (data.twitchUserName.isEmpty())
+            [&](const seventv::eventapi::PersonalEmoteSetAdded &data) {
+                QVarLengthArray<QString, 1> names;
+                for (const auto &user : data.connections)
+                {
+                    if (const auto *u =
+                            std::get_if<seventv::eventapi::TwitchUser>(&user))
+                    {
+                        names.emplace_back(u->userName);
+                    }
+                }
+                if (names.empty())
                 {
                     return;
                 }
 
                 postToThread(
-                    [this, data]() {
-                        this->forEachChannelAndSpecialChannels([=](auto chan) {
+                    [this, emoteSet = data.emoteSet,
+                     names{std::move(names)}]() {
+                        this->forEachChannelAndSpecialChannels([&](const auto
+                                                                       &chan) {
                             if (auto *twitchChannel =
                                     dynamic_cast<TwitchChannel *>(chan.get()))
                             {
-                                twitchChannel->upsertPersonalSeventvEmotes(
-                                    data.twitchUserName, data.emoteSet);
+                                for (const auto &name : names)
+                                {
+                                    twitchChannel->upsertPersonalSeventvEmotes(
+                                        name, emoteSet);
+                                }
                             }
                         });
                     },
@@ -1203,28 +1216,30 @@ ChannelPtr TwitchIrcServer::getOrAddChannel(const QString &dirtyChannelName)
 
     // value doesn't exist
     chan = this->createChannel(channelName);
-    if (!chan)
+    auto *twitchChannel = dynamic_cast<TwitchChannel *>(chan.get());
+    if (!chan || !twitchChannel)
     {
         return Channel::getEmpty();
     }
 
     this->channels.insert(channelName, chan);
-    this->signalHolder.managedConnect(chan->destroyed, [this, channelName] {
-        // fourtf: issues when the server itself is destroyed
+    this->signalHolder.managedConnect(
+        twitchChannel->destroyed, [this, channelName] {
+            // fourtf: issues when the server itself is destroyed
 
-        qCDebug(chatterinoIrc) << "[TwitchIrcServer::addChannel]" << channelName
-                               << "was destroyed";
-        this->channels.remove(channelName);
+            qCDebug(chatterinoIrc) << "[TwitchIrcServer::addChannel]"
+                                   << channelName << "was destroyed";
+            this->channels.remove(channelName);
 
-        if (this->readConnection_)
-        {
-            // HACK(mm2pl): This prevents custom invalid twitch channels used by plugins from being joined
-            if (!channelName.startsWith("/"))
+            if (this->readConnection_)
             {
-                this->readConnection_->sendRaw("PART #" + channelName);
+                // HACK(mm2pl): This prevents custom invalid twitch channels used by plugins from being joined
+                if (!channelName.startsWith("/"))
+                {
+                    this->readConnection_->sendRaw("PART #" + channelName);
+                }
             }
-        }
-    });
+        });
 
     // join IRC channel
     {

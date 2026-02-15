@@ -45,6 +45,10 @@ public:
     static MessagePtrMut makeKicksGiftedMessage(KickChannel *channel,
                                                 BoostJsonObject data);
 
+    static MessagePtrMut makeRoomModeMessage(
+        KickChannel *channel, const QString &mode, bool enabled,
+        std::optional<std::chrono::seconds> duration);
+
     KickChannel *channel() const
     {
         return this->channel_;

@@ -760,7 +760,9 @@ void Split::updateInputPlaceholder()
         QString placeholderText = [&] {
             if (user->isAnonymous())
             {
-                return QStringLiteral("Log in to send messages...");
+                // FIXME: once we have a proper OAuth for Kick (device auth or similar),
+                // we can update this label to "Log in to send messages...".
+                return QString{};
             }
             return QString(u"Send message as " % user->username() % u"...");
         }();
@@ -868,6 +870,11 @@ void Split::setChannel(IndirectChannel newChannel)
         this->roomModeChangedConnection_ = tc->roomModesChanged.connect([this] {
             this->header_->updateRoomModes();
         });
+
+        this->channelSignalHolder_.managedConnect(
+            tc->sendWaitUpdate, [this](const QString &text) {
+                this->getInput().setSendWaitStatus(text);
+            });
     }
     else if (kc != nullptr)
     {
@@ -879,6 +886,11 @@ void Split::setChannel(IndirectChannel newChannel)
         this->roomModeChangedConnection_ = kc->roomModesChanged.connect([this] {
             this->header_->updateRoomModes();
         });
+
+        this->channelSignalHolder_.managedConnect(
+            kc->sendWaitUpdate, [this](const QString &text) {
+                this->getInput().setSendWaitStatus(text);
+            });
     }
 
     this->indirectChannelChangedConnection_ =

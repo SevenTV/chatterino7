@@ -80,6 +80,7 @@ private:
     void onGiftedSubscriptionEvent(KickChannel *channel, BoostJsonObject data);
     void onRewardRedeemedEvent(KickChannel *channel, BoostJsonObject data);
     void onKicksGiftedEvent(KickChannel *channel, BoostJsonObject data);
+    void onChatroomUpdatedEvent(KickChannel *channel, BoostJsonObject data);
 
     void onKnownIgnoredMessage(KickChannel *channel, BoostJsonObject data);
 

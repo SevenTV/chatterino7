@@ -64,11 +64,6 @@ public:
     ~Channel() override;
 
     // SIGNALS
-    pajlada::Signals::Signal<const QString &, const QString &, bool &>
-        sendMessageSignal;
-    pajlada::Signals::Signal<const QString &, const QString &, const QString &,
-                             bool &>
-        sendReplySignal;
     pajlada::Signals::Signal<MessagePtr &, std::optional<MessageFlags>>
         messageAppended;
     pajlada::Signals::Signal<std::vector<MessagePtr> &> messagesAddedAtStart;
@@ -77,7 +72,6 @@ public:
         messageReplaced;
     /// Invoked when some number of messages were filled in using time received
     pajlada::Signals::Signal<const std::vector<MessagePtr> &> filledInMessages;
-    pajlada::Signals::NoArgSignal destroyed;
     pajlada::Signals::NoArgSignal displayNameChanged;
     pajlada::Signals::NoArgSignal messagesCleared;
 

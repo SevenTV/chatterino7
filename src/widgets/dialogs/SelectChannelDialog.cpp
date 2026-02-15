@@ -266,6 +266,7 @@ void SelectChannelDialog::setSelectedChannel(
         break;
         case Channel::Type::Kick: {
             this->ui_.kickName->setText(channel->getName());
+            this->ui_.kickName->selectAll();
             this->ui_.notebook->select(this->ui_.kickPage);
         }
         break;

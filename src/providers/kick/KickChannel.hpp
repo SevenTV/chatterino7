@@ -38,6 +38,15 @@ public:
         uint64_t channelID = 0;
     };
 
+    struct RoomModes {
+        bool subscribersMode = false;
+        bool emotesMode = false;
+        std::optional<std::chrono::seconds> slowModeDuration;
+        std::optional<std::chrono::minutes> followersModeDuration;
+
+        auto operator<=>(const RoomModes &other) const = default;
+    };
+
     KickChannel(const QString &name);
     ~KickChannel() override;
 
@@ -69,9 +78,11 @@ public:
         return this->channelID_;
     }
 
-    /// Get the thread for the given message
-    /// If no thread can be found for the message, create one
-    std::shared_ptr<MessageThread> getOrCreateThread(const QString &messageID);
+    /// Get the thread for the given message.
+    /// If no thread can be found for the message, create one.
+    /// Additionally, this returns the reply parent.
+    std::pair<std::shared_ptr<MessageThread>, MessagePtr> getOrCreateThread(
+        const QString &messageID);
 
     void reloadSeventvEmotes(bool manualRefresh);
 
@@ -123,9 +134,18 @@ public:
 
     pajlada::Signals::NoArgSignal userIDChanged;
     pajlada::Signals::NoArgSignal userStateChanged;
+
+    const RoomModes &roomModes() const;
+    void updateRoomModes(const RoomModes &modes);
     pajlada::Signals::NoArgSignal roomModesChanged;
 
+    pajlada::Signals::Signal<const QString &> sendWaitUpdate;
+    void setSendWait(std::chrono::seconds waitTime);
+
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
+
+protected:
+    void messageRemovedFromStart(const MessagePtr &msg) override;
 
 private:
     /// Message ID -> thread
@@ -154,6 +174,8 @@ private:
     bool tryReplaceLastSeventvAddOrRemove(MessageFlag op, const QString &actor,
                                           const QString &emoteName);
 
+    void emitSendWait();
+
     // Kick usually calls this username
     QString displayName_;
     // The name in the URL (replaces non-alphanumeric characters with dashes)
@@ -175,6 +197,12 @@ private:
     std::queue<std::chrono::steady_clock::time_point> lastMessageTimestamps_;
     std::chrono::steady_clock::time_point lastMessageSpeedErrorTs_;
     std::chrono::steady_clock::time_point lastMessageAmountErrorTs_;
+
+    QTimer sendWaitTimer_;
+    // Timepoint at which the user can send messages again
+    std::optional<std::chrono::steady_clock::time_point> sendWaitEnd_;
+
+    RoomModes roomModes_;
 
     bool isMod_ = false;
     bool isVip_ = false;

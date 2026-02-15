@@ -2,11 +2,13 @@
 
 #include "Application.hpp"
 #include "common/QLogging.hpp"
+#include "controllers/accounts/AccountController.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/kick/KickMessageBuilder.hpp"
-#include "providers/seventv/eventapi/Dispatch.hpp"  // IWYU pragma: keep
+#include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Settings.hpp"
@@ -89,7 +91,12 @@ std::shared_ptr<KickChannel> KickChatServer::findByUserID(uint64_t userID) const
 std::shared_ptr<KickChannel> KickChatServer::findBySlug(
     const QString &slug) const
 {
-    auto it = this->channelsBySlug.find(slug);
+    QString searchString = slug.toLower();
+    if (searchString.startsWith('#'))
+    {
+        searchString.removeFirst();
+    }
+    auto it = this->channelsBySlug.find(searchString);
     if (it != this->channelsBySlug.end())
     {
         return it->second.lock();
@@ -192,10 +199,11 @@ bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
         "PinnedMessageCreatedEvent",
         &KickChatServer::onPinnedMessageCreatedEvent,  //
         "PinnedMessageDeletedEvent",
-        &KickChatServer::onPinnedMessageDeletedEvent,                   //
-        "RewardRedeemedEvent", &KickChatServer::onRewardRedeemedEvent,  //
-        "KicksGifted", &KickChatServer::onKicksGiftedEvent,             //
-        "StreamHostEvent", &KickChatServer::onStreamHostEvent,          //
+        &KickChatServer::onPinnedMessageDeletedEvent,                     //
+        "RewardRedeemedEvent", &KickChatServer::onRewardRedeemedEvent,    //
+        "KicksGifted", &KickChatServer::onKicksGiftedEvent,               //
+        "StreamHostEvent", &KickChatServer::onStreamHostEvent,            //
+        "ChatroomUpdatedEvent", &KickChatServer::onChatroomUpdatedEvent,  //
 
         // ignored
         "KicksLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
@@ -273,6 +281,16 @@ void KickChatServer::onUserBanned(KickChannel *channel, BoostJsonObject data)
     {
         channel->addOrReplaceTimeout(msg, now);
     }
+    auto duration = data["duration"].toInt64();
+    auto cur = getApp()->getAccounts()->kick.current();
+    if (!cur->isAnonymous() && duration > 0)
+    {
+        auto userID = data["user"]["id"].toUint64();
+        if (cur->userID() == userID)
+        {
+            channel->setSendWait(std::chrono::minutes{duration});
+        }
+    }
 }
 
 void KickChatServer::onUserUnbanned(KickChannel *channel, BoostJsonObject data)
@@ -281,6 +299,16 @@ void KickChatServer::onUserUnbanned(KickChannel *channel, BoostJsonObject data)
     if (msg)
     {
         channel->addMessage(msg, MessageContext::Original);
+    }
+
+    auto cur = getApp()->getAccounts()->kick.current();
+    if (!cur->isAnonymous())
+    {
+        auto userID = data["user"]["id"].toUint64();
+        if (cur->userID() == userID)
+        {
+            channel->setSendWait(std::chrono::seconds{0});
+        }
     }
 }
 
@@ -372,6 +400,62 @@ void KickChatServer::onKicksGiftedEvent(KickChannel *channel,
     {
         channel->addMessage(msg, MessageContext::Original);
     }
+}
+
+void KickChatServer::onChatroomUpdatedEvent(KickChannel *channel,
+                                            BoostJsonObject data)
+{
+    KickChannel::RoomModes newMode{
+        .subscribersMode = data["subscribers_mode"]["enabled"].toBool(),
+        .emotesMode = data["emotes_mode"]["enabled"].toBool(),
+    };
+    auto slowMode = data["slow_mode"].toObject();
+    if (slowMode["enabled"].toBool())
+    {
+        newMode.slowModeDuration =
+            std::chrono::seconds{slowMode["message_interval"].toInt64()};
+    }
+    auto followersMode = data["followers_mode"].toObject();
+    if (followersMode["enabled"].toBool())
+    {
+        newMode.followersModeDuration =
+            std::chrono::minutes{followersMode["min_duration"].toInt64()};
+    }
+
+    const auto &oldMode = channel->roomModes();
+
+    if (newMode.subscribersMode != oldMode.subscribersMode)
+    {
+        channel->addMessage(KickMessageBuilder::makeRoomModeMessage(
+                                channel, u"Subscribers"_s,
+                                newMode.subscribersMode, std::nullopt),
+                            MessageContext::Original);
+    }
+    if (newMode.emotesMode != oldMode.emotesMode)
+    {
+        channel->addMessage(
+            KickMessageBuilder::makeRoomModeMessage(
+                channel, u"Emote-only"_s, newMode.emotesMode, std::nullopt),
+            MessageContext::Original);
+    }
+    if (newMode.slowModeDuration != oldMode.slowModeDuration)
+    {
+        channel->addMessage(
+            KickMessageBuilder::makeRoomModeMessage(
+                channel, u"Slow"_s, newMode.slowModeDuration.has_value(),
+                newMode.slowModeDuration),
+            MessageContext::Original);
+    }
+    if (newMode.followersModeDuration != oldMode.followersModeDuration)
+    {
+        channel->addMessage(KickMessageBuilder::makeRoomModeMessage(
+                                channel, u"Followers-only"_s,
+                                newMode.followersModeDuration.has_value(),
+                                newMode.followersModeDuration),
+                            MessageContext::Original);
+    }
+
+    channel->updateRoomModes(newMode);
 }
 
 void KickChatServer::onKnownIgnoredMessage(KickChannel * /*channel*/,
@@ -503,16 +587,29 @@ void KickChatServer::initializeSeventvEventApi(SeventvEventAPI *api)
             });
         });
     this->signalHolder_.managedConnect(
-        api->signals_.personalEmoteSetAdded, [&](const auto &data) {
+        api->signals_.personalEmoteSetAdded,
+        [&](const seventv::eventapi::PersonalEmoteSetAdded &data) {
+            QVarLengthArray<QString, 1> names;
+            for (const auto &user : data.connections)
+            {
+                if (const auto *u =
+                        std::get_if<seventv::eventapi::KickUser>(&user))
+                {
+                    names.emplace_back(u->userName);
+                }
+            }
+            if (names.empty())
+            {
+                return;
+            }
+
             postToThread(
-                [this, data] {
-                    if (data.kickUserName.isEmpty())
-                    {
-                        return;
-                    }
-                    this->forEachChannel([data](auto &chan) {
-                        chan.upsertPersonalSeventvEmotes(data.kickUserName,
-                                                         data.emoteSet);
+                [this, emoteSet = data.emoteSet, names{std::move(names)}] {
+                    this->forEachChannel([&](auto &chan) {
+                        for (const auto &name : names)
+                        {
+                            chan.upsertPersonalSeventvEmotes(name, emoteSet);
+                        }
                     });
                 },
                 this);

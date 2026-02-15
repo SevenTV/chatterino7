@@ -236,42 +236,6 @@ void Application::initialize(Settings &settings, const Paths &paths)
         getSettings()->currentVersion.getValue() != "" &&
         getSettings()->currentVersion.getValue() != CHATTERINO_VERSION)
     {
-#if defined(Q_OS_MACOS) && defined(Q_PROCESSOR_X86)
-        if (Version::instance().isRunningInRosetta())
-        {
-            auto *armBox =
-                new QMessageBox(QMessageBox::Information, "Chatterino 7",
-                                "It looks like you're running the x86-64 "
-                                "version of Chatterio on "
-                                "Apple Silicon (ARM) using Rosetta2 emulation. "
-                                "There are native "
-                                "builds "
-                                "available (suffix: arm64).<br>Do you want to "
-                                "switch to the native "
-                                "version?",
-                                QMessageBox::Yes | QMessageBox::No);
-            armBox->setAttribute(Qt::WA_DeleteOnClose);
-            if (armBox->exec() == QMessageBox::Yes)
-            {
-                auto url = [] {
-                    if (Modes::instance().isNightly)
-                    {
-                        return QStringLiteral(
-                            "https://github.com/SevenTV/chatterino7/"
-                            "releases/tag/nightly-build");
-                    }
-
-                    return QStringLiteral(
-                               "https://github.com/SevenTV/chatterino7/"
-                               "releases/tag/v") +
-                           Version::instance().version();
-                }();
-                QDesktopServices::openUrl(url);
-                _Exit(0);
-            }
-        }
-#endif
-
         auto *box = new QMessageBox(QMessageBox::Information, "Chatterino 7",
                                     "Show changelog?",
                                     QMessageBox::Yes | QMessageBox::No);

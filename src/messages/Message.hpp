@@ -6,6 +6,7 @@
 
 #include "messages/MessageFlag.hpp"
 #include "providers/twitch/ChannelPointReward.hpp"
+#include "util/DebugCount.hpp"
 #include "util/QStringHash.hpp"
 
 #include <QColor>
@@ -24,6 +25,11 @@ class MessageElement;
 class MessageThread;
 class TwitchBadge;
 class ScrollbarHighlight;
+
+enum class MessagePlatform : uint8_t {
+    AnyOrTwitch,
+    Kick,
+};
 
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
@@ -112,6 +118,8 @@ struct Message {
     /// This is only used for plugins right now. This value is only ever set to
     /// true.
     mutable bool frozen = false;
+
+    MessagePlatform platform = MessagePlatform::AnyOrTwitch;
 
     std::vector<std::unique_ptr<MessageElement>> elements;
 

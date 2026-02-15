@@ -12,8 +12,15 @@
 #include <shared_mutex>
 #include <span>
 #include <unordered_map>
+#include <variant>
 
 namespace chatterino {
+
+namespace seventv::eventapi {
+struct TwitchUser;
+struct KickUser;
+using User = std::variant<TwitchUser, KickUser>;
+}  // namespace seventv::eventapi
 
 class SeventvPersonalEmotes
 {
@@ -23,9 +30,9 @@ public:
     void createEmoteSet(const QString &id);
 
     // Returns the emote-map of this set if it's new.
-    std::optional<std::shared_ptr<const EmoteMap>> assignUserToEmoteSet(
-        const QString &emoteSetID, const QString &userTwitchID,
-        uint64_t userKickID);
+    std::optional<std::shared_ptr<const EmoteMap>> assignUsersToEmoteSet(
+        const QString &emoteSetID,
+        std::span<const seventv::eventapi::User> users);
 
     void updateEmoteSet(const QString &id,
                         const seventv::eventapi::EmoteAddDispatch &dispatch);

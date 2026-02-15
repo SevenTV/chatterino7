@@ -4,57 +4,22 @@
 
 #include "common/Version.hpp"
 
-#include "common/Literals.hpp"
-#include "common/Modes.hpp"
-
 #include <QFileInfo>
 #include <QStringBuilder>
 
-#ifdef Q_OS_MACOS
-
-#    include <sys/sysctl.h>
-#    include <sys/types.h>
-
-namespace {
-
-// From https://forums.developer.apple.com/forums/thread/653009
-bool runningInRosetta()
-{
-    int ret = 0;
-    size_t size = sizeof(ret);
-    // Call the sysctl and if successful return the result
-    if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) != -1)
-    {
-        return ret != 0;
-    }
-    // If "sysctl.proc_translated" is not present then must be native
-    if (errno == ENOENT)
-    {
-        return false;
-    }
-
-    return false;
-}
-
-}  // namespace
-
-#endif
-
 namespace chatterino {
 
-using namespace literals;
+using namespace Qt::Literals;
 
 Version::Version()
     : version_(CHATTERINO_VERSION)
     , commitHash_(QStringLiteral(CHATTERINO_GIT_HASH))
     , isModified_(CHATTERINO_GIT_MODIFIED == 1)
     , dateOfBuild_(QStringLiteral(CHATTERINO_CMAKE_GEN_DATE))
-#ifdef Q_OS_MACOS
-    , isRunningInRosetta_(runningInRosetta())
-#endif
+    , isNightly_(CHATTERINO_NIGHTLY_BUILD == 1)
 {
     this->fullVersion_ = "Chatterino ";
-    if (Modes::instance().isNightly)
+    if (this->isNightly())
     {
         this->fullVersion_ += "Nightly ";
     }
@@ -73,6 +38,7 @@ Version::Version()
 
     this->generateBuildString();
     this->generateRunningString();
+    this->generateExtraString();
 
 #ifdef Q_OS_WIN
     // keep in sync with .CI/chatterino-installer.iss
@@ -156,6 +122,16 @@ const QString &Version::runningString() const
     return this->runningString_;
 }
 
+const QString &Version::extraString() const
+{
+    return this->extraString_;
+}
+
+bool Version::isNightly() const
+{
+    return this->isNightly_;
+}
+
 void Version::generateBuildString()
 {
     // e.g. Chatterino 2.3.5 or Chatterino Nightly 2.3.5
@@ -178,7 +154,7 @@ void Version::generateBuildString()
     s += " built";
 
     // If the build is a nightly build (decided with modes atm), include build date information
-    if (Modes::instance().isNightly)
+    if (this->isNightly())
     {
         s += " on " + this->dateOfBuild();
     }
@@ -194,11 +170,6 @@ void Version::generateRunningString()
     auto s = QString("Running on %1, kernel: %2")
                  .arg(QSysInfo::prettyProductName(), QSysInfo::kernelVersion());
 
-    if (this->isFlatpak())
-    {
-        s += ", running from Flatpak";
-    }
-
     if (!this->isSupportedOS())
     {
         s += " (unsupported OS)";
@@ -206,6 +177,19 @@ void Version::generateRunningString()
 
     this->runningString_ = s;
 }
+
+#define STRINGIFY(x) #x
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define STRINGIFY2(x) STRINGIFY(x)
+
+void Version::generateExtraString()
+{
+    this->extraString_ =
+        QStringLiteral(STRINGIFY2(CHATTERINO_EXTRA_BUILD_STRING)).trimmed();
+}
+
+#undef STRINGIFY2
+#undef STRINGIFY
 
 #ifdef Q_OS_WIN
 const std::wstring &Version::appUserModelID() const

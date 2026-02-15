@@ -39,7 +39,6 @@ Channel::~Channel()
     {
         app->getChatLogger()->closeChannel(this->name_, this->platform_);
     }
-    this->destroyed.invoke();
 }
 
 Channel::Type Channel::getType() const
@@ -471,7 +470,7 @@ void Channel::upsertPersonalSeventvEmotes(
     // added emotes are inserted where appropriate.
 
     assertInGuiThread();
-    auto snapshot = this->getMessageSnapshot();
+    auto snapshot = this->getMessageSnapshot(5);
     if (snapshot.empty())
     {
         return;

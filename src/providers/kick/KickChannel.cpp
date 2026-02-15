@@ -23,6 +23,7 @@
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Settings.hpp"
+#include "util/FormatTime.hpp"
 #include "util/Helpers.hpp"
 #include "util/PostToThread.hpp"
 
@@ -39,6 +40,12 @@ KickChannel::KickChannel(const QString &name)
     , seventvEmotes_(std::make_shared<const EmoteMap>())
 {
     this->setMentionFlag(MessageElementFlag::KickUsername);
+
+    this->sendWaitTimer_.setInterval(1s);
+    this->sendWaitTimer_.setSingleShot(false);
+    QObject::connect(&this->sendWaitTimer_, &QTimer::timeout, [this] {
+        this->emitSendWait();
+    });
 }
 
 KickChannel::~KickChannel()
@@ -72,8 +79,8 @@ std::weak_ptr<KickChannel> KickChannel::weakFromThis()
     return this->sharedFromThis();
 }
 
-std::shared_ptr<MessageThread> KickChannel::getOrCreateThread(
-    const QString &messageID)
+std::pair<std::shared_ptr<MessageThread>, MessagePtr>
+    KickChannel::getOrCreateThread(const QString &messageID)
 {
     auto existingIt = this->threads_.find(messageID);
     if (existingIt != this->threads_.end())
@@ -81,19 +88,24 @@ std::shared_ptr<MessageThread> KickChannel::getOrCreateThread(
         auto existing = existingIt->second.lock();
         if (existing)
         {
-            return existing;
+            return {existing, existing->root()};
         }
     }
 
     auto msg = this->findMessageByID(messageID);
     if (!msg)
     {
-        return nullptr;
+        return {nullptr, nullptr};
+    }
+
+    if (msg->replyThread)
+    {
+        return {msg->replyThread, msg};
     }
 
     auto thread = std::make_shared<MessageThread>(msg);
     this->threads_[messageID] = thread;
-    return thread;
+    return {thread, msg};
 }
 
 // FIXME: These are largely the same as in TwitchChannel. They should be
@@ -101,6 +113,18 @@ std::shared_ptr<MessageThread> KickChannel::getOrCreateThread(
 
 void KickChannel::reloadSeventvEmotes(bool manualRefresh)
 {
+    bool cacheHit = readProviderEmotesCache(
+        u"kick." % QString::number(this->userID()), "seventv",
+        [this](const auto &jsonDoc) {
+            const auto json = jsonDoc.object();
+            const auto emoteSet = json["emote_set"].toObject();
+            const auto parsedEmotes = emoteSet["emotes"].toArray();
+            auto emoteMap = seventv::detail::parseEmotes(
+                parsedEmotes, SeventvEmoteSetKind::Channel);
+            this->seventvEmotes_.set(
+                std::make_shared<const EmoteMap>(emoteMap));
+        });
+
     SeventvEmotes::loadKickChannelEmotes(
         this->weakFromThis(), this->userID(),
         [weak = this->weakFromThis()](EmoteMap &&emotes,
@@ -116,7 +140,7 @@ void KickChannel::reloadSeventvEmotes(bool manualRefresh)
             self->seventvKickConnectionIndex_ = info.twitchConnectionIndex;
             self->updateSeventvData(info.userID, info.emoteSetID);
         },
-        manualRefresh);
+        manualRefresh, cacheHit);
 }
 
 std::shared_ptr<const EmoteMap> KickChannel::seventvEmotes() const
@@ -258,11 +282,19 @@ void KickChannel::sendReply(const QString &message, const QString &replyToId)
     getKickApi()->sendMessage(
         this->userID(), prepared, replyToId,
         [weak = this->weakFromThis()](const auto &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
             if (res)
             {
+                if (self->roomModes_.slowModeDuration)
+                {
+                    self->setSendWait(*self->roomModes_.slowModeDuration);
+                }
                 return;  // message sent
             }
-            auto self = weak.lock();
             if (self)
             {
                 self->addSystemMessage(u"Failed to send message: " %
@@ -396,6 +428,58 @@ const KickChannel::StreamData &KickChannel::streamData() const
     return this->streamData_;
 }
 
+const KickChannel::RoomModes &KickChannel::roomModes() const
+{
+    return this->roomModes_;
+}
+
+void KickChannel::updateRoomModes(const RoomModes &modes)
+{
+    if (modes == this->roomModes_)
+    {
+        return;
+    }
+
+    this->roomModes_ = modes;
+    this->roomModesChanged.invoke();
+
+    if (!modes.slowModeDuration || *modes.slowModeDuration == 0s)
+    {
+        this->setSendWait(0s);
+    }
+}
+
+void KickChannel::setSendWait(std::chrono::seconds waitTime)
+{
+    if (waitTime <= 0s)
+    {
+        if (this->sendWaitEnd_)
+        {
+            this->sendWaitEnd_ = std::nullopt;
+            this->emitSendWait();
+        }
+        return;
+    }
+
+    this->sendWaitEnd_ = std::chrono::steady_clock::now() + waitTime;
+    if (!this->sendWaitTimer_.isActive())
+    {
+        this->sendWaitTimer_.start();
+        this->emitSendWait();
+    }
+}
+
+void KickChannel::messageRemovedFromStart(const MessagePtr &msg)
+{
+    if (msg->replyThread)
+    {
+        if (msg->replyThread->liveCount(msg) == 0)
+        {
+            this->threads_.erase(msg->replyThread->rootId());
+        }
+    }
+}
+
 void KickChannel::resolveChannelInfo()
 {
     auto weak = this->weakFromThis();
@@ -430,6 +514,13 @@ void KickChannel::resolveChannelInfo()
             {
                 self->displayNameChanged.invoke();
             }
+
+            self->updateRoomModes(RoomModes{
+                .subscribersMode = res->chatroom.subscribersMode,
+                .emotesMode = res->chatroom.emotesMode,
+                .slowModeDuration = res->chatroom.slowModeDuration,
+                .followersModeDuration = res->chatroom.followersModeDuration,
+            });
         });
 }
 
@@ -468,7 +559,7 @@ size_t KickChannel::maxBurstMessages() const
     // FIXME: this isn't fully tested (maybe these are higher?)
     if (this->hasHighRateLimit())
     {
-        return 10;
+        return 20;
     }
     return 5;
 }
@@ -480,6 +571,10 @@ std::chrono::milliseconds KickChannel::minMessageOffset() const
     {
         return 50ms;
     }
+    if (this->roomModes().slowModeDuration)
+    {
+        return 500ms;
+    }
     return 100ms;
 }
 
@@ -489,7 +584,7 @@ bool KickChannel::checkMessageRatelimit()
     auto &timestamps = this->lastMessageTimestamps_;
 
     // FIXME: haven't tested this fully
-    const auto cooldown = 30s;
+    const auto cooldown = 5s;
 
     // This is mostly identical to the logic in TwitchIrcServer
     if (!timestamps.empty() &&
@@ -750,6 +845,26 @@ bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
     this->replaceMessage(last, msg);
 
     return true;
+}
+
+void KickChannel::emitSendWait()
+{
+    auto now = std::chrono::steady_clock::now();
+    std::chrono::seconds remaining = 0s;
+    if (this->sendWaitEnd_)
+    {
+        remaining = std::chrono::duration_cast<std::chrono::seconds>(
+            *this->sendWaitEnd_ - now);
+    }
+    if (remaining <= 0s)
+    {
+        this->sendWaitTimer_.stop();
+        this->sendWaitUpdate.invoke({});
+    }
+    else
+    {
+        this->sendWaitUpdate.invoke(formatTime(remaining, 2));
+    }
 }
 
 QDebug operator<<(QDebug dbg, const KickChannel &chan)

@@ -17,6 +17,32 @@
 #include <QNetworkReply>
 #include <QtConcurrent>
 
+#ifndef signals
+#    define signals public  // the file uses signals: but we build without that
+#endif
+#include <private/qnetworkreplyhttpimpl_p.h>  // for QNetworkReplyHttpImplPrivate
+#undef signals
+
+namespace {
+
+/// For DELETE requests, Qt remaps the operation to `DeleteOperation`:
+/// https://github.com/qt/qtbase/blob/bc60fa052b6163bcf444dab027bd6c1e717c9845/src/network/access/qnetworkreplyhttpimpl.cpp#L141-L161
+/// If we specified a body on the request. That will get dropped, because
+/// `DeleteOperation` has a special handler that won't use the body.
+void forceCustomOperation(QNetworkReply *reply)
+{
+    // We can't use dynamic_cast here, since some Qt builds are without RTTI.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+    auto *d = static_cast<QNetworkReplyPrivate *>(QObjectPrivate::get(reply));
+    if (!d)
+    {
+        return;  // not an HTTP request?
+    }
+    d->operation = QNetworkAccessManager::CustomOperation;
+}
+
+}  // namespace
+
 namespace chatterino::network::detail {
 
 NetworkTask::NetworkTask(std::shared_ptr<NetworkData> &&data)
@@ -87,9 +113,21 @@ QNetworkReply *NetworkTask::createReply()
         case NetworkRequestType::Get:
             return accessManager->get(request);
 
-        case NetworkRequestType::Delete:
-            return NetworkManager::accessManager->sendCustomRequest(
-                request, "DELETE", data->payload);
+        case NetworkRequestType::Delete: {
+            if (data->payload.isEmpty())
+            {
+                return accessManager->deleteResource(request);
+            }
+
+            auto *reply = accessManager->sendCustomRequest(request, "DELETE",
+                                                           data->payload);
+            if (!reply)
+            {
+                return reply;
+            }
+            forceCustomOperation(reply);
+            return reply;
+        }
 
         case NetworkRequestType::Put:
             if (data->multiPartPayload)
@@ -244,7 +282,7 @@ void NetworkTask::finished()
         this->writeToCache(bytes);
     }
 
-    DebugCount::increase("http request success");
+    DebugCount::increase(DebugObject::HTTPRequestSuccess);
     this->logReply();
     this->data_->emitSuccess({reply->error(), status, bytes});
     this->data_->emitFinally();

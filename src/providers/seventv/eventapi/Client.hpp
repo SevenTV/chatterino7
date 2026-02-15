@@ -7,6 +7,7 @@
 #include "providers/liveupdates/BasicPubSubClient.hpp"
 // this needs to be included for the specialization
 // of std::hash for Subscription
+#include "providers/seventv/eventapi/Dispatch.hpp"  // for Twitch/KickUser
 #include "providers/seventv/eventapi/Subscription.hpp"
 
 #include <QPointer>
@@ -53,8 +54,7 @@ private:
     SeventvEventAPI &manager_;
 
     struct LastPersonalEmoteAssignment {
-        QString twitchUserName;
-        QString kickUserName;
+        QVarLengthArray<User, 1> connections;
         QString emoteSetID;
         std::shared_ptr<const EmoteMap> emoteSet;
     };

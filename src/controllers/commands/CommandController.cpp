@@ -20,6 +20,7 @@
 #include "controllers/commands/builtin/twitch/DeleteMessages.hpp"
 #include "controllers/commands/builtin/twitch/GetModerators.hpp"
 #include "controllers/commands/builtin/twitch/GetVIPs.hpp"
+#include "controllers/commands/builtin/twitch/LowTrust.hpp"
 #include "controllers/commands/builtin/twitch/Poll.hpp"
 #include "controllers/commands/builtin/twitch/Prediction.hpp"
 #include "controllers/commands/builtin/twitch/Raid.hpp"
@@ -452,6 +453,11 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/banid", &commands::sendBanById);
 
     this->registerCommand("/warn", &commands::sendWarn);
+
+    this->registerCommand("/monitor", &commands::monitorUser);
+    this->registerCommand("/restrict", &commands::restrictUser);
+    this->registerCommand("/unmonitor", &commands::unmonitorUser);
+    this->registerCommand("/unrestrict", &commands::unrestrictUser);
 
     for (const auto &cmd : TWITCH_WHISPER_COMMANDS)
     {

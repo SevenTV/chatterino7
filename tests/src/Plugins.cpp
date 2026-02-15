@@ -975,6 +975,7 @@ TEST_F(PluginTest, MessageElementFlag)
                          "EmojiText=0x1000000,"
                          "EmoteImage=0x10,"
                          "EmoteText=0x20,"
+                         "KickUsername=0x4000000000,"
                          "LowercaseLinks=0x20000000,"
                          "Mention=0x8000000,"
                          "Misc=0x1,"
@@ -1504,6 +1505,56 @@ TEST_F(PluginTest, LuaVersion)
     ASSERT_TRUE(lua->script("check_it()").valid());
 
     static_assert(LUA_VERSION_NUM >= 504);
+}
+
+TEST_F(PluginTest, ChannelOnDisplayNameChanged)
+{
+    this->configure();
+
+    bool gotEvent = false;
+    this->lua->set_function("on_test_event", [&] {
+        gotEvent = true;
+    });
+
+    auto chan = std::make_shared<MockChannel>("mock");
+    this->lua->set("chan", lua::api::ChannelRef(chan));
+    sol::protected_function init = this->lua->script(R"lua(
+        hdl = nil
+        return function(chan)
+            hdl = chan:on_display_name_changed(on_test_event)
+        end
+    )lua");
+
+    ASSERT_TRUE(init(lua::api::ChannelRef(chan)).valid());
+
+    ASSERT_TRUE(this->lua->script("assert(hdl ~= nil)").valid());
+
+    // regular delivery
+    chan->displayNameChanged.invoke();
+    ASSERT_TRUE(gotEvent);
+
+    // blocked connection
+    ASSERT_TRUE(this->lua->script("hdl:block()").valid());
+    ASSERT_TRUE(this->lua->script("assert(hdl:is_blocked())").valid());
+
+    gotEvent = false;
+    chan->displayNameChanged.invoke();
+    ASSERT_FALSE(gotEvent);
+
+    // unblocked connection
+    ASSERT_TRUE(this->lua->script("hdl:unblock()").valid());
+    ASSERT_TRUE(this->lua->script("assert(not hdl:is_blocked())").valid());
+
+    gotEvent = false;
+    chan->displayNameChanged.invoke();
+    ASSERT_TRUE(gotEvent);
+
+    // disconnect
+    ASSERT_TRUE(this->lua->script("hdl:disconnect()").valid());
+    ASSERT_TRUE(this->lua->script("assert(not hdl:is_connected())").valid());
+
+    gotEvent = false;
+    ASSERT_FALSE(gotEvent);
 }
 
 class PluginMessageConstructionTest

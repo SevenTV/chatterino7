@@ -29,6 +29,7 @@ KickAccountManager::KickAccountManager()
     QObject::connect(&this->refreshTimer, &QTimer::timeout, [this] {
         this->refreshAccounts();
     });
+    this->refreshTimer.start();
 }
 
 std::shared_ptr<KickAccount> KickAccountManager::current()
@@ -184,7 +185,7 @@ bool KickAccountManager::removeAccount(KickAccount *account)
     }
 
     auto accountPath = "/kickAccounts/uid" + std::to_string(account->userID());
-    pajlada::Settings::SettingManager::removeSetting(accountPath);
+    pajlada::Settings::SettingManager::gRemoveSetting(accountPath);
 
     if (account->username() == this->currentUsername)
     {

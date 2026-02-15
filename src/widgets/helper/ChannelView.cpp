@@ -24,6 +24,7 @@
 #include "providers/colors/ColorProvider.hpp"
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickChannel.hpp"
+#include "providers/kick/KickChatServer.hpp"
 #include "providers/links/LinkInfo.hpp"
 #include "providers/links/LinkResolver.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -68,6 +69,7 @@
 #include <QPainter>
 #include <QScreen>
 #include <QStringBuilder>
+#include <QUrl>
 #include <QVariantAnimation>
 
 #include <algorithm>
@@ -2720,6 +2722,39 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
         }
     }
 
+    // Add search action when text is selected and search feature is enabled
+    if (!this->selection_.isEmpty() && getSettings()->searchEnabled.getValue())
+    {
+        QString searchURL = getSettings()->searchEngineUrl.getValue();
+        QString searchName = getSettings()->searchEngineName.getValue();
+
+        if (!searchURL.isEmpty())
+        {
+            QString actionText =
+                searchName.isEmpty() ? "&Search" : "&Search with " + searchName;
+
+            if (getSettings()->searchIncognito && supportsIncognitoLinks())
+            {
+                actionText += " in private mode";
+            }
+
+            menu->addAction(actionText, [this, searchURL] {
+                QString query = this->getSelectedText().trimmed();
+                QString encodedQuery = QUrl::toPercentEncoding(query);
+                QString url = searchURL + encodedQuery;
+
+                if (getSettings()->searchIncognito && supportsIncognitoLinks())
+                {
+                    openLinkIncognito(url);
+                }
+                else
+                {
+                    QDesktopServices::openUrl(QUrl(url));
+                }
+            });
+        }
+    }
+
     if (!layout->getMessage()->id.isEmpty() &&
         this->underlyingChannel_->hasModRights())
     {
@@ -3002,10 +3037,23 @@ void ChannelView::showUserInfoPopup(const QString &userName,
     auto *userPopup =
         new UserInfoPopup(getSettings()->autoCloseUserPopup, this->split_);
 
-    auto contextChannel =
-        getApp()->getTwitch()->getChannelOrEmpty(alternativePopoutChannel);
     auto openingChannel = this->hasSourceChannel() ? this->sourceChannel_
                                                    : this->underlyingChannel_;
+    ChannelPtr contextChannel;
+    if (openingChannel && openingChannel->isKickChannel())
+    {
+        contextChannel =
+            getApp()->getKickChatServer()->findBySlug(alternativePopoutChannel);
+        if (!contextChannel)
+        {
+            contextChannel = Channel::getEmpty();
+        }
+    }
+    else
+    {
+        contextChannel =
+            getApp()->getTwitch()->getChannelOrEmpty(alternativePopoutChannel);
+    }
     userPopup->setData(userName, contextChannel, openingChannel);
 
     QPoint offset(userPopup->width() / 3, userPopup->height() / 5);
@@ -3463,6 +3511,7 @@ void ChannelView::updateID()
 
     boost::hash_combine(seed, first);
     boost::hash_combine(seed, second);
+    boost::hash_combine(seed, this->underlyingChannel_->getType());
 
     this->id_ = seed;
 }

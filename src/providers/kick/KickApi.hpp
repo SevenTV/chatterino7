@@ -5,6 +5,7 @@
 #include <QDateTime>
 #include <QString>
 
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <span>
@@ -29,6 +30,10 @@ struct KickPrivateChatroomInfo {
 
     uint64_t roomID = 0;
     QDateTime createdAt;
+    bool subscribersMode = false;
+    bool emotesMode = false;
+    std::optional<std::chrono::seconds> slowModeDuration;
+    std::optional<std::chrono::minutes> followersModeDuration;
 };
 
 struct KickPrivateChannelInfo {

@@ -1,8 +1,10 @@
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 
+#include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "singletons/Settings.hpp"
 #include "util/DebugCount.hpp"
+#include "util/Variant.hpp"
 
 #include <memory>
 #include <mutex>
@@ -27,43 +29,49 @@ void SeventvPersonalEmotes::createEmoteSet(const QString &id)
     std::unique_lock<std::shared_mutex> lock(this->mutex_);
     if (!this->emoteSets_.contains(id))
     {
-        DebugCount::increase(u"7TV Personal Emote Sets"_s);
+        DebugCount::increase(DebugObject::SeventvPersonalEmoteSets);
         this->emoteSets_.emplace(id, std::make_shared<const EmoteMap>());
     }
 }
 
 std::optional<std::shared_ptr<const EmoteMap>>
-    SeventvPersonalEmotes::assignUserToEmoteSet(const QString &emoteSetID,
-                                                const QString &userTwitchID,
-                                                uint64_t userKickID)
+    SeventvPersonalEmotes::assignUsersToEmoteSet(
+        const QString &emoteSetID,
+        std::span<const seventv::eventapi::User> users)
 {
     std::unique_lock<std::shared_mutex> lock(this->mutex_);
 
     int64_t additions = 0;
-    if (!userTwitchID.isEmpty())
-    {
-        auto &twitch = this->twitchEmoteSets_[userTwitchID];
-        // checking for one is enough because we always update both
-        // ...unless the user changed their connections
-        if (twitch.contains(emoteSetID))
+    auto tryAssign = [&](auto &list) {
+        if (list.contains(emoteSetID))
         {
+            return false;
+        }
+        list.append(emoteSetID);
+        additions++;
+        return true;
+    };
+    for (const auto &user : users)
+    {
+        bool changed =
+            std::visit(variant::Overloaded{
+                           [&](const seventv::eventapi::TwitchUser &u) {
+                               return tryAssign(this->twitchEmoteSets_[u.id]);
+                           },
+                           [&](const seventv::eventapi::KickUser &u) {
+                               return tryAssign(this->kickEmoteSets_[u.id]);
+                           }},
+                       user);
+        if (!changed)
+        {
+            // checking for one is enough because we always update all
+            // ...unless the user changed their connections
             return std::nullopt;
         }
-        twitch.append(emoteSetID);
-        additions++;
-    }
-    if (userKickID != 0)
-    {
-        auto &kick = this->kickEmoteSets_[userKickID];
-        if (kick.contains(emoteSetID))
-        {
-            return std::nullopt;
-        }
-        kick.append(emoteSetID);
-        additions++;
     }
 
-    DebugCount::increase(u"7TV Personal Emote Assignments"_s, additions);
+    DebugCount::increase(DebugObject::SeventvPersonalEmoteAssignments,
+                         additions);
 
     auto set = this->emoteSets_.find(emoteSetID);
     if (set == this->emoteSets_.end())
@@ -122,10 +130,10 @@ void SeventvPersonalEmotes::addEmoteSetForTwitchUser(
                      .second;
     if (added)
     {
-        DebugCount::increase(u"7TV Personal Emote Sets"_s);
+        DebugCount::increase(DebugObject::SeventvPersonalEmoteSets);
     }
     this->twitchEmoteSets_[userTwitchID].append(emoteSetID);
-    DebugCount::increase(u"7TV Personal Emote Assignments"_s);
+    DebugCount::increase(DebugObject::SeventvPersonalEmoteAssignments);
 }
 
 void SeventvPersonalEmotes::addEmoteSetForKickUser(const QString &emoteSetID,
@@ -139,10 +147,10 @@ void SeventvPersonalEmotes::addEmoteSetForKickUser(const QString &emoteSetID,
                      .second;
     if (added)
     {
-        DebugCount::increase(u"7TV Personal Emote Sets"_s);
+        DebugCount::increase(DebugObject::SeventvPersonalEmoteSets);
     }
     this->kickEmoteSets_[kickUserID].append(emoteSetID);
-    DebugCount::increase(u"7TV Personal Emote Assignments"_s);
+    DebugCount::increase(DebugObject::SeventvPersonalEmoteAssignments);
 }
 
 bool SeventvPersonalEmotes::hasEmoteSet(const QString &id) const

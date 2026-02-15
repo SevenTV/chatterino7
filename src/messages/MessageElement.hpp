@@ -10,6 +10,7 @@
 #include "messages/MessageColor.hpp"
 #include "providers/links/LinkInfo.hpp"
 #include "singletons/Fonts.hpp"
+#include "util/DebugCount.hpp"
 
 #include <magic_enum/magic_enum.hpp>
 #include <pajlada/signals/signalholder.hpp>
@@ -158,7 +159,7 @@ enum class MessageElementFlag : int64_t {
     // (1LL << 36) is occupied by BadgeSevenTV
 
     // `Username` but the username comes from Kick
-    KickUsername = (1LL << 37),
+    KickUsername = (1LL << 38),
 
     Default = Timestamp | Badges | Username | BitsStatic | EmoteImage |
               BitsAmount | Text | AlwaysShow,

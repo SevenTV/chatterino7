@@ -21,6 +21,7 @@
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
+#include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "util/BoostJsonWrap.hpp"
 #include "util/FormatTime.hpp"
@@ -231,11 +232,14 @@ void checkThreadSubscription(const QString &senderLogin,
 
     if (getSettings()->autoSubToParticipatedThreads)
     {
-        // FIXME: use kick account
-        const auto &currentLogin =
-            getApp()->getAccounts()->twitch.getCurrent()->getUserName();
-
-        if (senderLogin == currentLogin || originalSender == currentLogin)
+        const auto &current = getApp()->getAccounts()->kick.current();
+        if (current->isAnonymous())
+        {
+            return;
+        }
+        auto user = current->username();
+        if (senderLogin.compare(user, Qt::CaseInsensitive) == 0 ||
+            originalSender.compare(user, Qt::CaseInsensitive) == 0)
         {
             thread->markSubscribed();
         }
@@ -248,13 +252,12 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
     auto originalMessage = metadata["original_message"].toObject();
     auto originalSender = metadata["original_sender"]["username"].toQString();
     auto originalMessageID = originalMessage["id"].toQString();
-    auto thread = builder.channel()->getOrCreateThread(originalMessageID);
-    MessagePtr threadRoot;
+    auto [thread, replyParent] =
+        builder.channel()->getOrCreateThread(originalMessageID);
     if (thread)
     {
         builder->replyThread = thread;
-        // there's no replyParent like on Twitch
-        threadRoot = thread->root();
+        builder->replyParent = replyParent;
         thread->addToThread(std::weak_ptr{builder.weakOf()});
         checkThreadSubscription(builder->loginName, originalSender, thread);
         if (thread->subscribed())
@@ -266,9 +269,9 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
     builder->flags.set(MessageFlag::ReplyMessage);
 
     QString usernameText = originalSender;
-    if (threadRoot)
+    if (replyParent)
     {
-        usernameText = displayedUsername(*threadRoot);
+        usernameText = displayedUsername(*replyParent);
     }
 
     builder.emplace<ReplyCurveElement>();
@@ -282,23 +285,23 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
     }
 
     builder
-        .emplace<TextElement>('@' % usernameText % ':',
-                              MessageElementFlag::RepliedMessage,
-                              threadRoot ? threadRoot->usernameColor : QColor{},
-                              FontStyle::ChatMediumSmall)
+        .emplace<TextElement>(
+            '@' % usernameText % ':', MessageElementFlag::RepliedMessage,
+            replyParent ? replyParent->usernameColor : QColor{},
+            FontStyle::ChatMediumSmall)
         ->setLink({Link::UserInfo,
-                   threadRoot ? threadRoot->displayName : usernameText});
+                   replyParent ? replyParent->displayName : usernameText});
 
     MessageColor color = MessageColor::Text;
-    if (threadRoot && threadRoot->flags.has(MessageFlag::Action))
+    if (replyParent && replyParent->flags.has(MessageFlag::Action))
     {
-        color = threadRoot->usernameColor;
+        color = replyParent->usernameColor;
     }
 
     QString messageText = [&] {
-        if (threadRoot)
+        if (replyParent)
         {
-            return threadRoot->messageText;
+            return replyParent->messageText;
         }
         return originalMessage["content"].toQString();
     }();
@@ -308,9 +311,31 @@ void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
         MessageElementFlags(
             {MessageElementFlag::RepliedMessage, MessageElementFlag::Text}),
         color, FontStyle::ChatMediumSmall);
-    if (threadRoot)
+    if (thread)
     {
         textEl->setLink({Link::ViewThread, thread->rootId()});
+    }
+}
+
+void appendReplyButtons(KickMessageBuilder &builder)
+{
+    if (builder->replyThread)
+    {
+        auto &img = getResources().buttons.replyThreadDark;
+        builder
+            .emplace<CircularImageElement>(Image::fromResourcePixmap(img, 0.15),
+                                           2, Qt::gray,
+                                           MessageElementFlag::ReplyButton)
+            ->setLink({Link::ViewThread, builder->replyThread->rootId()});
+    }
+    else
+    {
+        auto &img = getResources().buttons.replyDark;
+        builder
+            .emplace<CircularImageElement>(Image::fromResourcePixmap(img, 0.15),
+                                           2, Qt::gray,
+                                           MessageElementFlag::ReplyButton)
+            ->setLink({Link::ReplyToMessage, builder->id});
     }
 }
 
@@ -367,7 +392,8 @@ HighlightAlert processHighlights(KickMessageBuilder &builder,
     }
 
     auto [highlighted, highlightResult] = getApp()->getHighlights()->check(
-        args, {}, builder->loginName, builder->messageText, builder->flags);
+        args, {}, builder->loginName, builder->messageText, builder->flags,
+        builder->platform);
 
     if (!highlighted)
     {
@@ -412,6 +438,7 @@ KickMessageBuilder::KickMessageBuilder(SystemMessageTag /* tag */,
 {
     this->emplace<TimestampElement>(time.time());
     this->message().flags.set(MessageFlag::System);
+    this->message().platform = MessagePlatform::Kick;
     this->message().serverReceivedTime = time;
 }
 
@@ -420,20 +447,21 @@ KickMessageBuilder::KickMessageBuilder(KickChannel *channel,
     : channel_(channel)
 {
     this->emplace<TimestampElement>(time.time());
+    this->message().platform = MessagePlatform::Kick;
     this->message().serverReceivedTime = time;
 }
 
 KickMessageBuilder::KickMessageBuilder(KickChannel *channel)
     : channel_(channel)
 {
-    // set Kick flag?
+    this->message().platform = MessagePlatform::Kick;
 }
 
 std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     KickChannel *kickChannel, BoostJsonObject data)
 {
     auto id = data["id"].toQString();
-    auto content = data["content"].toQString();
+    auto content = data["content"].toQString().simplified();
     auto createdAt = data["created_at"].toQString();
 
     auto sender = data["sender"].toObject();
@@ -443,7 +471,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     builder->channelName = kickChannel->getName();
     builder->id = id;
     builder->serverReceivedTime =
-        QDateTime::fromString(createdAt, Qt::DateFormat::ISODate);
+        QDateTime::fromString(createdAt, Qt::DateFormat::ISODate).toLocalTime();
     builder->parseTime = QTime::currentTime();
     builder->displayName = sender["username"].toQString();
     builder->loginName = builder->displayName.toLower();
@@ -469,6 +497,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
 
     QString messageText;
     parseContent(builder, messageText, content);
+    appendReplyButtons(builder);
 
     builder->searchText =
         builder->loginName % ' ' % builder->displayName % u": " % messageText;
@@ -561,7 +590,7 @@ MessagePtrMut KickMessageBuilder::makeTimeoutMessage(KickChannel *channel,
     builder.emplaceSystemTextAndUpdate(".", text);
     builder->messageText = text;
     builder->searchText = text;
-    builder->timeoutUser = timedOutUsername;
+    builder->timeoutUser = timedOutUsername.toLower();
 
     return builder.release();
 }
@@ -634,7 +663,7 @@ MessagePtrMut KickMessageBuilder::makePinnedMessage(KickChannel *channel,
         {
             return existing->messageText;
         }
-        return jsonMessage["text"].toQString();
+        return jsonMessage["text"].toQString().simplified();
     }();
     auto limit = getSettings()->deletedMessageLengthLimit.getValue();
     if (limit > 0 && messageText.length() > limit)
@@ -688,7 +717,7 @@ std::tuple<MessagePtrMut, MessagePtrMut, HighlightAlert>
 
     auto months = data["months"].toUint64();
     auto username = data["username"].toQString();
-    auto customMessageText = data["custom_message"].toQString();
+    auto customMessageText = data["custom_message"].toQString().simplified();
     if (!customMessageText.isEmpty())
     {
         KickMessageBuilder builder(channel);
@@ -789,7 +818,7 @@ MessagePtrMut KickMessageBuilder::makeRewardRedeemedMessage(
 {
     const auto reward = data["reward_title"].toQString();
     const auto username = data["username"].toQString();
-    const auto userInput = data["user_input"].toQString();
+    const auto userInput = data["user_input"].toQString().simplified();
 
     KickMessageBuilder builder(channel, QDateTime::currentDateTime());
     builder->flags.set(MessageFlag::RedeemedChannelPointReward);
@@ -836,7 +865,7 @@ MessagePtrMut KickMessageBuilder::makeKicksGiftedMessage(KickChannel *channel,
     const auto gift = data["gift"].toObject();
     const auto giftName = gift["name"].toQString();
     const auto giftAmount = gift["amount"].toUint64();
-    const auto userInput = data["message"].toQString();
+    const auto userInput = data["message"].toQString().simplified();
 
     KickMessageBuilder builder(channel, QDateTime::currentDateTime());
     builder->flags.set(MessageFlag::RedeemedChannelPointReward);
@@ -876,6 +905,38 @@ MessagePtrMut KickMessageBuilder::makeKicksGiftedMessage(KickChannel *channel,
         builder->searchText = text % ' ' % username % u": " % redeemedText;
     }
     builder->loginName = username;
+    return builder.release();
+}
+
+MessagePtrMut KickMessageBuilder::makeRoomModeMessage(
+    KickChannel *channel, const QString &mode, bool enabled,
+    std::optional<std::chrono::seconds> duration)
+{
+    KickMessageBuilder builder(systemMessage, channel,
+                               QDateTime::currentDateTime());
+    builder->flags.set(MessageFlag::ModerationAction);
+    QString text;
+
+    QString enabledText = enabled ? u"enabled"_s : u"disabled"_s;
+
+    builder.emplaceSystemTextAndUpdate(mode, text);
+    builder.emplaceSystemTextAndUpdate(u"mode"_s, text);
+
+    if (duration && duration->count() > 0)
+    {
+        builder.emplaceSystemTextAndUpdate(u'(' % formatTime(*duration) % u')',
+                                           text);
+    }
+
+    builder.emplaceSystemTextAndUpdate(u"has been"_s, text);
+    builder.emplaceSystemTextAndUpdate(enabledText, text);
+
+    text.removeLast();
+    builder->elements.back()->setTrailingSpace(false);
+    builder.emplaceSystemTextAndUpdate(u"."_s, text);
+
+    builder->messageText = text;
+    builder->searchText = text;
     return builder.release();
 }
 

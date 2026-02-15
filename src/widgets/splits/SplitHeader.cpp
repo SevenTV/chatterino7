@@ -58,33 +58,32 @@ constexpr const int ADD_SPLIT_BUTTON_WIDTH = 16;
 // 5 minutes
 constexpr const qint64 THUMBNAIL_MAX_AGE_MS = 5LL * 60 * 1000;
 
-auto formatRoomModeUnclean(
-    const SharedAccessGuard<const TwitchChannel::RoomModes> &modes) -> QString
+auto formatRoomModeUnclean(const TwitchChannel::RoomModes &modes) -> QString
 {
     QString text;
 
-    if (modes->r9k)
+    if (modes.r9k)
     {
         text += "r9k, ";
     }
-    if (modes->slowMode > 0)
+    if (modes.slowMode > 0)
     {
-        text += QString("slow(%1), ").arg(localizeNumbers(modes->slowMode));
+        text += QString("slow(%1), ").arg(localizeNumbers(modes.slowMode));
     }
-    if (modes->emoteOnly)
+    if (modes.emoteOnly)
     {
         text += "emote, ";
     }
-    if (modes->submode)
+    if (modes.submode)
     {
         text += "sub, ";
     }
-    if (modes->followerOnly != -1)
+    if (modes.followerOnly != -1)
     {
-        if (modes->followerOnly != 0)
+        if (modes.followerOnly != 0)
         {
             text += QString("follow(%1m), ")
-                        .arg(localizeNumbers(modes->followerOnly));
+                        .arg(localizeNumbers(modes.followerOnly));
         }
         else
         {
@@ -93,6 +92,27 @@ auto formatRoomModeUnclean(
     }
 
     return text;
+}
+
+QString formatRoomModeUnclean(const KickChannel::RoomModes &modes)
+{
+    TwitchChannel::RoomModes twitch{
+        .submode = modes.subscribersMode,
+        .r9k = false,
+        .emoteOnly = modes.emotesMode,
+        .followerOnly = -1,
+        .slowMode = 0,
+    };
+    if (modes.followersModeDuration)
+    {
+        twitch.followerOnly =
+            static_cast<int>(modes.followersModeDuration->count());
+    }
+    if (modes.slowModeDuration)
+    {
+        twitch.slowMode = static_cast<int>(modes.slowModeDuration->count());
+    }
+    return formatRoomModeUnclean(twitch);
 }
 
 void cleanRoomModeText(QString &text, bool hasModRights)
@@ -519,6 +539,22 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                 ->setVisible(twitchChannel->isLive());
         }
 
+        if (this->split_->getIndirectChannel().getType() ==
+            Channel::Type::TwitchWatching)
+        {
+            menu->addAction("Reset /watching", this->split_, [] {
+                if (!getApp()
+                         ->getTwitch()
+                         ->getWatchingChannel()
+                         .get()
+                         ->isEmpty())
+                {
+                    getApp()->getTwitch()->setWatchingChannel(
+                        Channel::getEmpty());
+                }
+            });
+        }
+
         menu->addSeparator();
     }
 
@@ -540,7 +576,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
             &SplitHeader::reconnect);
     }
 
-    if (twitchChannel)
+    if (twitchChannel || kickChannel)
     {
         auto bothSeq = h->getDisplaySequence(
             HotkeyCategory::Split, "reloadEmotes", {std::vector<QString>()});
@@ -551,9 +587,12 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         menu->addAction("Reload channel emotes",
                         channelSeq.isEmpty() ? bothSeq : channelSeq, this,
                         &SplitHeader::reloadChannelEmotes);
-        menu->addAction("Reload subscriber emotes",
-                        subSeq.isEmpty() ? bothSeq : subSeq, this,
-                        &SplitHeader::reloadSubscriberEmotes);
+        if (twitchChannel)
+        {
+            menu->addAction("Reload subscriber emotes",
+                            subSeq.isEmpty() ? bothSeq : subSeq, this,
+                            &SplitHeader::reloadSubscriberEmotes);
+        }
     }
 
     menu->addSeparator();
@@ -799,7 +838,7 @@ void SplitHeader::updateRoomModes()
         QString text;
         {
             auto roomModes = twitchChannel->accessRoomModes();
-            text = formatRoomModeUnclean(roomModes);
+            text = formatRoomModeUnclean(*roomModes);
 
             // Set menu action
             this->modeActionSetR9k->setChecked(roomModes->r9k);
@@ -824,6 +863,24 @@ void SplitHeader::updateRoomModes()
         }
 
         // Update the mode button menu actions
+    }
+    else if (auto *kc =
+                 dynamic_cast<KickChannel *>(this->split_->getChannel().get()))
+    {
+        this->modeButton_->setEnabled(false);
+
+        QString text = formatRoomModeUnclean(kc->roomModes());
+        cleanRoomModeText(text, false);
+
+        if (!text.isEmpty())
+        {
+            this->modeButton_->setText(text);
+            this->modeButton_->show();
+        }
+        else
+        {
+            this->modeButton_->hide();
+        }
     }
     else
     {
@@ -1205,6 +1262,10 @@ void SplitHeader::reloadChannelEmotes()
         twitchChannel->refreshFFZChannelEmotes(true);
         twitchChannel->refreshBTTVChannelEmotes(true);
         twitchChannel->refreshSevenTVChannelEmotes(true);
+    }
+    else if (auto *kc = dynamic_cast<KickChannel *>(channel.get()))
+    {
+        kc->reloadSeventvEmotes(true);
     }
 }
 

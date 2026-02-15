@@ -268,10 +268,7 @@ void Client::onEmoteSetUpdate(const Dispatch &dispatch)
         {
             qCDebug(chatterinoSeventvEventAPI) << "Flushed last emote set";
             this->manager_.signals_.personalEmoteSetAdded.invoke({
-                .twitchUserName =
-                    this->lastPersonalEmoteAssignment_->twitchUserName,
-                .kickUserName =
-                    this->lastPersonalEmoteAssignment_->kickUserName,
+                .connections = this->lastPersonalEmoteAssignment_->connections,
                 .emoteSet = *emoteSet,
             });
         }
@@ -353,25 +350,22 @@ void Client::onEntitlementCreate(
     switch (entitlement.kind)
     {
         case CosmeticKind::Badge: {
-            badges->assignBadgeToUser(entitlement.refID,
-                                      UserId{entitlement.twitchUserID},
-                                      entitlement.kickUserID);
+            badges->assignBadgeToUsers(entitlement.refID,
+                                       entitlement.connections);
         }
         break;
         case CosmeticKind::Paint: {
-            app->getSeventvPaints()->assignPaintToUser(
-                entitlement.refID, UserName{entitlement.twitchUserName},
-                UserName{entitlement.kickUserName});
+            app->getSeventvPaints()->assignPaintToUsers(
+                entitlement.refID, entitlement.connections);
         }
         break;
         case CosmeticKind::EmoteSet: {
             qCDebug(chatterinoSeventvEventAPI)
-                << "Assign user" << entitlement.twitchUserID << "to emote set"
-                << entitlement.refID;
+                << "Assign user" << entitlement.seventvUsername
+                << "to emote set" << entitlement.refID;
             if (auto set =
-                    app->getSeventvPersonalEmotes()->assignUserToEmoteSet(
-                        entitlement.refID, entitlement.twitchUserID,
-                        entitlement.kickUserID))
+                    app->getSeventvPersonalEmotes()->assignUsersToEmoteSet(
+                        entitlement.refID, entitlement.connections))
             {
                 if ((*set)->empty())
                 {
@@ -380,8 +374,7 @@ void Client::onEntitlementCreate(
                            "updates";
                     this->lastPersonalEmoteAssignment_ =
                         LastPersonalEmoteAssignment{
-                            .twitchUserName = entitlement.twitchUserName,
-                            .kickUserName = entitlement.kickUserName,
+                            .connections = entitlement.connections,
                             .emoteSetID = entitlement.refID,
                         };
                 }
@@ -389,8 +382,7 @@ void Client::onEntitlementCreate(
                 {
                     this->lastPersonalEmoteAssignment_ = std::nullopt;
                     this->manager_.signals_.personalEmoteSetAdded.invoke({
-                        .twitchUserName = entitlement.twitchUserName,
-                        .kickUserName = entitlement.kickUserName,
+                        .connections = entitlement.connections,
                         .emoteSet = *set,
                     });
                 }
@@ -415,15 +407,13 @@ void Client::onEntitlementDelete(
     switch (entitlement.kind)
     {
         case CosmeticKind::Badge: {
-            badges->clearBadgeFromUser(entitlement.refID,
-                                       UserId{entitlement.twitchUserID},
-                                       entitlement.kickUserID);
+            badges->clearBadgeFromUsers(entitlement.refID,
+                                        entitlement.connections);
         }
         break;
         case CosmeticKind::Paint: {
-            app->getSeventvPaints()->clearPaintFromUser(
-                entitlement.refID, UserName{entitlement.twitchUserName},
-                UserName{entitlement.kickUserName});
+            app->getSeventvPaints()->clearPaintFromUsers(
+                entitlement.refID, entitlement.connections);
         }
         break;
         default:
