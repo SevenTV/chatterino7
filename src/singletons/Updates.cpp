@@ -371,6 +371,10 @@ void Updates::checkForUpdates()
 
         /// Version available on every platform
         auto version = object["version"];
+        if (object["v2_version"_L1].isString())
+        {
+            version = object["v2_version"_L1].toString();
+        }
 
         if (!version.isString())
         {
