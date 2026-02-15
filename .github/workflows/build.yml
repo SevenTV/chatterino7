@@ -192,19 +192,19 @@ jobs:
           # Windows
           - os: windows-latest
             qt-version: 6.9.3
-            force-lto: false
+            force-lto: true
             skip-artifact: false
             skip-crashpad: false
           # Windows on ARM
           - os: windows-11-arm
             qt-version: 6.9.3
-            force-lto: false
+            force-lto: true
             skip-artifact: false
             skip-crashpad: false
           # macOS (ARM)
           - os: macos-latest
             qt-version: 6.9.3
-            force-lto: false
+            force-lto: true
             skip-artifact: false
             skip-crashpad: false
 
