@@ -26,6 +26,9 @@ jobs:
     env:
       # same as in build.yml
       C2_ARCH: ${{ case(endsWith(matrix.os, '-arm'), 'arm', 'x86-64') }}
+    permissions:
+      # FIXME: this only needed for the nightly upload step (should split to another job)
+      contents: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -112,6 +115,9 @@ jobs:
   draft-release:
     runs-on: ubuntu-latest
     needs: [create-installer, check-release]
+    permissions:
+      # FIXME: this only needed for the last step (should split to another job)
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
