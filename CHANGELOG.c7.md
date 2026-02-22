@@ -2,7 +2,7 @@
 
 ## Unversioned
 
-- Major: Added experimental Kick support (#351, #353, #354, #355, #356, #357, #360, #362, #367, #368, #369, #371, #373, #378, #379, #380, #381, #382, #383, #386, #387, #388, #390, #391)
+- Major: Added experimental Kick support (#351, #353, #354, #355, #356, #357, #360, #362, #367, #368, #369, #371, #373, #378, #379, #380, #381, #382, #383, #386, #387, #388, #390, #391, #395)
 - Minor: Increased radius of drop-shadows in paints to match the browser extension (#339, a4a86c9ca6e1bccf9253dce75bdfe838c15e71fd)
 - Bugfix: Fixed 7TV users with multiple connections to the same platform not having cosmetics applied on all connected accounts (#389)
 - Bugfix: Fixed URL paints on mentions not being scaled correctly in high-dpi settings (57627edf4af49111bf5e0c1bc942ad4db3b85d96)
