@@ -156,52 +156,26 @@ void KickAccount::refreshIfNeeded()
     }
 
     auto now = QDateTime::currentDateTimeUtc() + CHECK_REFRESH_INTERVAL +
-               std::chrono::seconds{30};
+               std::chrono::seconds{60};
     if (now < this->expiresAt_)
     {
         return;
     }
+    qCDebug(chatterinoKick) << "Attempting to refresh" << this->username()
+                            << "expires:" << this->expiresAt_;
 
-    QUrlQuery payload{
-        {"refresh_token"_L1, this->refreshToken_},
-        {"client_id"_L1, this->clientID_},
-        {"client_secret"_L1, this->clientSecret_},
-        {"grant_type"_L1, "refresh_token"_L1},
-    };
-
-    auto weak = this->weak_from_this();
-    NetworkRequest(u"https://id.kick.com/oauth/token"_s,
-                   NetworkRequestType::Post)
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
-        .onSuccess([weak](const NetworkResult &res) {
-            auto self = weak.lock();
-            if (!self)
-            {
-                return;
-            }
-
-            const auto json = res.parseJson();
-            self->authToken_ = json["access_token"_L1].toString();
-            self->refreshToken_ = json["refresh_token"_L1].toString();
-            auto expiresInSec =
-                std::clamp<qint64>(json["expires_in"_L1].toInteger(), 0,
-                                   std::numeric_limits<qint32>::max());
-            self->expiresAt_ =
-                QDateTime::currentDateTimeUtc().addSecs(expiresInSec);
-            self->save();
-            self->authUpdated.invoke();
-        })
-        .onError([weak](const NetworkResult &res) {
-            auto self = weak.lock();
-            if (!self)
-            {
-                return;
-            }
-            qCWarning(chatterinoKick) << "Failed to refresh" << self->username()
-                                      << "error:" << res.formatError();
-        })
-        .execute();
+    // Hack: check the current token first to ensure we're connected. Otherwise,
+    // we might miss the response.
+    // FIXME: queue re-check earlier
+    this->check([this](CheckResult res) {
+        if (res == CheckResult::NetworkError)
+        {
+            qCWarning(chatterinoKick)
+                << "Skipping refresh, because of network error";
+            return;
+        }
+        this->doRefresh();
+    });
 }
 
 void KickAccount::loadSeventvUser()
@@ -269,6 +243,93 @@ void KickAccount::loadSeventvUser()
             qCDebug(chatterinoSeventv)
                 << "Failed to load your 7TV user-id:" << result.formatError();
         });
+}
+
+void KickAccount::check(const std::function<void(CheckResult)> &cb)
+{
+    auto weak = this->weak_from_this();
+    NetworkRequest(u"https://id.kick.com/oauth/token/introspect"_s,
+                   NetworkRequestType::Post)
+        .timeout(10'000)
+        .onSuccess([cb, weak](const NetworkResult & /*res*/) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            qCDebug(chatterinoKick)
+                << "[Refresh]: Successfully checked previous token";
+            cb(CheckResult::Valid);
+        })
+        .onError([weak, cb](const NetworkResult &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            qCDebug(chatterinoKick)
+                << "[Refresh; Error] Network response:" << res.formatError();
+            auto status = res.status();
+            if (!status || *status < 100)
+            {
+                cb(CheckResult::NetworkError);
+                return;
+            }
+            if (*status == 401)
+            {
+                cb(CheckResult::Expired);
+                return;
+            }
+            cb(CheckResult::OtherHttp);
+        })
+        .execute();
+}
+
+void KickAccount::doRefresh()
+{
+    QUrlQuery payload{
+        {"refresh_token"_L1, this->refreshToken_},
+        {"client_id"_L1, this->clientID_},
+        {"client_secret"_L1, this->clientSecret_},
+        {"grant_type"_L1, "refresh_token"_L1},
+    };
+
+    auto weak = this->weak_from_this();
+    NetworkRequest(u"https://id.kick.com/oauth/token"_s,
+                   NetworkRequestType::Post)
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
+        .timeout(20'000)
+        .onSuccess([weak](const NetworkResult &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+
+            const auto json = res.parseJson();
+            self->authToken_ = json["access_token"_L1].toString();
+            self->refreshToken_ = json["refresh_token"_L1].toString();
+            auto expiresInSec =
+                std::clamp<qint64>(json["expires_in"_L1].toInteger(), 0,
+                                   std::numeric_limits<qint32>::max());
+            self->expiresAt_ =
+                QDateTime::currentDateTimeUtc().addSecs(expiresInSec);
+            self->save();
+            self->authUpdated.invoke();
+            qCDebug(chatterinoKick)
+                << "[Refresh] Successful, next expiry:" << self->expiresAt_;
+        })
+        .onError([weak](const NetworkResult &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            qCWarning(chatterinoKick) << "Failed to refresh" << self->username()
+                                      << "error:" << res.formatError();
+        })
+        .execute();
 }
 
 }  // namespace chatterino

@@ -32,7 +32,7 @@ public:
     KickAccount(const KickAccountData &args);
     ~KickAccount() override;
 
-    constexpr static std::chrono::minutes CHECK_REFRESH_INTERVAL{5};
+    constexpr static std::chrono::minutes CHECK_REFRESH_INTERVAL{2};
 
     Q_DISABLE_COPY_MOVE(KickAccount);
 
@@ -83,6 +83,23 @@ public:
     pajlada::Signals::NoArgSignal authUpdated;
 
 private:
+    enum class CheckResult : uint8_t {
+        /// Returned 2xx
+        Valid,
+        /// 401 Unauthorized
+        ///
+        /// Expected if Chatterino just started. The tokens have an expiry of
+        /// 2h.
+        Expired,
+        /// Error code >=100, but not 401
+        OtherHttp,
+        /// A Qt error code <100
+        NetworkError,
+    };
+
+    void check(const std::function<void(CheckResult)> &cb);
+    void doRefresh();
+
     QString username_;
     uint64_t userID_ = 0;
     QString clientID_;
