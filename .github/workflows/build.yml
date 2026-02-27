@@ -468,7 +468,7 @@ jobs:
         with:
           fetch-depth: 0 # allows for tags access
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         name: Download artifacts
         with:
           path: release-artifacts/
