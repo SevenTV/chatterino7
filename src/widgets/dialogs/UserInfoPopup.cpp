@@ -377,7 +377,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                             });
 
                         menu->addAction(
-                            "Open channel in browser", [channelURL] {
+                            "Open channel in browser", this, [channelURL] {
                                 QDesktopServices::openUrl(channelURL);
                             });
 
@@ -1656,7 +1656,7 @@ void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)
                 container->insertSplit(split);
             });
 
-            menu->addAction("Open channel in browser", [channelURL] {
+            menu->addAction("Open channel in browser", this, [channelURL] {
                 QDesktopServices::openUrl(channelURL);
             });
 
