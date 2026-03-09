@@ -1687,7 +1687,7 @@ void UserInfoPopup::appendCommonProfileActions(QMenu *menu)
     {
         menu->addAction(
             "Open 7TV user in browser", this, [id = this->seventvUserID_] {
-                QDesktopServices::openUrl(QUrl(SEVENTV_USER_PAGE + id));
+                QDesktopServices::openUrl(QUrl(SEVENTV_USER_PAGE % id));
             });
     }
 }
