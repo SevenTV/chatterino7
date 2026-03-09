@@ -76,6 +76,7 @@ constexpr QStringView SEVENTV_TWITCH_USER_API =
     u"https://7tv.io/v3/users/twitch/%1";
 constexpr QStringView SEVENTV_KICK_USER_API =
     u"https://7tv.io/v3/users/kick/%1";
+constexpr QStringView SEVENTV_USER_PAGE = u"https://7tv.app/users/";
 
 using namespace chatterino;
 
@@ -373,6 +374,9 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                 split->setChannel(channel);
                                 container->insertSplit(split);
                             });
+
+                        this->appendCommonProfileActions(menu);
+
                         menu->popup(QCursor::pos());
                         menu->raise();
                     }
@@ -1307,8 +1311,10 @@ void UserInfoPopup::loadSevenTVAvatar(const QString &userID, bool isKick)
                 return;
             }
 
-            auto root = result.parseJson();
-            auto url = root["user"].toObject()["avatar_url"].toString();
+            const auto root = result.parseJson();
+            const auto userObj = root["user"].toObject();
+            this->seventvUserID_ = userObj["id"].toString();
+            auto url = userObj["avatar_url"].toString();
 
             if (url.isEmpty())
             {
@@ -1643,6 +1649,9 @@ void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)
                     getApp()->getKickChatServer()->getOrCreate(username));
                 container->insertSplit(split);
             });
+
+            this->appendCommonProfileActions(menu);
+
             menu->popup(QCursor::pos());
             menu->raise();
         }
@@ -1660,6 +1669,17 @@ QStringView UserInfoPopup::platformName() const
         return u"Kick";
     }
     return u"Twitch";
+}
+
+void UserInfoPopup::appendCommonProfileActions(QMenu *menu)
+{
+    if (!this->seventvUserID_.isEmpty())
+    {
+        menu->addAction(
+            "Open 7TV user in browser", this, [id = this->seventvUserID_] {
+                QDesktopServices::openUrl(QUrl(SEVENTV_USER_PAGE + id));
+            });
+    }
 }
 
 //
