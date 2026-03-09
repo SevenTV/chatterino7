@@ -314,12 +314,13 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                     return;
                 }
 
+                QUrl channelURL("https://www.twitch.tv/" +
+                                this->userName_.toLower());
+
                 switch (button)
                 {
                     case Qt::LeftButton: {
-                        QDesktopServices::openUrl(
-                            QUrl("https://www.twitch.tv/" +
-                                 this->userName_.toLower()));
+                        QDesktopServices::openUrl(channelURL);
                     }
                     break;
 
@@ -373,6 +374,11 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                 Split *split = new Split(container);
                                 split->setChannel(channel);
                                 container->insertSplit(split);
+                            });
+
+                        menu->addAction(
+                            "Open channel in browser", [channelURL] {
+                                QDesktopServices::openUrl(channelURL);
                             });
 
                         this->appendCommonProfileActions(menu);
@@ -1594,12 +1600,12 @@ void UserInfoPopup::updateKickUserData()
 void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)
 {
     assert(this->isKick_);
+    auto channelURL = QUrl("https://kick.com/" + this->kickUserSlug_);
 
     switch (button)
     {
         case Qt::LeftButton: {
-            QDesktopServices::openUrl(
-                QUrl("https://kick.com/" + this->kickUserSlug_));
+            QDesktopServices::openUrl(channelURL);
         }
         break;
 
@@ -1648,6 +1654,10 @@ void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)
                 split->setChannel(
                     getApp()->getKickChatServer()->getOrCreate(username));
                 container->insertSplit(split);
+            });
+
+            menu->addAction("Open channel in browser", [channelURL] {
+                QDesktopServices::openUrl(channelURL);
             });
 
             this->appendCommonProfileActions(menu);
