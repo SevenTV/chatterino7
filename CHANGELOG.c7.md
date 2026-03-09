@@ -2,6 +2,10 @@
 
 ## Unversioned
 
+- Minor: Added "Open 7TV user in browser" and "Open channel in browser" (same as left-click) when right-clicking the profile picture in a usercard (#400)
+
+## 7.5.5-beta.1
+
 - Major: Added experimental Kick support (#351, #353, #354, #355, #356, #357, #360, #362, #367, #368, #369, #371, #373, #378, #379, #380, #381, #382, #383, #386, #387, #388, #390, #391, #395)
 - Minor: Increased radius of drop-shadows in paints to match the browser extension (#339, a4a86c9ca6e1bccf9253dce75bdfe838c15e71fd)
 - Bugfix: Fixed 7TV users with multiple connections to the same platform not having cosmetics applied on all connected accounts (#389)
