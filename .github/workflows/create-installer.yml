@@ -35,7 +35,7 @@ jobs:
           fetch-depth: 0 # allows for tags access
 
       - name: Download artifact
-        uses: dawidd6/action-download-artifact@v17
+        uses: dawidd6/action-download-artifact@v18
         with:
           workflow: build.yml
           name: chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.zip
@@ -129,7 +129,7 @@ jobs:
           merge-multiple: true
 
       - name: Download artifact
-        uses: dawidd6/action-download-artifact@v17
+        uses: dawidd6/action-download-artifact@v18
         with:
           workflow: build.yml
           name_is_regexp: true
