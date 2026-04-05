@@ -184,7 +184,7 @@ void NetworkTask::logReply()
     else
     {
         QUtf8StringView payload = this->data_->payload;
-#ifdef NDEBUG
+#if defined(NDEBUG) || QT_VERSION < QT_VERSION_CHECK(6, 10, 0)
         if (this->data_->hideRequestBody)
 #else
         static bool alwaysShowRequestBodies =
