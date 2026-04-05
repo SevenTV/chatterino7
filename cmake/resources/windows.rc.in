@@ -15,14 +15,14 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "ProductName",      "Chatterino"
+            VALUE "ProductName",      "Chatterino 7TV"
             VALUE "ProductVersion",   "@PROJECT_VERSION@"
             VALUE "CompanyName",      "Chatterino, @PROJECT_HOMEPAGE_URL@"
-            VALUE "FileDescription",  "Chatterino"
+            VALUE "FileDescription",  "Chatterino 7TV"
             VALUE "FileVersion",      "@PROJECT_VERSION@"
             VALUE "SpecialBuild",     "@GIT_COMMIT@"
-            VALUE "InternalName",     "Chatterino"
-            VALUE "OriginalFilename", "Chatterino"
+            VALUE "InternalName",     "Chatterino 7TV"
+            VALUE "OriginalFilename", "Chatterino 7TV"
             VALUE "LegalCopyright",   "Project contributors 2016-@CURRENT_YEAR@"
             VALUE "Licence",          "MIT"
         END

@@ -98,7 +98,7 @@ namespace chatterino {
 Args::Args(const QApplication &app, const Paths &paths)
 {
     QCommandLineParser parser;
-    parser.setApplicationDescription("Chatterino 2 Client for Twitch Chat");
+    parser.setApplicationDescription("Chatterino 7TV Client for Twitch Chat");
     parser.addHelpOption();
 
     // Used internally by app to restart after unexpected crashes

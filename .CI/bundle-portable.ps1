@@ -31,11 +31,11 @@ if ($isTagged) {
     # This is a release.
     # Make sure, any existing `modes` file is overwritten for the user,
     # for example when updating from nightly to stable.
-    $bundleBaseName = "Chatterino7.Portable";
+    $bundleBaseName = "Chatterino7TV.Portable";
 }
 else {
     Write-Output nightly | Out-File Chatterino2/modes -Append -Encoding ASCII;
-    $bundleBaseName = "Chatterino7.Nightly.Portable";
+    $bundleBaseName = "Chatterino7TV.Nightly.Portable";
 }
 
 $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()

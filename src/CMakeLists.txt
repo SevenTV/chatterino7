@@ -1284,7 +1284,8 @@ if (APPLE AND BUILD_APP)
     set_target_properties(${EXECUTABLE_PROJECT} PROPERTIES MACOSX_BUNDLE TRUE)
     set_target_properties(${EXECUTABLE_PROJECT}
         PROPERTIES
-        MACOSX_BUNDLE_BUNDLE_NAME "Chatterino"
+        MACOSX_BUNDLE_BUNDLE_NAME "Chatterino 7TV"
+        # Keep this for backwards compatibility
         MACOSX_BUNDLE_GUI_IDENTIFIER "app.7tv.chatterino7"
         MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
