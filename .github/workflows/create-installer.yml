@@ -129,7 +129,7 @@ jobs:
           merge-multiple: true
 
       - name: Download artifact
-        uses: dawidd6/action-download-artifact@v19
+        uses: dawidd6/action-download-artifact@v20
         with:
           workflow: build.yml
           name_is_regexp: true
