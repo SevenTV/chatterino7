@@ -33,6 +33,8 @@ enum class HighlightState;
 class Channel;
 using ChannelPtr = std::shared_ptr<Channel>;
 
+enum class MessagePlatform : uint8_t;
+
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
 
@@ -196,8 +198,8 @@ public:
      * @param userName The login name of the user
      * @param alternativePopoutChannel Optional parameter containing the channel name to use for context
      **/
-    void showUserInfoPopup(const QString &userName,
-                           QString alternativePopoutChannel = QString());
+    void showUserInfoPopup(const QString &userName, MessagePlatform platform,
+                           const QString &alternativePopoutChannel = {});
 
     /**
      * @brief This method is meant to be used when filtering out channels.
