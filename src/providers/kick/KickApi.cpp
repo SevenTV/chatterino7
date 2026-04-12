@@ -86,11 +86,14 @@ void callDeserialize(auto &&cb, BoostJsonValue data)
 }
 
 template <typename T>
-void getJsonNoAuth(const QString &url, std::function<void(ExpectedStr<T>)> cb)
+void getJsonNoAuth(
+    const QString &url,
+    std::function<void(Expected<T, std::pair<unsigned, QString>>)> cb)
 {
     NetworkRequest(url)
         .onError([cb](const NetworkResult &res) {
-            cb(makeUnexpected(res.formatError()));
+            cb(makeUnexpected(
+                std::pair(res.status().value_or(0), res.formatError())));
         })
         .onSuccess([cb = std::move(cb)](const NetworkResult &res) {
             const auto &ba = res.getData();
@@ -101,13 +104,27 @@ void getJsonNoAuth(const QString &url, std::function<void(ExpectedStr<T>)> cb)
             {
                 qCWarning(chatterinoKick)
                     << "Failed to parse API response:" << ec.message();
-                cb(makeUnexpected(u"Failed to parse API response: "_s %
-                                  QString::fromStdString(ec.message())));
+                cb(makeUnexpected(
+                    std::pair(0U, u"Failed to parse API response: "_s %
+                                      QString::fromStdString(ec.message()))));
                 return;
             }
 
             BoostJsonValue ref(jv);
-            callDeserialize<T>(cb, ref);
+            callDeserialize<T>(
+                [cb = std::move(cb)](auto &&res) {
+                    if constexpr (std::is_same_v<
+                                      std::remove_cvref_t<decltype(res)>, T>)
+                    {
+                        cb(std::forward<decltype(res)>(res));
+                    }
+                    else
+                    {
+                        cb(makeUnexpected(std::pair(
+                            0, std::forward<decltype(res)>(res).error())));
+                    }
+                },
+                ref);
         })
         .execute();
 }
@@ -115,6 +132,64 @@ void getJsonNoAuth(const QString &url, std::function<void(ExpectedStr<T>)> cb)
 QString makePublicV1Url(QStringView endpoint)
 {
     return u"https://api.kick.com/public/v1/" % endpoint;
+}
+
+template <typename T>
+void autoSlugifyImpl(const QString &baseUrl, auto &&cb, bool /* shouldSlug */)
+{
+    getJsonNoAuth<T>(baseUrl, std::forward<decltype(cb)>(cb));
+}
+
+template <typename T>
+void autoSlugifyImpl(const QString &baseUrl, auto &&cb, bool shouldSlug,
+                     const QString &user0, auto &&...rest)
+{
+    QString url = baseUrl;
+    url.append('/');
+    if (shouldSlug)
+    {
+        QString s = user0;
+        url.append(s.replace('_', '-'));
+    }
+    else
+    {
+        url.append(user0);
+    }
+    autoSlugifyImpl<T>(
+        url,
+        [baseUrl, cb = std::forward<decltype(cb)>(cb), shouldSlug, user0,
+         rest...](auto res) {
+            if (!shouldSlug && !res.has_value() && res.error().first == 404 &&
+                user0.contains('_'))
+            {
+                autoSlugifyImpl<T>(baseUrl, cb, true, user0, rest...);
+            }
+            else
+            {
+                cb(std::move(res));
+            }
+        },
+        false, rest...);
+}
+
+template <typename T>
+void autoSlugify(const QString &baseUrl,
+                 std::function<void(Expected<T, QString>)> cb,
+                 auto &&...segments)
+{
+    autoSlugifyImpl<T>(
+        baseUrl,
+        [cb = std::move(cb)](auto res) {
+            if (!res.has_value())
+            {
+                cb(makeUnexpected(std::move(res.error().second)));
+            }
+            else
+            {
+                cb(*std::move(res));
+            }
+        },
+        false, std::forward<decltype(segments)>(segments)...);
 }
 
 }  // namespace
@@ -240,36 +315,26 @@ KickApi *KickApi::instance()
     return api.get();
 }
 
-QString KickApi::slugify(const QString &usernameOrSlug)
-{
-    auto slugified = usernameOrSlug;
-    slugified.replace('_', '-');
-    return slugified;
-}
-
 void KickApi::privateChannelInfo(const QString &username,
                                  Callback<KickPrivateChannelInfo> cb)
 {
-    getJsonNoAuth<KickPrivateChannelInfo>(
-        u"https://kick.com/api/v2/channels/" % slugify(username),
-        std::move(cb));
+    autoSlugify<KickPrivateChannelInfo>(u"https://kick.com/api/v2/channels"_s,
+                                        std::move(cb), username);
 }
 
 void KickApi::privateUserInChannelInfo(
     const QString &userUsername, const QString &channelUsername,
     Callback<KickPrivateUserInChannelInfo> cb)
 {
-    getJsonNoAuth<KickPrivateUserInChannelInfo>(
-        u"https://kick.com/api/v2/channels/" % slugify(channelUsername) %
-            "/users/" % slugify(userUsername),
-        std::move(cb));
+    autoSlugify<KickPrivateUserInChannelInfo>(
+        u"https://kick.com/api/v2/channels"_s, std::move(cb), channelUsername,
+        "users", userUsername);
 }
 
 void KickApi::privateEmotesInChannel(
     const QString &username, Callback<std::vector<KickPrivateEmoteSetInfo>> cb)
 {
-    getJsonNoAuth(u"https://kick.com/emotes/" % slugify(username),
-                  std::move(cb));
+    autoSlugify(u"https://kick.com/emotes"_s, std::move(cb), username);
 }
 
 void KickApi::sendMessage(uint64_t broadcasterUserID, const QString &message,
@@ -324,8 +389,7 @@ void KickApi::getChannels(std::span<uint64_t> userIDs,
 void KickApi::getChannelByName(const QString &usernameOrSlug,
                                Callback<KickChannelInfo> cb)
 {
-    QString path =
-        u"channels?slug=" % QUrl::toPercentEncoding(slugify(usernameOrSlug));
+    QString path = u"channels?slug=" % QUrl::toPercentEncoding(usernameOrSlug);
     this->getJson(path, std::move(cb));
 }
 
