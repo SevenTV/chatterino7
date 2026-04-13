@@ -467,6 +467,14 @@ void TextLayoutElement::paint(QPainter &painter,
                      this->getLink().type == chatterino::Link::UserWhisper;
     bool drawPaint = isNametag && this->messageColor_ != MessageColor::System &&
                      getSettings()->displaySevenTVPaints;
+    
+    if (drawPaint && !this->getCreator().getFlags().has(MessageElementFlag::Username))
+
+        if (!getSettings()->colorUsernames)
+        {
+            drawPaint = false;
+        }
+
     if (drawPaint)
     {
         auto paint = app->getSeventvPaints()->getPaint(
@@ -509,7 +517,15 @@ bool TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)
     const bool isNametag =
         this->getLink().type == chatterino::Link::UserInfo ||
         this->getLink().type == chatterino::Link::UserWhisper;
-    const bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
+        bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
+            if (drawPaint && !this->getCreator().getFlags().has(MessageElementFlag::Username))
+            {
+                if (!getSettings()->colorUsernames)
+                {
+                    drawPaint = false;
+                }
+            }
+            
     if (!drawPaint)
     {
         return false;
