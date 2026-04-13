@@ -465,15 +465,14 @@ void TextLayoutElement::paint(QPainter &painter,
 
     bool isNametag = this->getLink().type == chatterino::Link::UserInfo ||
                      this->getLink().type == chatterino::Link::UserWhisper;
+    bool isMention = isNametag && !this->getCreator().getFlags().has(MessageElementFlag::Username);
     bool drawPaint = isNametag && this->messageColor_ != MessageColor::System &&
                      getSettings()->displaySevenTVPaints;
     
-    if (drawPaint && !this->getCreator().getFlags().has(MessageElementFlag::Username))
-
-        if (!getSettings()->colorUsernames)
-        {
-            drawPaint = false;
-        }
+    if (isMention && !this->getSettings()->enablePaintsOnMentions)
+    {
+        drawPaint = false;
+    }
 
     if (drawPaint)
     {
@@ -517,13 +516,11 @@ bool TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)
     const bool isNametag =
         this->getLink().type == chatterino::Link::UserInfo ||
         this->getLink().type == chatterino::Link::UserWhisper;
+        bool isMention = isNametag && !this->getCreator().getFlags().has(MessageElementFlag::Username);
         bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
-            if (drawPaint && !this->getCreator().getFlags().has(MessageElementFlag::Username))
+            if (isMention && !this->getSettings()->enablePaintsOnMentions)
             {
-                if (!getSettings()->colorUsernames)
-                {
-                    drawPaint = false;
-                }
+                drawPaint = false;
             }
             
     if (!drawPaint)
