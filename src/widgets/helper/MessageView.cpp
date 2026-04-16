@@ -132,6 +132,8 @@ void MessageView::layoutMessage()
             .scale = this->scale(),
             .imageScale =
                 this->scale() * static_cast<float>(this->devicePixelRatio()),
+            .selectedChannel = nullptr,
+            .message = *this->message_,
         },
         false);
 

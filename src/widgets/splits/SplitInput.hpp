@@ -176,6 +176,7 @@ protected:
     bool enableInlineReplying_;
 
     pajlada::Signals::SignalHolder managedConnections_;
+    pajlada::Signals::SignalHolder channelConnections_;
     QStringList prevMsg_;
     QString currMsg_;
     int prevIndex_ = 0;
@@ -212,6 +213,8 @@ protected:
 
 private Q_SLOTS:
     void editTextChanged();
+
+    void updateChannel();
 
     friend class Split;
     friend class ReplyThreadPopup;

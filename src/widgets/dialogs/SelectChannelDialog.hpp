@@ -90,9 +90,13 @@ private:
 
         QLineEdit *kickName;
 
+        QListWidget *multiView;
+        QComboBox *multiIndicatorMode;
+
         MicroNotebook *notebook;
         QWidget *twitchPage;
         QWidget *kickPage;
+        QWidget *multiPage;
     } ui_{};
 
     EventFilter tabFilter_;

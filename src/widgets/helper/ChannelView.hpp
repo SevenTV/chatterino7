@@ -327,6 +327,9 @@ private:
     void showReplyThreadPopup(const MessagePtr &message);
     bool canReplyToMessages() const;
 
+    /// Returns the selected channel as well as enabled flags.
+    std::pair<Channel *, MessageElementFlags> getMultiChannelInfo() const;
+
     void updateID();
     ChannelViewID id_{};
 

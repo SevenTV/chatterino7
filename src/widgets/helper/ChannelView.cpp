@@ -39,6 +39,7 @@
 #include "util/DistanceBetweenPoints.hpp"
 #include "util/Helpers.hpp"
 #include "util/IncognitoBrowser.hpp"
+#include "util/MultiChannel.hpp"
 #include "util/QMagicEnum.hpp"
 #include "util/Twitch.hpp"
 #include "widgets/buttons/LabelButton.hpp"
@@ -707,6 +708,9 @@ void ChannelView::layoutVisibleMessages(
         auto y = -(messages[start]->getHeight() *
                    (fmod(this->scrollBar_->getRelativeCurrentValue(), 1)));
 
+        auto [selectedChannel, mcFlags] = this->getMultiChannelInfo();
+        auto layoutFlags = flags | mcFlags;
+
         for (auto i = start; i < messages.size() && y <= this->height(); i++)
         {
             const auto &message = messages[i];
@@ -714,11 +718,13 @@ void ChannelView::layoutVisibleMessages(
             redrawRequired |= message->layout(
                 {
                     .messageColors = this->messageColors_,
-                    .flags = flags,
+                    .flags = layoutFlags,
                     .width = layoutWidth,
                     .scale = this->scale(),
                     .imageScale = this->scale() *
                                   static_cast<float>(this->devicePixelRatio()),
+                    .selectedChannel = selectedChannel,
+                    .message = *message->getMessage(),
                 },
                 this->bufferInvalidationQueued_);
 
@@ -747,6 +753,8 @@ void ChannelView::updateScrollbar(const std::vector<MessageLayoutPtr> &messages,
     auto flags = this->getFlags();
     auto layoutWidth = this->getLayoutWidth();
     auto showScrollbar = false;
+    auto [selectedChannel, mcFlags] = this->getMultiChannelInfo();
+    flags = flags | mcFlags;
 
     // convert i to int since it checks >= 0
     for (auto i = int(messages.size()) - 1; i >= 0; i--)
@@ -761,6 +769,8 @@ void ChannelView::updateScrollbar(const std::vector<MessageLayoutPtr> &messages,
                 .scale = this->scale(),
                 .imageScale = this->scale() *
                               static_cast<float>(this->devicePixelRatio()),
+                .selectedChannel = selectedChannel,
+                .message = *message->getMessage(),
             },
             false);
 
@@ -919,6 +929,36 @@ ChannelPtr ChannelView::channel() const
 ChannelPtr ChannelView::underlyingChannel() const
 {
     return this->underlyingChannel_;
+}
+
+std::pair<Channel *, MessageElementFlags> ChannelView::getMultiChannelInfo()
+    const
+{
+    Channel *selectedChannel = this->underlyingChannel_.get();
+    MessageElementFlags flags{};
+    if (auto *mc = dynamic_cast<MultiChannel *>(selectedChannel))
+    {
+        const auto *active = mc->activeChannel();
+        if (active)
+        {
+            selectedChannel = active->channel.get();
+        }
+        switch (mc->indicatorMode())
+        {
+            case MultiChannelIndicatorMode::None:
+                break;
+            case MultiChannelIndicatorMode::PlatformBadgeIfUnselected:
+                flags.set(MessageElementFlag::PlatformBadgeIfUnselected);
+                break;
+            case MultiChannelIndicatorMode::PlatformBadgeAlways:
+                flags.set(MessageElementFlag::PlatformBadgeAlways);
+                break;
+            case MultiChannelIndicatorMode::ChannelName:
+                flags.set(MessageElementFlag::ChannelName);
+                break;
+        }
+    }
+    return {selectedChannel, flags};
 }
 
 bool ChannelView::showScrollbarHighlights() const
@@ -1785,6 +1825,10 @@ void ChannelView::wheelEvent(QWheelEvent *event)
         int i = std::min<int>(int(desired - this->scrollBar_->getMinimum()),
                               snapshotLength - 1);
 
+        auto flags = this->getFlags();
+        auto [selectedChannel, mcFlags] = this->getMultiChannelInfo();
+        flags = flags | mcFlags;
+
         if (delta > 0)
         {
             qreal scrollFactor = fmod(desired, 1);
@@ -1813,12 +1857,14 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                     snapshot[i - 1]->layout(
                         {
                             .messageColors = this->messageColors_,
-                            .flags = this->getFlags(),
+                            .flags = flags,
                             .width = this->getLayoutWidth(),
                             .scale = this->scale(),
                             .imageScale =
                                 this->scale() *
                                 static_cast<float>(this->devicePixelRatio()),
+                            .selectedChannel = selectedChannel,
+                            .message = *snapshot[i - 1]->getMessage(),
                         },
                         false);
                     scrollFactor = 1;
@@ -1856,12 +1902,14 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                     snapshot[i + 1]->layout(
                         {
                             .messageColors = this->messageColors_,
-                            .flags = this->getFlags(),
+                            .flags = flags,
                             .width = this->getLayoutWidth(),
                             .scale = this->scale(),
                             .imageScale =
                                 this->scale() *
                                 static_cast<float>(this->devicePixelRatio()),
+                            .selectedChannel = selectedChannel,
+                            .message = *snapshot[i + 1]->getMessage(),
                         },
                         false);
 

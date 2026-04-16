@@ -5,11 +5,13 @@
 #include "common/WindowDescriptors.hpp"
 
 #include "common/QLogging.hpp"
+#include "util/QMagicEnum.hpp"
 #include "widgets/Window.hpp"
 
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
+
 
 namespace chatterino {
 
@@ -99,6 +101,22 @@ const QList<QUuid> loadFilters(QJsonValue val)
 
 }  // namespace
 
+ChildChannelDescriptor ChildChannelDescriptor::fromJson(const QJsonObject &obj)
+{
+    return {
+        .platform = obj["platform"].toString(),
+        .channelName = obj["channel"].toString(),
+    };
+}
+
+QJsonObject ChildChannelDescriptor::toJson() const
+{
+    return {
+        {QLatin1StringView("platform"), this->platform},
+        {QLatin1StringView("channel"), this->channelName},
+    };
+}
+
 void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
                                    const QJsonObject &root,
                                    const QJsonObject &data)
@@ -127,6 +145,19 @@ void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
             static_cast<uint64_t>(data["channelID"].toInt());
         descriptor.kickUserID = static_cast<uint64_t>(data["userID"].toInt());
         descriptor.kickRoomID = static_cast<uint64_t>(data["roomID"].toInt());
+    }
+    else if (descriptor.type_ == u"multi")
+    {
+        const auto children = data["children"].toArray();
+        for (const auto child : children)
+        {
+            descriptor.children.emplace_back(
+                ChildChannelDescriptor::fromJson(child.toObject()));
+        }
+        auto modeStr = data["indicatorMode"].toString();
+        descriptor.mcIndicator =
+            qmagicenum::enumCast<MultiChannelIndicatorMode>(modeStr).value_or(
+                MultiChannelIndicatorMode::PlatformBadgeIfUnselected);
     }
 }
 

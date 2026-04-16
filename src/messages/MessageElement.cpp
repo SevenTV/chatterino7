@@ -5,6 +5,7 @@
 #include "messages/MessageElement.hpp"
 
 #include "Application.hpp"
+#include "common/Channel.hpp"
 #include "common/Literals.hpp"
 #include "controllers/emotes/EmoteController.hpp"
 #include "controllers/moderationactions/ModerationAction.hpp"
@@ -14,6 +15,7 @@
 #include "messages/layouts/MessageLayoutContainer.hpp"
 #include "messages/layouts/MessageLayoutContext.hpp"
 #include "messages/layouts/MessageLayoutElement.hpp"
+#include "messages/Message.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/twitch/TwitchEmotes.hpp"
 #include "singletons/Settings.hpp"
@@ -50,6 +52,38 @@ QSizeF getBoundingBoxSize(const std::vector<ImagePtr> &images)
     }
 
     return {width, height};
+}
+
+EmotePtr getKickBadge()
+{
+    static EmotePtr ptr = std::make_shared<const Emote>(Emote{
+        .name = {u"Kick"_s},
+        .images =
+            ImageSet{
+                Image::fromUrl({u":/badges/platform-kick-18.webp"_s}, 1.0,
+                               {18, 18}),
+                Image::fromUrl({u":/badges/platform-kick-36.webp"_s}, .5,
+                               {36, 36}),
+            },
+        .tooltip = Tooltip{},
+    });
+    return ptr;
+}
+
+EmotePtr getTwitchBadge()
+{
+    static EmotePtr ptr = std::make_shared<const Emote>(Emote{
+        .name = {u"Twitch"_s},
+        .images =
+            ImageSet{
+                Image::fromUrl({u":/badges/platform-twitch-18.webp"_s}, 1.0,
+                               {18, 18}),
+                Image::fromUrl({u":/badges/platform-twitch-36.webp"_s}, .5,
+                               {36, 36}),
+            },
+        .tooltip = Tooltip{},
+    });
+    return ptr;
 }
 
 }  // namespace
@@ -732,6 +766,41 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
                                  const MessageLayoutContext &ctx)
 {
     auto *app = getApp();
+
+    if (this->getFlags().has(MessageElementFlag::ChannelName) &&
+        ctx.flags.hasAny(MessageElementFlag::PlatformBadgeAlways,
+                         MessageElementFlag::PlatformBadgeIfUnselected) &&
+        ctx.selectedChannel != nullptr)
+    {
+        EmotePtr emote;
+        if (!ctx.flags.has(MessageElementFlag::PlatformBadgeIfUnselected) ||
+            ctx.message.platform != ctx.selectedChannel->messagePlatform())
+        {
+            switch (ctx.message.platform)
+            {
+                case MessagePlatform::AnyOrTwitch:
+                    emote = getTwitchBadge();
+                    break;
+                case MessagePlatform::Kick:
+                    emote = getKickBadge();
+                    break;
+            }
+        }
+
+        if (emote)
+        {
+            auto image =
+                emote->images.getImageOrLoaded(container.getImageScale());
+            if (image->isEmpty())
+            {
+                return;
+            }
+            auto *el = new ImageLayoutElement(
+                *this, image, image->size() * container.getScale());
+            el->setLink(Link{});
+            container.addElement(el);
+        }
+    }
 
     if (ctx.flags.hasAny(this->getFlags()))
     {

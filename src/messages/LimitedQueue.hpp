@@ -164,6 +164,21 @@ public:
         return full;
     }
 
+    void pushFrontWhile(auto &&next)
+    {
+        std::unique_lock lock(this->mutex_);
+
+        while (!this->buffer_.full())
+        {
+            auto item = next();
+            if (!item)
+            {
+                break;
+            }
+            this->buffer_.push_front(std::move(item));
+        }
+    }
+
     /**
      * @brief Push items into beginning of queue
      *

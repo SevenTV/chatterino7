@@ -158,8 +158,14 @@ enum class MessageElementFlag : int64_t {
 
     // (1LL << 36) is occupied by BadgeSevenTV
 
-    // `Username` but the username comes from Kick
-    KickUsername = (1LL << 38),
+    /// `Username` but the username comes from Kick
+    KickUsername = (1LL << 50),
+
+    /// Always show the platform badge.
+    PlatformBadgeAlways = (1LL << 51),
+    /// Show the platform badge if the selected channel's platform is different
+    /// from the message's.
+    PlatformBadgeIfUnselected = (1LL << 52),
 
     Default = Timestamp | Badges | Username | BitsStatic | EmoteImage |
               BitsAmount | Text | AlwaysShow,

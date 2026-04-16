@@ -5,6 +5,7 @@
 #pragma once
 
 #include "common/ProviderId.hpp"
+#include "util/MultiChannelIndicatorMode.hpp"
 
 #include <QJsonObject>
 #include <QList>
@@ -35,6 +36,14 @@ namespace chatterino {
 // from widgets/Window.hpp
 enum class WindowType;
 
+struct ChildChannelDescriptor {
+    QString platform;
+    QString channelName;
+
+    static ChildChannelDescriptor fromJson(const QJsonObject &obj);
+    QJsonObject toJson() const;
+};
+
 struct SplitDescriptor {
     // Twitch or mentions or watching or live or automod or whispers or IRC
     QString type_;
@@ -55,6 +64,10 @@ struct SplitDescriptor {
     uint64_t kickChannelID = 0;
     uint64_t kickUserID = 0;
     uint64_t kickRoomID = 0;
+
+    std::vector<ChildChannelDescriptor> children;
+
+    MultiChannelIndicatorMode mcIndicator = MultiChannelIndicatorMode::None;
 
     static void loadFromJSON(SplitDescriptor &descriptor,
                              const QJsonObject &root, const QJsonObject &data);

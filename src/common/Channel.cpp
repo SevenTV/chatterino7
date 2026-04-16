@@ -55,6 +55,15 @@ Channel::Channel(const QString &name, Type type)
     {
         this->platform_ = "twitch";
     }
+
+    if (this->isKickChannel())
+    {
+        this->messagePlatform_ = MessagePlatform::Kick;
+    }
+    else
+    {
+        this->messagePlatform_ = MessagePlatform::AnyOrTwitch;
+    }
 }
 
 Channel::~Channel()
@@ -408,6 +417,35 @@ void Channel::disableMessage(const QString &messageID)
     }
 }
 
+void Channel::mergeFrom(const std::span<std::span<const MessagePtr>> sources)
+{
+    assert(this->messages_.empty());
+    this->messages_.pushFrontWhile([&] {
+        MessagePtr max;
+        QDateTime dt;
+        size_t curI = 0;
+        for (size_t i = 0; i < sources.size(); i++)
+        {
+            auto src = sources[i];
+            if (!src.empty())
+            {
+                QDateTime cur = src.back()->serverReceivedTime;
+                if (!dt.isValid() || cur > dt)
+                {
+                    max = src.back();
+                    dt = cur;
+                    curI = i;
+                }
+            }
+        }
+        if (max)
+        {
+            sources[curI] = sources[curI].subspan(0, sources[curI].size() - 1);
+        }
+        return max;
+    });
+}
+
 void Channel::clearMessages()
 {
     RecursionGuard g{&this->recursionCount_};
@@ -708,6 +746,11 @@ void Channel::upsertPersonalSeventvEmotes(
     cloned->elements = std::move(elements);
 
     this->replaceMessage(message.value(), cloned);
+}
+
+MessagePlatform Channel::messagePlatform() const
+{
+    return this->messagePlatform_;
 }
 
 //
