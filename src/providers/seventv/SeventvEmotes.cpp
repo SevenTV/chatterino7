@@ -215,7 +215,7 @@ EmoteMap seventv::detail::parseEmotes(const QJsonArray &emoteSetEmotes,
         auto activeEmote = activeEmoteJson.toObject();
         auto emoteData = activeEmote["data"].toObject();
 
-        if (emoteData.empty() || !checkEmoteVisibility(emoteData, kind))
+        if (emoteData.empty() || name == QChar(0x2800))
         {
             continue;
         }
