@@ -84,7 +84,7 @@ const QRegularExpression mentionRegex("^@" + regexHelpString);
 // if findAllUsernames setting is enabled, matches strings like in the examples above, but without @ symbol at the beginning
 const QRegularExpression allUsernamesMentionRegex("^" + regexHelpString);
 
-const QRegularExpression SPACE_REGEX("\\s+");
+const QRegularExpression SPACE_REGEX("\\s");
 
 struct HypeChatPaidLevel {
     std::chrono::seconds duration;

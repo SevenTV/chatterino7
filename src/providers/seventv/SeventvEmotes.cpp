@@ -214,6 +214,12 @@ EmoteMap seventv::detail::parseEmotes(const QJsonArray &emoteSetEmotes,
     {
         auto activeEmote = activeEmoteJson.toObject();
         auto emoteData = activeEmote["data"].toObject();
+
+                if (emoteData.empty() || !checkEmoteVisibility(emoteData, kind))
+        {
+            continue;
+        }
+        
         auto result = createEmote(activeEmote, emoteData, kind);
         if (!result.hasImages)
         {

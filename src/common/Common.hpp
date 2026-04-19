@@ -56,14 +56,10 @@ enum class CopyMode {
 struct DeleteLater {
     void operator()(QObject *obj)
     {
-        if (obj)
-        {
             obj->deleteLater();
-        }
     }
 };
 
-bool isValidEmoteName(const QString &name);
 
 template <typename T>
 using QObjectPtr = std::unique_ptr<T, DeleteLater>;
