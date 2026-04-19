@@ -611,7 +611,7 @@ ImageSet SeventvEmotes::createImageSet(const QJsonObject &emoteData,
         {
             qCDebug(chatterinoSeventv)
                 << "Emote file without url:";
-            return ImageSet{};
+            return ImageSet{Image::getEmpty(), Image::getEmpty(), Image::getEmpty()};
         }
         
     std::array<ImagePtr, 4> sizes;
