@@ -33,11 +33,6 @@ void CompletionModel::updateResults(const QString &query, size_t maxCount)
         this->clear();
         this->source_->addToListModel(*this, maxCount);
     }
-
-    if (emote->name.isEmpty() || emote->name == QChar(0x2800))
-    {
-        this->addSuggestion(emote, query);
-    }
 }
 
 }  // namespace chatterino

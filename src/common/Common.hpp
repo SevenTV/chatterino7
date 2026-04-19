@@ -56,18 +56,14 @@ enum class CopyMode {
 struct DeleteLater {
     void operator()(QObject *obj)
     {
-        obj->deleteLater();
+        if (obj)
+        {
+            obj->deleteLater();
+        }
     }
 };
 
 bool isValidEmoteName(const QString &name);
-    {
-        if (name == QChar(0x2800)) return true;  // This is the "blank" emote, which is used as a placeholder 
-                                                 // for deleted emotes. It has an empty name but is still valid.
-            static QRegularExpression re("^[a-zA-Z0-9_]+$");
-            return re.match(name).hasMatch();
-        }
-    }
 
 template <typename T>
 using QObjectPtr = std::unique_ptr<T, DeleteLater>;
