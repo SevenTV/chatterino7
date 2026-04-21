@@ -53,7 +53,9 @@ c2.ChannelType = {
     TwitchLive = {}, ---@type c2.ChannelType.TwitchLive
     TwitchAutomod = {}, ---@type c2.ChannelType.TwitchAutomod
     TwitchEnd = {}, ---@type c2.ChannelType.TwitchEnd
+    Kick = {}, ---@type c2.ChannelType.Kick
     Misc = {}, ---@type c2.ChannelType.Misc
+    Multi = {}, ---@type c2.ChannelType.Multi
 }
 
 -- End src/common/Channel.hpp
@@ -745,6 +747,9 @@ c2.MessageElementFlag = {
     LowercaseLinks = 0,
     RepliedMessage = 0,
     ReplyButton = 0,
+    KickUsername = 0,
+    PlatformBadgeAlways = 0,
+    PlatformBadgeIfUnselected = 0,
     Default = 0,
 }
 
