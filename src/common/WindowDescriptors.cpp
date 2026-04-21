@@ -12,7 +12,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
-
 namespace chatterino {
 
 namespace {
