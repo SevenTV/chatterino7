@@ -10,6 +10,8 @@
 #include <QUuid>
 #include <QVarLengthArray>
 
+#include <set>
+
 namespace {
 
 using namespace chatterino;
