@@ -3,6 +3,8 @@
 #include "common/Channel.hpp"
 #include "util/MultiChannelIndicatorMode.hpp"
 
+#include <pajlada/signals/scoped-connection.hpp>
+
 #include <vector>
 
 namespace chatterino {
