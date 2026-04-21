@@ -112,6 +112,7 @@ TEST_P(MessageLayoutContainerTest, RtlReordering)
 {
     auto [inputText, expected, expectedDirection] = GetParam();
     MessageLayoutContainer container;
+    Message message;
     MessageLayoutContext ctx{
         .messageColors = {},
         .flags =
@@ -123,6 +124,8 @@ TEST_P(MessageLayoutContainerTest, RtlReordering)
         .width = 10000,
         .scale = 1.0F,
         .imageScale = 1.0F,
+        .selectedChannel = nullptr,
+        .message = message,
     };
     container.beginLayout(ctx.width, ctx.scale, ctx.imageScale,
                           {MessageFlag::Collapsed});

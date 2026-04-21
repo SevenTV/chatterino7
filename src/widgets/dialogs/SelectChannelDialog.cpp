@@ -95,7 +95,8 @@ public:
     }
 
 Q_SIGNALS:
-    void specAdded(MultiChannel::Spec spec);
+    // NOLINTNEXTLINE(readability-inconsistent-declaration-parameter-name)
+    void specAdded(chatterino::MultiChannel::Spec spec);
 
 private:
     void accept()
