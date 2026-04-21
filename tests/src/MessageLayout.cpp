@@ -69,6 +69,8 @@ public:
                 .width = WIDTH,
                 .scale = 1,
                 .imageScale = 1,
+                .selectedChannel = nullptr,
+                .message = *this->layout->getMessage(),
             },
             false);
     }
