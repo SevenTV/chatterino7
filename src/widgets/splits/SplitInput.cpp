@@ -19,6 +19,7 @@
 #include "singletons/Fonts.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/Theme.hpp"
+#include "singletons/WindowManager.hpp"
 #include "util/Helpers.hpp"
 #include "util/LayoutCreator.hpp"
 #include "util/MultiChannel.hpp"
@@ -824,6 +825,9 @@ void SplitInput::installTextEditEvents()
                                 auto *mc = dynamic_cast<MultiChannel *>(
                                     this->split_->getChannel().get());
                                 mc->setActiveChannelIndex(i);
+                                getApp()
+                                    ->getWindows()
+                                    ->forceLayoutChannelViews();
                             });
                         submenu->addAction(action);
                     }

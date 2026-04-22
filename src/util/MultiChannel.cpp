@@ -216,7 +216,7 @@ void MultiChannel::setActiveChannelIndex(size_t index)
     {
         return;
     }
-    this->activeChannel_ = std::clamp(index, 0ULL, this->channels_.size());
+    this->activeChannel_ = std::clamp<size_t>(index, 0, this->channels_.size());
     this->activeChannelChanged.invoke();
 }
 

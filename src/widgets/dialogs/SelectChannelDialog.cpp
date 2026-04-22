@@ -321,6 +321,12 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
         ui.multiIndicatorMode = new QComboBox;
         auto *layout = new QVBoxLayout(ui.multiPage);
         {
+            auto *descriptionLabel = new QLabel(
+                "Show multiple channels in one split. From the input box, you "
+                "can select an active/context channel to send messages in.");
+            descriptionLabel->setWordWrap(true);
+            layout->addWidget(descriptionLabel);
+
             auto *header = new QWidget;
             auto *add = new QPushButton("Add");
             auto *remove = new QPushButton("Remove");
@@ -348,6 +354,7 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
         ui.multiView->setSelectionBehavior(QListWidget::SelectRows);
         ui.multiView->setDragDropMode(QListWidget::InternalMove);
         ui.multiView->setFrameStyle(QFrame::NoFrame);
+        ui.multiView->setSizeAdjustPolicy(QListView::AdjustToContents);
         layout->addWidget(ui.multiView, 1);
 
         layout->addWidget(new QLabel("Channel indicator:"));
@@ -460,6 +467,7 @@ void SelectChannelDialog::setSelectedChannel(
                 {
                     this->ui_.multiIndicatorMode->setCurrentIndex(indicatorIdx);
                 }
+                this->mcChannelIndex = mc->activeChannelIndex();
             }
             this->ui_.notebook->select(this->ui_.multiPage);
         }
@@ -502,10 +510,11 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
                 specs.emplace_back(std::move(*spec));
             }
         }
-        ChannelPtr ptr = std::make_shared<MultiChannel>(
+        auto ptr = std::make_shared<MultiChannel>(
             specs, this->ui_.multiIndicatorMode->currentData()
                        .value<MultiChannelIndicatorMode>());
-        return ptr;
+        ptr->setActiveChannelIndex(this->mcChannelIndex);
+        return {std::move(ptr)};
     }
 
     if (this->ui_.channel->isChecked())

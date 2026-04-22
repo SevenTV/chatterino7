@@ -106,6 +106,8 @@ private:
     ChannelPtr selectedChannel_;
     bool hasSelectedChannel_ = false;
 
+    size_t mcChannelIndex = 0;
+
     void ok();
     friend class EventFilter;
 
