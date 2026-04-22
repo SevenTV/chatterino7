@@ -789,6 +789,8 @@ void WindowManager::encodeChannel(IndirectChannel channel, QJsonObject &obj)
                 obj.insert("children", children);
                 obj.insert("indicatorMode",
                            qmagicenum::enumNameString(mc->indicatorMode()));
+                obj.insert("activeIndex",
+                           static_cast<int32_t>(mc->activeChannelIndex()));
             }
         }
         break;
@@ -862,9 +864,10 @@ IndirectChannel WindowManager::decodeChannel(const SplitDescriptor &descriptor)
                 specs.emplace_back(*std::move(spec));
             }
         }
-        ChannelPtr ptr =
+        auto ptr =
             std::make_shared<MultiChannel>(specs, descriptor.mcIndicator);
-        return ptr;
+        ptr->setActiveChannelIndex(descriptor.mcIndex);
+        return {std::move(ptr)};
     }
 
     return Channel::getEmpty();

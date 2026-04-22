@@ -68,6 +68,7 @@ struct SplitDescriptor {
     std::vector<ChildChannelDescriptor> children;
 
     MultiChannelIndicatorMode mcIndicator = MultiChannelIndicatorMode::None;
+    uint32_t mcIndex = 0;
 
     static void loadFromJSON(SplitDescriptor &descriptor,
                              const QJsonObject &root, const QJsonObject &data);

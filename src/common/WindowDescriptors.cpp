@@ -157,6 +157,7 @@ void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
         descriptor.mcIndicator =
             qmagicenum::enumCast<MultiChannelIndicatorMode>(modeStr).value_or(
                 MultiChannelIndicatorMode::PlatformBadgeIfUnselected);
+        descriptor.mcIndex = static_cast<uint32_t>(data["activeIndex"].toInt());
     }
 }
 
