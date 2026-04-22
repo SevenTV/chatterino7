@@ -323,8 +323,12 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
         {
             auto *descriptionLabel = new QLabel(
                 "Show multiple channels in one split. From the input box, you "
-                "can select an active/context channel to send messages in.");
+                "can select an active/context channel to send messages in. "
+                "Report issues <a "
+                "href=\"https://github.com/SevenTV/chatterino7/issues\">here</"
+                "a>.");
             descriptionLabel->setWordWrap(true);
+            descriptionLabel->setOpenExternalLinks(true);
             layout->addWidget(descriptionLabel);
 
             auto *header = new QWidget;
