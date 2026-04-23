@@ -161,6 +161,10 @@ public:
     /// @see #channel()
     ChannelPtr underlyingChannel() const;
 
+    /// Same as #underlyingChannel() except that it returns the active channel
+    /// for MultiChannels.
+    ChannelPtr selectedChannel() const;
+
     /// @brief Set the channel this view is displaying
     ///
     /// @see #underlyingChannel()

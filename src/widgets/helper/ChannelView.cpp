@@ -931,6 +931,19 @@ ChannelPtr ChannelView::underlyingChannel() const
     return this->underlyingChannel_;
 }
 
+ChannelPtr ChannelView::selectedChannel() const
+{
+    if (auto *mc = dynamic_cast<MultiChannel *>(this->underlyingChannel_.get()))
+    {
+        const auto *active = mc->activeChannel();
+        if (active)
+        {
+            return active->channel;
+        }
+    }
+    return this->underlyingChannel_;
+}
+
 std::pair<Channel *, MessageElementFlags> ChannelView::getMultiChannelInfo()
     const
 {
@@ -3407,9 +3420,10 @@ void ChannelView::setInputReply(const MessagePtr &message)
     if (!message->replyThread)
     {
         // Message did not already have a thread attached, try to find or create one
-        auto *tc =
-            dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get());
-        auto *kc = dynamic_cast<KickChannel *>(this->underlyingChannel_.get());
+        auto chan = this->selectedChannel();
+
+        auto *tc = dynamic_cast<TwitchChannel *>(chan.get());
+        auto *kc = dynamic_cast<KickChannel *>(chan.get());
 
         if (tc)
         {
@@ -3472,13 +3486,19 @@ bool ChannelView::canReplyToMessages() const
 
     assert(this->channel_ != nullptr);
 
-    if (!this->channel_->isTwitchOrKickChannel())
+    auto chan = this->selectedChannel();
+    if (!chan)
     {
         return false;
     }
 
-    if (this->channel_->getType() == Channel::Type::TwitchWhispers ||
-        this->channel_->getType() == Channel::Type::TwitchLive)
+    if (!chan->isTwitchOrKickChannel())
+    {
+        return false;
+    }
+
+    if (chan->getType() == Channel::Type::TwitchWhispers ||
+        chan->getType() == Channel::Type::TwitchLive)
     {
         return false;
     }
