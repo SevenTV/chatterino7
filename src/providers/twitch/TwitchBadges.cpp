@@ -4,14 +4,19 @@
 
 #include "providers/twitch/TwitchBadges.hpp"
 
+#include "Application.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 #include "providers/twitch/api/Helix.hpp"
+#include "singletons/WindowManager.hpp"
 #include "util/DisplayBadge.hpp"
 #include "util/LoadPixmap.hpp"
+#include "widgets/Notebook.hpp"
+#include "widgets/splits/Split.hpp"
+#include "widgets/Window.hpp"
 
 #include <QBuffer>
 #include <QFile>
@@ -63,6 +68,12 @@ void TwitchBadges::loadTwitchBadges()
                         std::make_shared<Emote>(emote);
                 }
             }
+
+            getApp()->getWindows()->getMainWindow().getNotebook().forEachSplit(
+                [](Split *split) {
+                    split->getChannel()->addSystemMessage(
+                        "Global Twitch badges loaded.");
+                });
 
             this->loaded();
         },

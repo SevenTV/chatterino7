@@ -14,6 +14,7 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
+#include "providers/twitch/TwitchBadges.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
@@ -36,6 +37,8 @@
 #include "widgets/splits/ClosedSplits.hpp"
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitContainer.hpp"
+
+#include <qdebug.h>
 
 #ifndef NDEBUG
 #    include "providers/twitch/PubSubManager.hpp"
@@ -709,6 +712,14 @@ void Window::addShortcuts()
 
              return "";
          }},
+        {"reloadTwitchGlobalBadges",
+         [](std::vector<QString> arguments) -> QString {
+             getApp()->getTwitchBadges()->loadTwitchBadges();
+
+             return "";
+         }
+
+        },
     };
 
     this->addDebugStuff(actions);

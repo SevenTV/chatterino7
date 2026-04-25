@@ -372,6 +372,10 @@ inline const std::map<HotkeyCategory, ActionDefinitionMap> actionNames{
               .argumentsPromptHover = "Should the tabs be enabled, disabled, "
                                       "toggled, or live-only.",
           }},
+         {"reloadTwitchGlobalBadges",
+          ActionDefinition{
+              .displayName = "Reload Twitch global badges",
+          }},
      }},
 };
 
