@@ -80,12 +80,60 @@ echo "Run LinuxDeployQT"
 rm -rf appdir/home
 rm -f appdir/AppRun
 
+if [ -f appdir/usr/lib/libcrypto.so.3 ]; then
+    openssl_modules_dir=$(strings appdir/usr/lib/libcrypto.so.3 | sed -n 's/^MODULESDIR: "\(.*\)"/\1/p' | head -n 1)
+    if [ -z "$openssl_modules_dir" ] || [ ! -d "$openssl_modules_dir" ]; then
+        echo "ERROR: Bundled libcrypto.so.3 expects OpenSSL providers in '$openssl_modules_dir', but that directory was not found."
+        exit 1
+    fi
+
+    mkdir -p appdir/usr/lib/ossl-modules
+    find "$openssl_modules_dir" -maxdepth 1 -type f -name '*.so' \
+        -exec cp -L '{}' appdir/usr/lib/ossl-modules/ ';'
+
+    mkdir -p appdir/usr/lib/ssl
+    for cert_file in "$SSL_CERT_FILE" /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/cert.pem; do
+        if [ -f "$cert_file" ]; then
+            cp -L "$cert_file" appdir/usr/lib/ssl/cert.pem
+            break
+        fi
+    done
+
+    cat > appdir/usr/lib/ssl/openssl.cnf <<'EOF'
+openssl_conf = openssl_init
+
+[openssl_init]
+providers = provider_sect
+
+[provider_sect]
+default = default_sect
+
+[default_sect]
+activate = 1
+EOF
+
+    if ! find appdir/usr/lib/ossl-modules -maxdepth 1 -type f -name '*.so' | grep -q . ||
+        [ ! -f appdir/usr/lib/ssl/cert.pem ]; then
+        echo "ERROR: AppImage bundles libcrypto.so.3 but its OpenSSL runtime is incomplete."
+        exit 1
+    fi
+fi
+
 echo "Run AppImageTool"
 
 # shellcheck disable=SC2016
 echo '#!/bin/sh
 here="$(dirname "$(readlink -f "${0}")")"
 export QT_QPA_PLATFORM_PLUGIN_PATH="$here/usr/plugins"
+if [ -d "$here/usr/lib/ossl-modules" ]; then
+    export OPENSSL_MODULES="$here/usr/lib/ossl-modules"
+fi
+if [ -f "$here/usr/lib/ssl/openssl.cnf" ]; then
+    export OPENSSL_CONF="$here/usr/lib/ssl/openssl.cnf"
+fi
+if [ -f "$here/usr/lib/ssl/cert.pem" ]; then
+    export SSL_CERT_FILE="$here/usr/lib/ssl/cert.pem"
+fi
 cd "$here/usr"
 exec "$here/usr/bin/chatterino" "$@"' > appdir/AppRun
 chmod a+x appdir/AppRun
