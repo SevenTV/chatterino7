@@ -98,7 +98,7 @@ TEST_P(SplitInputTest, Reply)
     auto *message = new Message();
     message->displayName = "forsen";
     auto reply = MessagePtr(message);
-    this->input.setReply(reply);
+    this->input.setReply(reply, {});
     QString actual = this->input.getInputText();
     ASSERT_EQ(expected, actual) << "Input text after setReply should be '"
                                 << expected << "', but got '" << actual << "'";
