@@ -731,6 +731,50 @@ void Split::addShortcuts()
              this->openSubPage();
              return "";
          }},
+        {"changeMultichannelContext",
+         [this](const std::vector<QString> &arguments) -> QString {
+             if (arguments.empty())
+             {
+                 return "Expected at least one argument";
+             }
+             auto *mc =
+                 dynamic_cast<MultiChannel *>(this->channel_.get().get());
+             if (!mc || mc->channels().empty())
+             {
+                 return {};
+             }
+
+             size_t nextIndex = mc->activeChannelIndex();
+             QStringView arg = arguments[0];
+             if (arg == u"next")
+             {
+                 nextIndex =
+                     (mc->activeChannelIndex() + 1) % mc->channels().size();
+             }
+             else if (arg == u"prev")
+             {
+                 if (mc->activeChannelIndex() == 0)
+                 {
+                     nextIndex = mc->channels().size() - 1;
+                 }
+                 else
+                 {
+                     nextIndex -= 1;
+                 }
+             }
+             else
+             {
+                 bool ok = false;
+                 nextIndex = arg.toULongLong(&ok);
+                 if (!ok)
+                 {
+                     return "Failed to parse argument as integer";
+                 }
+             }
+             mc->setActiveChannelIndex(nextIndex);
+             getApp()->getWindows()->forceLayoutChannelViews();
+             return {};
+         }},
     };
 
     this->shortcuts_ = getApp()->getHotkeys()->shortcutsForCategory(
