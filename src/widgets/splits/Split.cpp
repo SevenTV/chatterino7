@@ -1428,9 +1428,10 @@ void Split::drag()
     stopDraggingSplit();
 }
 
-void Split::setInputReply(const MessagePtr &reply)
+void Split::setInputReply(const MessagePtr &reply,
+                          std::weak_ptr<Channel> channel)
 {
-    this->input_->setReply(reply);
+    this->input_->setReply(reply, std::move(channel));
 }
 
 void Split::unpause()

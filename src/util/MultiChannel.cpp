@@ -2,6 +2,7 @@
 
 #include "Application.hpp"
 #include "common/WindowDescriptors.hpp"
+#include "messages/Message.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "util/QCompareTransparent.hpp"
@@ -370,6 +371,18 @@ void MultiChannel::setComputedName(const QString &name)
     }
     this->computedName = name;
     this->displayNameChanged.invoke();
+}
+
+bool platformMatches(MessagePlatform lhs, MultiChannel::Platform rhs) noexcept
+{
+    switch (lhs)
+    {
+        case MessagePlatform::AnyOrTwitch:
+            return rhs == MultiChannel::Platform::Twitch;
+        case MessagePlatform::Kick:
+            return rhs == MultiChannel::Platform::Kick;
+    }
+    return false;
 }
 
 }  // namespace chatterino

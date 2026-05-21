@@ -944,6 +944,80 @@ ChannelPtr ChannelView::selectedChannel() const
     return this->underlyingChannel_;
 }
 
+ChannelPtr ChannelView::inferChannel(const Message &msg,
+                                     InferChannel mode) const
+{
+    ChannelPtr base = this->underlyingChannel_;
+    switch (mode)
+    {
+        case InferChannel::UnderlyingOnly:
+            break;
+        case InferChannel::SourceChannelIfAvailable: {
+            if (this->hasSourceChannel())
+            {
+                base = this->sourceChannel_;
+            }
+        }
+        break;
+        case InferChannel::SearchParentIfAvailable: {
+            auto *searchPopup =
+                dynamic_cast<SearchPopup *>(this->parentWidget());
+            if (searchPopup != nullptr)
+            {
+                auto *split =
+                    dynamic_cast<Split *>(searchPopup->parentWidget());
+                if (split != nullptr)
+                {
+                    base = split->getChannel();
+                }
+            }
+        }
+        break;
+    }
+
+    auto *mc = dynamic_cast<MultiChannel *>(base.get());
+    if (!mc)
+    {
+        return base;
+    }
+
+    const auto *active = mc->activeChannel();
+    auto matches = [&](const MultiChannel::ChildChannel &chan) {
+        if (!platformMatches(msg.platform, chan.platform))
+        {
+            return false;
+        }
+        QStringView nameView = msg.channelName;
+        bool kc = nameView.startsWith(u":kick:");
+        if (kc)
+        {
+            nameView = nameView.sliced(sizeof(":kick:") - 1);
+        }
+        return nameView.compare(chan.channel->getName(), Qt::CaseInsensitive) ==
+               0;
+    };
+
+    if (active && matches(*active))
+    {
+        return active->channel;
+    }
+
+    for (const auto &chan : mc->channels())
+    {
+        if (matches(chan))
+        {
+            return chan.channel;
+        }
+    }
+
+    // This shouldn't happen, we should always find a channel.
+    if (active)
+    {
+        return active->channel;
+    }
+    return this->underlyingChannel_;
+}
+
 std::pair<Channel *, MessageElementFlags> ChannelView::getMultiChannelInfo()
     const
 {
@@ -2814,24 +2888,22 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
         }
     }
 
-    if (!layout->getMessage()->id.isEmpty() &&
-        this->underlyingChannel_->hasModRights())
+    auto chan = this->inferChannel(*layout->getMessage());
+    if (!layout->getMessage()->id.isEmpty() && chan->hasModRights())
     {
         menu->addSeparator();
         auto *moderateAction = menu->addAction("Mo&derate");
         auto *moderateMenu = new QMenu(menu);
         moderateAction->setMenu(moderateMenu);
         moderateMenu->addAction(
-            "&Delete message", [this, id = layout->getMessage()->id] {
-                auto *twitchChannel = dynamic_cast<TwitchChannel *>(
-                    this->underlyingChannel_.get());
+            "&Delete message", [chan, id = layout->getMessage()->id] {
+                auto *twitchChannel = dynamic_cast<TwitchChannel *>(chan.get());
                 if (twitchChannel)
                 {
                     twitchChannel->deleteMessagesAs(
                         id, getApp()->getAccounts()->twitch.getCurrent().get());
                 }
-                else if (auto *kc = dynamic_cast<KickChannel *>(
-                             this->underlyingChannel_.get()))
+                else if (auto *kc = dynamic_cast<KickChannel *>(chan.get()))
                 {
                     kc->deleteMessage(id);
                 }
@@ -2991,14 +3063,7 @@ void ChannelView::addCommandExecutionContextMenuItems(
 
             /* Search popups and user message history's underlyingChannels aren't of type TwitchChannel, but
              * we would still like to execute commands from them. Use their source channel instead if applicable. */
-            if (this->hasSourceChannel())
-            {
-                channel = this->sourceChannel();
-            }
-            else
-            {
-                channel = this->underlyingChannel_;
-            }
+            channel = this->inferChannel(*layout->getMessage());
             auto *split = dynamic_cast<Split *>(this->parentWidget());
             QString userText;
             if (split)
@@ -3097,8 +3162,8 @@ void ChannelView::showUserInfoPopup(const QString &userName,
     auto *userPopup =
         new UserInfoPopup(getSettings()->autoCloseUserPopup, this->split_);
 
-    auto openingChannel = this->hasSourceChannel() ? this->sourceChannel_
-                                                   : this->underlyingChannel_;
+    auto openingChannel =
+        this->hasSourceChannel() ? this->sourceChannel_ : this->sourceChannel();
     ChannelPtr contextChannel;
     if (openingChannel && platform == MessagePlatform::Kick)
     {
@@ -3183,18 +3248,8 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
         case Link::UserAction: {
             QString value = link.value;
 
-            ChannelPtr channel = this->underlyingChannel_;
-            auto *searchPopup =
-                dynamic_cast<SearchPopup *>(this->parentWidget());
-            if (searchPopup != nullptr)
-            {
-                auto *split =
-                    dynamic_cast<Split *>(searchPopup->parentWidget());
-                if (split != nullptr)
-                {
-                    channel = split->getChannel();
-                }
-            }
+            ChannelPtr channel = this->inferChannel(
+                *layout->getMessage(), InferChannel::SearchParentIfAvailable);
 
             // Execute command clicking a moderator button
             value = getApp()->getCommands()->execCustomCommand(
@@ -3424,11 +3479,10 @@ void ChannelView::setInputReply(const MessagePtr &message)
         return;
     }
 
+    auto chan = this->inferChannel(*message);
     if (!message->replyThread)
     {
         // Message did not already have a thread attached, try to find or create one
-        auto chan = this->selectedChannel();
-
         auto *tc = dynamic_cast<TwitchChannel *>(chan.get());
         auto *kc = dynamic_cast<KickChannel *>(chan.get());
 
@@ -3449,7 +3503,7 @@ void ChannelView::setInputReply(const MessagePtr &message)
         }
     }
 
-    this->split_->setInputReply(message);
+    this->split_->setInputReply(message, chan);
 }
 
 void ChannelView::showReplyThreadPopup(const MessagePtr &message)
@@ -3470,7 +3524,7 @@ void ChannelView::showReplyThreadPopup(const MessagePtr &message)
     auto *popup =
         new ReplyThreadPopup(getSettings()->autoCloseThreadPopup, this->split_);
 
-    popup->setThread(message->replyThread);
+    popup->setThread(message->replyThread, this->inferChannel(*message));
 
     QPoint offset(int(150 * this->scale()), int(70 * this->scale()));
     popup->showAndMoveTo(QCursor::pos() - offset,

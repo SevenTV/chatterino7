@@ -165,6 +165,18 @@ public:
     /// for MultiChannels.
     ChannelPtr selectedChannel() const;
 
+    enum class InferChannel : uint8_t {
+        UnderlyingOnly,
+        SourceChannelIfAvailable,
+        SearchParentIfAvailable,
+    };
+
+    /// Infer the channel this message originates from.
+    /// In MultiChannels, this uses the best matching channel.
+    ChannelPtr inferChannel(
+        const Message &msg,
+        InferChannel mode = InferChannel::SourceChannelIfAvailable) const;
+
     /// @brief Set the channel this view is displaying
     ///
     /// @see #underlyingChannel()

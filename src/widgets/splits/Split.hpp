@@ -84,7 +84,7 @@ public:
 
     void setContainer(SplitContainer *container);
 
-    void setInputReply(const MessagePtr &reply);
+    void setInputReply(const MessagePtr &reply, std::weak_ptr<Channel> channel);
 
     // This is called on window focus lost
     void unpause();

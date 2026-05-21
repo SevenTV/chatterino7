@@ -251,7 +251,7 @@ void SplitInput::initLayout()
 
     // clear input and remove reply thread
     QObject::connect(this->ui_.cancelReplyButton, &Button::leftClicked, [this] {
-        this->setReply(nullptr);
+        this->setReply(nullptr, {});
     });
 
     // Forward selection change signal
@@ -398,7 +398,15 @@ void SplitInput::openEmotePopup()
 
 QString SplitInput::handleSendMessage(const std::vector<QString> &arguments)
 {
-    auto c = this->split_->getSelectedChannel();
+    ChannelPtr c;
+    if (this->replyTarget_)
+    {
+        c = this->replyChannel_.lock();
+    }
+    if (!c)
+    {
+        c = this->split_->getSelectedChannel();
+    }
     if (c == nullptr)
     {
         return "";
@@ -1276,7 +1284,7 @@ void SplitInput::giveFocus(Qt::FocusReason reason)
     this->ui_.textEdit->setFocus(reason);
 }
 
-void SplitInput::setReply(MessagePtr target)
+void SplitInput::setReply(MessagePtr target, std::weak_ptr<Channel> channel)
 {
     auto oldParent = this->replyTarget_;
     if (this->enableInlineReplying_ && oldParent)
@@ -1296,6 +1304,7 @@ void SplitInput::setReply(MessagePtr target)
     if (target != nullptr)
     {
         this->replyTarget_ = std::move(target);
+        this->replyChannel_ = std::move(channel);
 
         if (this->enableInlineReplying_)
         {
@@ -1346,6 +1355,7 @@ void SplitInput::setReply(MessagePtr target)
     else
     {
         this->replyTarget_.reset();
+        this->replyChannel_.reset();
 
         if (this->enableInlineReplying_)
         {

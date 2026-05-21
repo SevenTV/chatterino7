@@ -11,6 +11,8 @@ namespace chatterino {
 
 struct ChildChannelDescriptor;
 
+enum class MessagePlatform : uint8_t;
+
 class MultiChannel : public Channel
 {
 public:
@@ -83,6 +85,8 @@ private:
     MultiChannelIndicatorMode indicatorMode_ =
         MultiChannelIndicatorMode::PlatformBadgeIfUnselected;
 };
+
+bool platformMatches(MessagePlatform lhs, MultiChannel::Platform rhs) noexcept;
 
 }  // namespace chatterino
 

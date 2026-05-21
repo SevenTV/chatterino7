@@ -18,6 +18,7 @@ namespace chatterino {
 class MessageThread;
 class Split;
 class SplitInput;
+class Channel;
 
 class ReplyThreadPopup final : public DraggablePopup
 {
@@ -30,7 +31,8 @@ public:
      */
     explicit ReplyThreadPopup(bool closeAutomatically, Split *split);
 
-    void setThread(std::shared_ptr<MessageThread> thread);
+    void setThread(std::shared_ptr<MessageThread> thread,
+                   std::weak_ptr<Channel> channel);
     void giveFocus(Qt::FocusReason reason);
 
 protected:

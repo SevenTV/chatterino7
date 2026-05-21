@@ -192,10 +192,11 @@ ReplyThreadPopup::ReplyThreadPopup(bool closeAutomatically, Split *split)
     }
 }
 
-void ReplyThreadPopup::setThread(std::shared_ptr<MessageThread> thread)
+void ReplyThreadPopup::setThread(std::shared_ptr<MessageThread> thread,
+                                 std::weak_ptr<Channel> channel)
 {
     this->thread_ = std::move(thread);
-    this->ui_.replyInput->setReply(this->thread_->root());
+    this->ui_.replyInput->setReply(this->thread_->root(), std::move(channel));
     this->addMessagesFromThread();
     this->updateInputUI();
 

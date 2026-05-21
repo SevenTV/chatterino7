@@ -31,6 +31,7 @@ class ResizingTextEdit;
 class ChannelView;
 class SvgButton;
 class SpellCheckHighlighter;
+class Channel;
 enum class CompletionKind;
 
 class SplitInput : public BaseWidget
@@ -49,7 +50,7 @@ public:
     QString getInputText() const;
     void insertText(const QString &text);
 
-    void setReply(MessagePtr target);
+    void setReply(MessagePtr target, std::weak_ptr<Channel> channel);
     void setPlaceholderText(const QString &text);
 
     /**
@@ -173,6 +174,7 @@ protected:
     } ui_;
 
     MessagePtr replyTarget_ = nullptr;
+    std::weak_ptr<Channel> replyChannel_;
     bool enableInlineReplying_;
 
     pajlada::Signals::SignalHolder managedConnections_;
