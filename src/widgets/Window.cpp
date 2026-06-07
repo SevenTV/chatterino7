@@ -450,6 +450,10 @@ void Window::addCustomTitlebarButtons()
                     this->compactModeButton_->setVisible(false);
                 if (this->compactHeaderLabel_)
                     this->compactHeaderLabel_->setVisible(false);
+#ifdef Q_OS_MACOS
+                // Restore the base window title (removes channel info suffix).
+                this->onAccountSelected();
+#endif
             }
             else
             {
@@ -635,95 +639,122 @@ void Window::setupCompactHeaderConnections()
 
 void Window::updateCompactHeader()
 {
-    if (!this->compactHeaderLabel_ ||
-        !getSettings()->compactHeaders.getValue())
+    if (!getSettings()->compactHeaders.getValue())
     {
         return;
     }
 
     auto *page = this->notebook_->getSelectedPage();
+    QString text;
     if (!page)
     {
-        this->compactHeaderLabel_->setText("No tab selected");
-        return;
+        text = "No tab selected";
     }
-
-    auto *split = page->getSelectedSplit();
-    if (!split)
+    else if (auto *split = page->getSelectedSplit())
     {
-        this->compactHeaderLabel_->setText(page->getTab()->getTitle());
-        return;
-    }
+        auto channel = split->getChannel();
+        auto selectedChannel = split->getSelectedChannel();
 
-    auto channel = split->getChannel();
-    auto selectedChannel = split->getSelectedChannel();
-
-    auto text = channel->getLocalizedName();
-    if (channel->getType() == Channel::Type::TwitchWatching)
-    {
-        text = "watching: " + (text.isEmpty() ? "none" : text);
-    }
-
-    if (auto *twitchChannel =
-            dynamic_cast<TwitchChannel *>(selectedChannel.get()))
-    {
-        const auto streamStatus = twitchChannel->accessStreamStatus();
-        if (streamStatus->live)
+        text = channel->getLocalizedName();
+        if (channel->getType() == Channel::Type::TwitchWatching)
         {
-            if (streamStatus->rerun)
+            text = "watching: " + (text.isEmpty() ? "none" : text);
+        }
+
+        if (auto *twitchChannel =
+                dynamic_cast<TwitchChannel *>(selectedChannel.get()))
+        {
+            const auto streamStatus = twitchChannel->accessStreamStatus();
+            if (streamStatus->live)
             {
-                text += " (rerun)";
+                if (streamStatus->rerun)
+                {
+                    text += " (rerun)";
+                }
+                else
+                {
+                    text += " (live)";
+                }
+                if (getSettings()->headerViewerCount)
+                {
+                    text += " - " + localizeNumbers(streamStatus->viewerCount);
+                }
+                if (getSettings()->headerUptime)
+                {
+                    text += " - " + streamStatus->uptime;
+                }
+                if (getSettings()->headerGame &&
+                    !streamStatus->game.isEmpty())
+                {
+                    text += " - " + streamStatus->game;
+                }
+                if (getSettings()->headerStreamTitle &&
+                    !streamStatus->title.isEmpty())
+                {
+                    text += " - " + streamStatus->title.simplified();
+                }
             }
-            else
+        }
+        else if (auto *kickChannel =
+                     dynamic_cast<KickChannel *>(selectedChannel.get()))
+        {
+            const auto &stream = kickChannel->streamData();
+            if (stream.isLive)
             {
                 text += " (live)";
-            }
-            if (getSettings()->headerViewerCount)
-            {
-                text += " - " + localizeNumbers(streamStatus->viewerCount);
-            }
-            if (getSettings()->headerUptime)
-            {
-                text += " - " + streamStatus->uptime;
-            }
-            if (getSettings()->headerGame && !streamStatus->game.isEmpty())
-            {
-                text += " - " + streamStatus->game;
-            }
-            if (getSettings()->headerStreamTitle &&
-                !streamStatus->title.isEmpty())
-            {
-                text += " - " + streamStatus->title.simplified();
+                if (getSettings()->headerViewerCount)
+                {
+                    text += " - " + localizeNumbers(stream.viewerCount);
+                }
+                if (getSettings()->headerUptime)
+                {
+                    text += " - " + stream.uptime;
+                }
+                if (getSettings()->headerGame && !stream.category.isEmpty())
+                {
+                    text += " - " + stream.category;
+                }
+                if (getSettings()->headerStreamTitle &&
+                    !stream.title.isEmpty())
+                {
+                    text += " - " + stream.title.simplified();
+                }
             }
         }
     }
-    else if (auto *kickChannel =
-                 dynamic_cast<KickChannel *>(selectedChannel.get()))
+    else
     {
-        const auto &stream = kickChannel->streamData();
-        if (stream.isLive)
-        {
-            text += " (live)";
-            if (getSettings()->headerViewerCount)
-            {
-                text += " - " + localizeNumbers(stream.viewerCount);
-            }
-            if (getSettings()->headerUptime)
-            {
-                text += " - " + stream.uptime;
-            }
-            if (getSettings()->headerGame && !stream.category.isEmpty())
-            {
-                text += " - " + stream.category;
-            }
-            if (getSettings()->headerStreamTitle && !stream.title.isEmpty())
-            {
-                text += " - " + stream.title.simplified();
-            }
-        }
+        text = page->getTab()->getTitle();
     }
 
-    this->compactHeaderLabel_->setText(text.isEmpty() ? "<empty>" : text);
+    if (this->compactHeaderLabel_)
+    {
+        this->compactHeaderLabel_->setText(text.isEmpty() ? "<empty>" : text);
+    }
+
+#ifdef Q_OS_MACOS
+    // On macOS there is no custom titlebar label; append the channel info to
+    // the native window title so it appears in the titlebar.
+    QString windowTitle = Version::instance().fullVersion();
+    auto user = getApp()->getAccounts()->twitch.getCurrent();
+    if (user->isAnon())
+    {
+        windowTitle += " - not logged in";
+    }
+    else
+    {
+        windowTitle += " - " + user->getUserName();
+    }
+    if (getApp()->getArgs().safeMode)
+    {
+        windowTitle += " (safe mode)";
+    }
+    if (!text.isEmpty() && text != "No tab selected")
+    {
+        windowTitle += " | " + text;
+    }
+    this->setWindowTitle(windowTitle);
+#endif
 }
 
 void Window::updateCompactHeaderButtons()
@@ -1590,6 +1621,14 @@ void Window::onAccountSelected()
     }
 
     this->setWindowTitle(windowTitle);
+
+#ifdef Q_OS_MACOS
+    // Re-append channel info to the new base title when compact headers is on.
+    if (getSettings()->compactHeaders.getValue())
+    {
+        this->updateCompactHeader();
+    }
+#endif
 
     // update user
     if (this->userLabel_)

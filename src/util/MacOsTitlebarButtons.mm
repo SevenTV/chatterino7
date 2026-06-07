@@ -239,8 +239,8 @@ void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook)
         return;
     }
 
-    // Hide the window title text from the native titlebar
-    nsWindow.titleVisibility = NSWindowTitleHidden;
+    // Keep the window title visible so channel info (from updateCompactHeader)
+    // can be shown in the native titlebar when compact headers is enabled.
 
     gTarget = [[TitlebarActionTarget alloc] init];
     gTarget.notebook = notebook;
