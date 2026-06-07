@@ -927,6 +927,9 @@ if (APPLE)
     set_source_files_properties(${MACOS_BUNDLE_ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
     list(APPEND SOURCE_FILES util/MacOsHelpers.mm)
+    list(APPEND SOURCE_FILES util/MacOsTitlebarButtons.mm)
+    set_source_files_properties(util/MacOsTitlebarButtons.mm
+                                PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 endif ()
 
 # Generate source groups for use in IDEs

@@ -47,6 +47,8 @@ Q_SIGNALS:
 
 private:
     void paintEvent(QPaintEvent *) override;
+    void enterEvent(QEnterEvent *event) override;
+    void leaveEvent(QEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
     struct {
@@ -62,6 +64,7 @@ private:
     QString name_;
 
     bool selected_ = false;
+    bool hovered_ = false;
 };
 
 }  // namespace chatterino

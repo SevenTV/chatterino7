@@ -11,6 +11,7 @@
 #include <QDesktopServices>
 #include <QMouseEvent>
 #include <QPainter>
+
 #include <QTextDocument>
 #include <QUrl>
 
@@ -78,7 +79,6 @@ void MarkdownLabel::paintEvent(QPaintEvent * /*event*/)
         paintContext.palette = docPalette;
         paintContext.clip = QRectF(0, 0, textRect.width(), textRect.height());
         this->markdownDocument->documentLayout()->draw(&painter, paintContext);
-
         painter.restore();
     }
     else

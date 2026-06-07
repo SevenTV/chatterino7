@@ -1230,36 +1230,37 @@ void SplitInput::editTextChanged()
 void SplitInput::paintEvent(QPaintEvent * /*event*/)
 {
     QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
 
     QColor borderColor =
         this->theme->isLightTheme() ? QColor("#ccc") : QColor("#333");
 
-    QRect baseRect = this->rect();
-    baseRect.setWidth(baseRect.width() - 1);
+    const int radius =
+        static_cast<int>(this->theme->ui.borderRadius * this->scale());
 
     auto *inputWrap = this->ui_.inputWrapper;
-    auto inputBoxRect = inputWrap->geometry();
-    inputBoxRect.setSize(inputBoxRect.size() - QSize{1, 1});
-
-    painter.setBrush({this->theme->splits.input.background});
-    painter.setPen(borderColor);
-    painter.drawRect(inputBoxRect);
+    auto inputBoxRect = inputWrap->geometry().adjusted(0, 0, -1, -1);
 
     if (this->enableInlineReplying_ && this->replyTarget_ != nullptr)
     {
-        auto replyRect = this->ui_.replyWrapper->geometry();
-        replyRect.setSize(replyRect.size() - QSize{1, 1});
+        auto replyRect =
+            this->ui_.replyWrapper->geometry().adjusted(0, 0, -1, -1);
+        QRect combined = replyRect.united(inputBoxRect);
 
         painter.setBrush(this->theme->splits.input.background);
         painter.setPen(borderColor);
-        painter.drawRect(replyRect);
+        painter.drawRoundedRect(combined, radius, radius);
 
-        QPoint replyLabelBorderStart(
-            replyRect.x(),
-            replyRect.y() + this->ui_.replyHbox->geometry().height());
-        QPoint replyLabelBorderEnd(replyRect.right(),
-                                   replyLabelBorderStart.y());
-        painter.drawLine(replyLabelBorderStart, replyLabelBorderEnd);
+        int dividerY =
+            replyRect.y() + this->ui_.replyHbox->geometry().height();
+        painter.drawLine(combined.left() + 1, dividerY,
+                         combined.right() - 1, dividerY);
+    }
+    else
+    {
+        painter.setBrush(this->theme->splits.input.background);
+        painter.setPen(borderColor);
+        painter.drawRoundedRect(inputBoxRect, radius, radius);
     }
 }
 

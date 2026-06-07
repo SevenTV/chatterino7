@@ -103,11 +103,21 @@ Split::Split(QWidget *parent)
     this->setFocusProxy(this->input_->ui_.textEdit);
 
     this->vbox_->setSpacing(0);
-    this->vbox_->setContentsMargins(1, 1, 1, 1);
+    this->vbox_->setContentsMargins(1, 0, 1, 1);
 
     this->vbox_->addWidget(this->header_);
     this->vbox_->addWidget(this->view_, 1);
     this->vbox_->addWidget(this->input_);
+
+    if (getSettings()->compactHeaders.getValue())
+    {
+        this->header_->hide();
+    }
+    getSettings()->compactHeaders.connect(
+        [this](bool compact) {
+            this->header_->setVisible(!compact);
+        },
+        this->signalHolder_, false);
 
     this->input_->ui_.textEdit->installEventFilter(parent);
 
@@ -1414,6 +1424,16 @@ void Split::showSearch(bool singleChannel)
 void Split::reconnect()
 {
     this->getChannel()->reconnect();
+}
+
+void Split::showHeaderModeMenu(QPoint globalPos)
+{
+    this->header_->showModeMenu(globalPos);
+}
+
+void Split::showHeaderDropdown()
+{
+    this->header_->showDropdown();
 }
 
 void Split::dragEnterEvent(QDragEnterEvent *event)

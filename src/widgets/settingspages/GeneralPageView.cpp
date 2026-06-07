@@ -11,18 +11,8 @@
 #include "widgets/helper/Line.hpp"
 #include "widgets/settingspages/SettingWidget.hpp"
 
-#include <QRegularExpression>
 #include <QScrollArea>
 #include <QScrollBar>
-
-namespace {
-
-constexpr int MAX_TOOLTIP_LINE_LENGTH = 50;
-const auto MAX_TOOLTIP_LINE_LENGTH_PATTERN =
-    QStringLiteral(R"(.{%1}\S*\K(\s+))").arg(MAX_TOOLTIP_LINE_LENGTH);
-const QRegularExpression MAX_TOOLTIP_LINE_LENGTH_REGEX(
-    MAX_TOOLTIP_LINE_LENGTH_PATTERN);
-}  // namespace
 
 namespace chatterino {
 
@@ -369,15 +359,11 @@ void GeneralPageView::addToolTip(QWidget &widget, QString text) const
         return;
     }
 
-    if (text.length() > MAX_TOOLTIP_LINE_LENGTH)
-    {
-        // match MAX_TOOLTIP_LINE_LENGTH characters, any remaining
-        // non-space, and then capture the following space for
-        // replacement with newline
-        text.replace(MAX_TOOLTIP_LINE_LENGTH_REGEX, "\n");
-    }
-
-    widget.setToolTip(text);
+    widget.setToolTip(
+        QStringLiteral(
+            "<p style='max-width:380px; white-space:normal; "
+            "margin:0; padding:0;'>%1</p>")
+            .arg(text.toHtmlEscaped()));
 }
 
 }  // namespace chatterino

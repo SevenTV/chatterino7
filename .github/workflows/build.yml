@@ -175,19 +175,19 @@ jobs:
         include:
           # Windows
           - os: windows-latest
-            qt-version: 6.9.3
+            qt-version: 6.11.1
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
           # Windows on ARM
           - os: windows-11-arm
-            qt-version: 6.9.3
+            qt-version: 6.11.1
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
           # macOS (ARM)
           - os: macos-latest
-            qt-version: 6.9.3
+            qt-version: 6.11.1
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
@@ -463,9 +463,9 @@ jobs:
         run: |
           ls -l
           # Rename the macos build to indicate that it's for macOS 13.0 users
-          mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino-macOS-13.0-universal.dmg
+          mv chatterino-macos-Qt-6.11.1-universal.dmg Chatterino-macOS-13.0-universal.dmg
           # Rename Windows ARM64 to indicate that it's not well tested
-          mv chatterino-windows-arm-Qt-6.9.3.zip Experimental-ARM64-chatterino-windows-Qt-6.9.3.zip
+          mv chatterino-windows-arm-Qt-6.11.1.zip Experimental-ARM64-chatterino-windows-Qt-6.11.1.zip
         working-directory: release-artifacts
         shell: bash
 

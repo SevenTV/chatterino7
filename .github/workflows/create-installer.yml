@@ -21,7 +21,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
-        qt-version: ["6.9.3"]
+        qt-version: ["6.11.1"]
         os: [windows-latest, windows-11-arm]
     env:
       # same as in build.yml
@@ -155,7 +155,7 @@ jobs:
 
           mv Chatterino-x86_64-Qt-6.7.2.AppImage Chatterino-x86_64-Qt6.AppImage
 
-          mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino.dmg
+          mv chatterino-macos-Qt-6.11.1-universal.dmg Chatterino.dmg
 
       - name: Hash files
         working-directory: build

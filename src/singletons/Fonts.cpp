@@ -240,6 +240,11 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
         isItalic(type),
     };
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+    font.setStyleStrategy(QFont::StyleStrategy(font.styleStrategy() |
+                                               QFont::ContextFontMerging));
+#endif
+
     switch (type)
     {
         case FontStyle::TimestampMedium: {

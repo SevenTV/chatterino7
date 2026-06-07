@@ -11,12 +11,14 @@
 
 #include <pajlada/settings/setting.hpp>
 #include <pajlada/signals/signalholder.hpp>
+#include "widgets/TooltipWidget.hpp"
+
 #include <QMenu>
 #include <QPropertyAnimation>
 
 namespace chatterino {
 
-inline constexpr int NOTEBOOK_TAB_HEIGHT = 28;
+inline constexpr int NOTEBOOK_TAB_HEIGHT = 32;
 
 class SplitContainer;
 
@@ -167,6 +169,9 @@ private:
     QMenu *closeMultipleTabsMenu_{};
     QAction *closeTabsBeforeSelectedAction_{};
     QAction *closeTabsAfterSelectedAction_{};
+    QAction *splitMenuSeparator_{};
+    QList<QAction *> dynamicSplitActions_;
+    TooltipWidget *tooltipWidget_{};
 
     pajlada::Signals::SignalHolder managedConnections_;
 };

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "common/Common.hpp"
 #include "widgets/BaseWidget.hpp"
 #include "widgets/NotebookEnums.hpp"
 
@@ -126,6 +127,8 @@ public:
     // Update layout and tab visibility
     void refresh();
 
+    void updateBadgeCount();
+
 protected:
     bool getShowTabs() const;
     void setShowTabs(bool value);
@@ -175,6 +178,9 @@ protected:
 
     void sortTabsAlphabetically();
 
+public:
+    pajlada::Signals::NoArgSignal pageSelected;
+
 private:
     struct LayoutContext {
         int left = 0;
@@ -212,6 +218,8 @@ private:
 
     static bool containsChild(const QObject *obj, const QObject *child);
     NotebookTab *getTabFromPage(QWidget *page);
+
+    friend class Window;
 
     // Returns the number of buttons in `customButtons_` that are visible
     size_t visibleButtonCount() const;

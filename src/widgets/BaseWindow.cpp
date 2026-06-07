@@ -675,7 +675,14 @@ void BaseWindow::focusOutEvent(QFocusEvent *event)
 void BaseWindow::appendTitlebarButton(Button *button)
 {
     this->ui_.buttons.push_back(button);
-    this->ui_.titlebarBox->insertWidget(1, button);
+    // Insert before the last 3 widgets (min/max/close buttons).
+    // The title label is at index 0, min/max/close are at the end.
+    int insertPos = this->ui_.titlebarBox->count() - 3;
+    if (insertPos < 1)
+    {
+        insertPos = 1;
+    }
+    this->ui_.titlebarBox->insertWidget(insertPos, button);
 }
 
 LabelButton *BaseWindow::addTitleBarLabel(std::function<void()> onClicked)

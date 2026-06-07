@@ -39,6 +39,8 @@ public:
     // Invoked when SplitHeader should update anything refering to a TwitchChannel's mode
     // has changed (e.g. sub mode toggled)
     void updateRoomModes();
+    void showModeMenu(QPoint globalPos);
+    void showDropdown();
 
 protected:
     void scaleChangedEvent(float scale) override;

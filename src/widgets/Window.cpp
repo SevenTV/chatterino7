@@ -13,8 +13,12 @@
 #include "common/Version.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
+#include "providers/kick/KickChannel.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "util/FormatTime.hpp"
+#include "util/Helpers.hpp"
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
@@ -27,6 +31,8 @@
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/PixmapButton.hpp"
 #include "widgets/buttons/TitlebarButton.hpp"
+#include "widgets/buttons/SvgButton.hpp"
+#include "widgets/buttons/DrawnButton.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
 #include "widgets/dialogs/switcher/QuickSwitcherPopup.hpp"
 #include "widgets/dialogs/UpdateDialog.hpp"
@@ -36,6 +42,13 @@
 #include "widgets/splits/ClosedSplits.hpp"
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitContainer.hpp"
+#include "widgets/splits/SplitHeader.hpp"
+#include "widgets/splits/RoomModeHelpers.hpp"
+#include "util/MultiChannel.hpp"
+
+#ifdef Q_OS_MACOS
+#    include "util/MacOsTitlebarButtons.hpp"
+#endif
 
 #ifndef NDEBUG
 #    include "providers/twitch/PubSubManager.hpp"
@@ -50,6 +63,7 @@
 #include <QHeaderView>
 #include <QMenuBar>
 #include <QObject>
+#include <QPainter>
 #include <QPalette>
 #include <QStandardItemModel>
 #include <QVBoxLayout>
@@ -206,46 +220,309 @@ void Window::addLayout()
 
 void Window::addCustomTitlebarButtons()
 {
-    if (!this->hasCustomWindowFrame())
-    {
-        return;
-    }
     if (this->type_ != WindowType::Main)
     {
         return;
     }
 
-    // settings
-    this->addTitleBarButton<TitleBarButton>(
-        [this] {
-            getApp()->getWindows()->showSettingsDialog(this);
-        },
-        TitleBarButtonStyle::Settings);
+#ifdef Q_OS_MACOS
+    // setupMacOsTitlebarButtons() is called in showEvent()
+    return;
+#endif
 
-    // updates
-    auto *update = this->addTitleBarButton<PixmapButton>([] {});
+    if (this->hasCustomWindowFrame())
+    {
+        this->addTitleBarButton<TitleBarButton>(
+            [this] { getApp()->getWindows()->showSettingsDialog(this); },
+            TitleBarButtonStyle::Settings);
 
-    initUpdateButton(*update, [] {}, this->signalHolder_);
+        auto *update = this->addTitleBarButton<PixmapButton>([] {});
+        initUpdateButton(*update, [] {}, this->signalHolder_);
 
-    // account
-    this->userLabel_ = this->addTitleBarLabel([this] {
-        getApp()->getWindows()->showAccountSelectPopup(
-            this->userLabel_->mapToGlobal(
-                this->userLabel_->rect().bottomLeft()));
-    });
-    this->userLabel_->setMinimumWidth(20 * this->scale());
-
-    // streamer mode
-    this->streamerModeTitlebarIcon_ =
-        this->addTitleBarButton<PixmapButton>([this] {
-            getApp()->getWindows()->showSettingsDialog(
-                this, SettingsDialogPreference::StreamerMode);
+        this->userLabel_ = this->addTitleBarLabel([this] {
+            getApp()->getWindows()->showAccountSelectPopup(
+                this->userLabel_->mapToGlobal(
+                    this->userLabel_->rect().bottomLeft()));
         });
-    QObject::connect(getApp()->getStreamerMode(), &IStreamerMode::changed, this,
-                     &Window::updateStreamerModeIcon);
+        this->userLabel_->setMinimumWidth(20 * this->scale());
 
-    // Update initial state
-    this->updateStreamerModeIcon();
+        this->streamerModeTitlebarIcon_ =
+            this->addTitleBarButton<PixmapButton>([this] {
+                getApp()->getWindows()->showSettingsDialog(
+                    this, SettingsDialogPreference::StreamerMode);
+            });
+        QObject::connect(getApp()->getStreamerMode(), &IStreamerMode::changed,
+                         this, &Window::updateStreamerModeIcon);
+        this->updateStreamerModeIcon();
+
+        this->compactHeaderLabel_ = this->addTitleBarLabel([] {});
+        this->compactHeaderLabel_->setVisible(
+            getSettings()->compactHeaders.getValue());
+        this->compactHeaderLabel_->setMinimumWidth(120 * this->scale());
+        this->compactHeaderLabel_->setSizePolicy(QSizePolicy::Expanding,
+                                                 QSizePolicy::Fixed);
+
+        this->compactModeButton_ = this->addTitleBarButton<LabelButton>([this] {
+            auto *page = this->notebook_->getSelectedPage();
+            auto *split = page ? page->getSelectedSplit() : nullptr;
+            if (split)
+                split->showHeaderModeMenu(QCursor::pos());
+        });
+        this->compactModeButton_->setVisible(
+            getSettings()->compactHeaders.getValue());
+        this->compactModeButton_->setPadding(QSize(2, 0));
+
+        this->compactModButton_ = this->addTitleBarButton<SvgButton>(
+            [this] {
+                if (auto *page = this->notebook_->getSelectedPage())
+                    if (auto *split = page->getSelectedSplit())
+                        split->setModerationMode(!split->getModerationMode());
+            },
+            SvgButton::Src{
+                .dark = ":/buttons/moderationDisabled-darkMode.svg",
+                .light = ":/buttons/moderationDisabled-lightMode.svg",
+            });
+        this->compactModButton_->setVisible(
+            getSettings()->compactHeaders.getValue());
+
+        this->compactChattersButton_ = this->addTitleBarButton<SvgButton>(
+            [this] {
+                if (auto *page = this->notebook_->getSelectedPage())
+                    if (auto *split = page->getSelectedSplit())
+                        split->openChatterList();
+            },
+            SvgButton::Src{
+                .dark = ":/buttons/chatters-darkMode.svg",
+                .light = ":/buttons/chatters-lightMode.svg",
+            });
+        this->compactChattersButton_->setVisible(
+            getSettings()->compactHeaders.getValue());
+    }
+    else
+    {
+        bool compact = getSettings()->compactHeaders.getValue();
+
+        this->compactModButton_ =
+            this->notebook_->addCustomButton<SvgButton>(SvgButton::Src{
+                .dark = ":/buttons/moderationDisabled-darkMode.svg",
+                .light = ":/buttons/moderationDisabled-lightMode.svg",
+            });
+        QObject::connect(
+            this->compactModButton_, &Button::leftClicked, this, [this] {
+                if (auto *page = this->notebook_->getSelectedPage())
+                    if (auto *split = page->getSelectedSplit())
+                        split->setModerationMode(!split->getModerationMode());
+            });
+        this->compactModButton_->setVisible(false);
+
+        this->compactChattersButton_ =
+            this->notebook_->addCustomButton<SvgButton>(SvgButton::Src{
+                .dark = ":/buttons/chatters-darkMode.svg",
+                .light = ":/buttons/chatters-lightMode.svg",
+            });
+        QObject::connect(
+            this->compactChattersButton_, &Button::leftClicked, this, [this] {
+                if (auto *page = this->notebook_->getSelectedPage())
+                    if (auto *split = page->getSelectedSplit())
+                        split->openChatterList();
+            });
+        this->compactChattersButton_->setVisible(false);
+
+        this->compactDropdownButton_ =
+            this->notebook_->addCustomButton<DrawnButton>(
+                DrawnButton::Symbol::Kebab, DrawnButton::Options{});
+        QObject::connect(
+            this->compactDropdownButton_, &Button::leftMousePress, this,
+            [this] {
+                auto *page = this->notebook_->getSelectedPage();
+                auto *split = page ? page->getSelectedSplit() : nullptr;
+                if (!split)
+                    return;
+                const auto &h = getApp()->getHotkeys();
+                auto menu = std::make_unique<QMenu>();
+                menu->addAction(
+                    "Change channel",
+                    h->getDisplaySequence(HotkeyCategory::Split,
+                                          "changeChannel"),
+                    split, &Split::changeChannel);
+                menu->addAction(
+                    "Close",
+                    h->getDisplaySequence(HotkeyCategory::Split, "delete"),
+                    split, &Split::deleteFromContainer);
+                menu->addSeparator();
+                menu->addAction(
+                    "Popup",
+                    h->getDisplaySequence(HotkeyCategory::Window, "popup",
+                                          {{"split"}}),
+                    split, &Split::popup);
+                menu->addAction(
+                    "Search",
+                    h->getDisplaySequence(HotkeyCategory::Split, "showSearch"),
+                    split, [split] { split->showSearch(true); });
+                menu->addAction(
+                    "Set filters",
+                    h->getDisplaySequence(HotkeyCategory::Split, "pickFilters"),
+                    split, &Split::setFiltersDialog);
+                menu->addSeparator();
+                auto selected = split->getSelectedChannel();
+                if (auto *tc =
+                        dynamic_cast<TwitchChannel *>(selected.get()))
+                {
+                    menu->addAction(
+                        "Open in browser",
+                        h->getDisplaySequence(HotkeyCategory::Split,
+                                              "openInBrowser"),
+                        split, &Split::openInBrowser);
+                    menu->addAction(
+                        "Open player in browser",
+                        h->getDisplaySequence(HotkeyCategory::Split,
+                                              "openPlayerInBrowser"),
+                        split, &Split::openBrowserPlayer);
+                    menu->addAction(
+                        "Open in streamlink",
+                        h->getDisplaySequence(HotkeyCategory::Split,
+                                              "openInStreamlink"),
+                        split, &Split::openInStreamlink);
+                    if (split->getChannel()->hasModRights())
+                    {
+                        menu->addAction(
+                            "Open mod view",
+                            h->getDisplaySequence(HotkeyCategory::Split,
+                                                  "openModView"),
+                            split, &Split::openModViewInBrowser);
+                    }
+                    if (tc->isLive())
+                    {
+                        menu->addAction(
+                            "Create a clip",
+                            h->getDisplaySequence(HotkeyCategory::Split,
+                                                  "createClip"),
+                            split, [tc] { tc->createClip({}, {}); });
+                    }
+                    menu->addSeparator();
+                    menu->addAction(
+                        "Reload channel emotes",
+                        h->getDisplaySequence(HotkeyCategory::Split,
+                                              "reloadEmotes", {{"channel"}}),
+                        split, [tc] {
+                            tc->refreshFFZChannelEmotes(true);
+                            tc->refreshBTTVChannelEmotes(true);
+                            tc->refreshSevenTVChannelEmotes(true);
+                        });
+                    menu->addAction(
+                        "Reload subscriber emotes",
+                        h->getDisplaySequence(HotkeyCategory::Split,
+                                              "reloadEmotes", {{"subscriber"}}),
+                        split, [tc] {
+                            tc->refreshTwitchChannelEmotes(true);
+                        });
+                }
+                if (split->getChannel()->canReconnect())
+                {
+                    menu->addAction(
+                        "Reconnect",
+                        h->getDisplaySequence(HotkeyCategory::Split,
+                                              "reconnect"),
+                        split, &Split::reconnect);
+                }
+                menu->addSeparator();
+                menu->addAction(
+                    "Clear messages",
+                    h->getDisplaySequence(HotkeyCategory::Split,
+                                          "clearMessages"),
+                    split, &Split::clear);
+                this->compactDropdownButton_->setMenu(std::move(menu));
+            });
+        this->compactDropdownButton_->setVisible(compact);
+    }
+
+    getSettings()->compactHeaders.connect(
+        [this](bool compact) {
+            if (!compact)
+            {
+                if (this->compactDropdownButton_)
+                    this->compactDropdownButton_->setVisible(false);
+                if (this->compactModButton_)
+                    this->compactModButton_->setVisible(false);
+                if (this->compactChattersButton_)
+                    this->compactChattersButton_->setVisible(false);
+                if (this->compactModeButton_)
+                    this->compactModeButton_->setVisible(false);
+                if (this->compactHeaderLabel_)
+                    this->compactHeaderLabel_->setVisible(false);
+            }
+            else
+            {
+                if (this->compactDropdownButton_)
+                    this->compactDropdownButton_->setVisible(true);
+                if (this->compactHeaderLabel_)
+                    this->compactHeaderLabel_->setVisible(true);
+                this->updateCompactHeader();
+                this->updateCompactHeaderButtons();
+                this->updateCompactHeaderMode();
+            }
+            this->notebook_->performLayout();
+        },
+        this->signalHolder_, false);
+
+    auto refreshHeader = [this](const auto &, const auto &) {
+        this->updateCompactHeader();
+    };
+    getSettings()->headerViewerCount.connect(refreshHeader,
+                                             this->signalHolder_);
+    getSettings()->headerStreamTitle.connect(refreshHeader,
+                                             this->signalHolder_);
+    getSettings()->headerGame.connect(refreshHeader, this->signalHolder_);
+    getSettings()->headerUptime.connect(refreshHeader, this->signalHolder_);
+
+    this->signalHolder_.managedConnect(
+        getApp()->getAccounts()->twitch.currentUserChanged, [this] {
+            this->updateCompactHeaderButtons();
+        });
+
+    this->signalHolder_.managedConnect(
+        this->notebook_->pageSelected, [this] {
+            this->setupCompactHeaderConnections();
+            this->updateCompactHeader();
+            this->updateCompactHeaderButtons();
+        });
+
+    this->setupCompactHeaderConnections();
+    this->updateCompactHeader();
+    this->updateCompactHeaderButtons();
+    this->updateCompactHeaderMode();
+}
+
+void Window::showEvent(QShowEvent *event)
+{
+    BaseWindow::showEvent(event);
+
+#ifdef Q_OS_MACOS
+    if (!this->macTitlebarSetup_ && this->type_ == WindowType::Main)
+    {
+        this->macTitlebarSetup_ = true;
+        setupMacOsTitlebarButtons(this, this->notebook_);
+
+        this->signalHolder_.managedConnect(
+            this->notebook_->pageSelected, [this] {
+                this->setupCompactHeaderConnections();
+                this->updateCompactHeader();
+                this->updateCompactHeaderButtons();
+            });
+        this->setupCompactHeaderConnections();
+        this->updateCompactHeaderButtons();
+
+        getSettings()->compactHeaders.connect(
+            [this](bool compact) {
+                setMacOsTitlebarButtonsVisible(compact);
+                if (compact)
+                {
+                    this->updateCompactHeaderButtons();
+                }
+            },
+            this->signalHolder_, false);
+    }
+#endif
 }
 
 void Window::updateStreamerModeIcon()
@@ -282,6 +559,270 @@ void Window::themeChangedEvent()
 {
     this->updateStreamerModeIcon();
     BaseWindow::themeChangedEvent();
+#ifdef Q_OS_MACOS
+    this->updateCompactHeaderButtons();
+#endif
+}
+
+void Window::setupCompactHeaderConnections()
+{
+    this->compactHeaderConnections_.clear();
+
+    auto *page = this->notebook_->getSelectedPage();
+    if (!page)
+    {
+        return;
+    }
+
+    for (auto *s : page->getSplits())
+    {
+        this->compactHeaderConnections_.managedConnect(
+            s->focused, [this] {
+                this->updateCompactHeader();
+                this->updateCompactHeaderButtons();
+            });
+    }
+
+    auto *split = page->getSelectedSplit();
+    if (!split)
+    {
+        return;
+    }
+
+    this->compactHeaderConnections_.managedConnect(
+        split->channelChanged, [this] {
+            this->updateCompactHeader();
+            this->updateCompactHeaderButtons();
+        });
+
+    auto channel = split->getChannel();
+    if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get()))
+    {
+        this->compactHeaderConnections_.managedConnect(
+            twitchChannel->streamStatusChanged, [this] {
+                this->updateCompactHeader();
+            });
+        this->compactHeaderConnections_.managedConnect(
+            twitchChannel->roomModesChanged, [this] {
+                this->updateCompactHeaderButtons();
+            });
+        this->compactHeaderConnections_.managedConnect(
+            twitchChannel->userStateChanged, [this] {
+                this->updateCompactHeaderButtons();
+            });
+    }
+    else if (auto *kickChannel = dynamic_cast<KickChannel *>(channel.get()))
+    {
+        this->compactHeaderConnections_.managedConnect(
+            kickChannel->streamDataChanged, [this] {
+                this->updateCompactHeader();
+            });
+        this->compactHeaderConnections_.managedConnect(
+            kickChannel->roomModesChanged, [this] {
+                this->updateCompactHeaderButtons();
+            });
+    }
+    else if (auto *multiChannel =
+                 dynamic_cast<MultiChannel *>(channel.get()))
+    {
+        this->compactHeaderConnections_.managedConnect(
+            multiChannel->activeChannelChanged, [this] {
+                this->updateCompactHeader();
+                this->updateCompactHeaderButtons();
+            });
+    }
+}
+
+void Window::updateCompactHeader()
+{
+    if (!this->compactHeaderLabel_ ||
+        !getSettings()->compactHeaders.getValue())
+    {
+        return;
+    }
+
+    auto *page = this->notebook_->getSelectedPage();
+    if (!page)
+    {
+        this->compactHeaderLabel_->setText("No tab selected");
+        return;
+    }
+
+    auto *split = page->getSelectedSplit();
+    if (!split)
+    {
+        this->compactHeaderLabel_->setText(page->getTab()->getTitle());
+        return;
+    }
+
+    auto channel = split->getChannel();
+    auto selectedChannel = split->getSelectedChannel();
+
+    auto text = channel->getLocalizedName();
+    if (channel->getType() == Channel::Type::TwitchWatching)
+    {
+        text = "watching: " + (text.isEmpty() ? "none" : text);
+    }
+
+    if (auto *twitchChannel =
+            dynamic_cast<TwitchChannel *>(selectedChannel.get()))
+    {
+        const auto streamStatus = twitchChannel->accessStreamStatus();
+        if (streamStatus->live)
+        {
+            if (streamStatus->rerun)
+            {
+                text += " (rerun)";
+            }
+            else
+            {
+                text += " (live)";
+            }
+            if (getSettings()->headerViewerCount)
+            {
+                text += " - " + localizeNumbers(streamStatus->viewerCount);
+            }
+            if (getSettings()->headerUptime)
+            {
+                text += " - " + streamStatus->uptime;
+            }
+            if (getSettings()->headerGame && !streamStatus->game.isEmpty())
+            {
+                text += " - " + streamStatus->game;
+            }
+            if (getSettings()->headerStreamTitle &&
+                !streamStatus->title.isEmpty())
+            {
+                text += " - " + streamStatus->title.simplified();
+            }
+        }
+    }
+    else if (auto *kickChannel =
+                 dynamic_cast<KickChannel *>(selectedChannel.get()))
+    {
+        const auto &stream = kickChannel->streamData();
+        if (stream.isLive)
+        {
+            text += " (live)";
+            if (getSettings()->headerViewerCount)
+            {
+                text += " - " + localizeNumbers(stream.viewerCount);
+            }
+            if (getSettings()->headerUptime)
+            {
+                text += " - " + stream.uptime;
+            }
+            if (getSettings()->headerGame && !stream.category.isEmpty())
+            {
+                text += " - " + stream.category;
+            }
+            if (getSettings()->headerStreamTitle && !stream.title.isEmpty())
+            {
+                text += " - " + stream.title.simplified();
+            }
+        }
+    }
+
+    this->compactHeaderLabel_->setText(text.isEmpty() ? "<empty>" : text);
+}
+
+void Window::updateCompactHeaderButtons()
+{
+    bool compact = getSettings()->compactHeaders.getValue();
+
+    auto *page = this->notebook_->getSelectedPage();
+    auto *split = page ? page->getSelectedSplit() : nullptr;
+    auto channel = split ? split->getSelectedChannel() : nullptr;
+
+    if (!channel || !channel->isTwitchOrKickChannel())
+    {
+        if (this->compactModButton_)
+            this->compactModButton_->setVisible(false);
+        if (this->compactChattersButton_)
+            this->compactChattersButton_->setVisible(false);
+        if (this->compactModeButton_)
+            this->compactModeButton_->setVisible(false);
+#ifdef Q_OS_MACOS
+        updateMacOsTitlebarButtonsForSplit(nullptr);
+#endif
+        return;
+    }
+
+    bool hasMod = channel->hasModRights();
+    bool moderationMode =
+        split->getModerationMode() &&
+        !getSettings()->moderationActions.empty();
+
+    if (this->compactModButton_)
+    {
+        this->compactModButton_->setSource(
+            moderationMode
+                ? SvgButton::Src{
+                      .dark = ":/buttons/moderationEnabled-darkMode.svg",
+                      .light = ":/buttons/moderationEnabled-lightMode.svg",
+                  }
+                : SvgButton::Src{
+                      .dark = ":/buttons/moderationDisabled-darkMode.svg",
+                      .light = ":/buttons/moderationDisabled-lightMode.svg",
+                  });
+        this->compactModButton_->setVisible(compact && (hasMod || moderationMode));
+    }
+    if (this->compactChattersButton_)
+    {
+        this->compactChattersButton_->setVisible(
+            compact && (hasMod && channel->isTwitchChannel()));
+    }
+
+    this->updateCompactHeaderMode();
+
+#ifdef Q_OS_MACOS
+    updateMacOsTitlebarButtonsForSplit(split);
+#endif
+}
+
+void Window::updateCompactHeaderMode()
+{
+    if (!this->compactModeButton_)
+    {
+        return;
+    }
+
+    bool compact = getSettings()->compactHeaders.getValue();
+    auto *page = this->notebook_->getSelectedPage();
+    auto *split = page ? page->getSelectedSplit() : nullptr;
+    if (!split)
+    {
+        this->compactModeButton_->setVisible(false);
+        return;
+    }
+
+    auto channel = split->getSelectedChannel();
+    QString text;
+    bool visible = false;
+
+    if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get()))
+    {
+        auto roomModes = twitchChannel->accessRoomModes();
+        text = formatRoomModeUnclean(*roomModes);
+        cleanRoomModeText(text, twitchChannel->hasModRights());
+        visible = !text.isEmpty();
+    }
+    else if (auto *kickChannel = dynamic_cast<KickChannel *>(channel.get()))
+    {
+        text = formatRoomModeUnclean(kickChannel->roomModes());
+        cleanRoomModeText(text, false);
+        visible = !text.isEmpty();
+    }
+
+    if (visible && compact)
+    {
+        this->compactModeButton_->setText(text);
+        this->compactModeButton_->setVisible(true);
+    }
+    else
+    {
+        this->compactModeButton_->setVisible(false);
+    }
 }
 
 void Window::addDebugStuff(HotkeyController::HotkeyMap &actions)
@@ -719,67 +1260,310 @@ void Window::addShortcuts()
 
 void Window::addMenuBar()
 {
-    QMenuBar *mainMenu = new QMenuBar();
-    mainMenu->setNativeMenuBar(true);
+    auto *menuBar = new QMenuBar();
+    menuBar->setNativeMenuBar(true);
 
-    // First menu.
-    QMenu *menu = mainMenu->addMenu(QString());
+    QMenu *appMenu = menuBar->addMenu(QString());
+    {
+        auto *about = appMenu->addAction(QString());
+        about->setMenuRole(QAction::AboutRole);
+        connect(about, &QAction::triggered, this, [this] {
+            SettingsDialog::showDialog(
+                this, SettingsDialogPreference::About);
+        });
 
-    // About button that shows the About tab in the Settings Dialog.
-    QAction *about = menu->addAction(QString());
-    about->setMenuRole(QAction::AboutRole);
-    connect(about, &QAction::triggered, this, [this] {
-        SettingsDialog::showDialog(this, SettingsDialogPreference::About);
-    });
+        appMenu->addSeparator();
 
-    QAction *prefs = menu->addAction(QString());
-    prefs->setMenuRole(QAction::PreferencesRole);
-    connect(prefs, &QAction::triggered, this, [this] {
-        SettingsDialog::showDialog(this);
-    });
+        auto *prefs = appMenu->addAction(QString());
+        prefs->setMenuRole(QAction::PreferencesRole);
+        prefs->setShortcut(QKeySequence::Preferences);
+        connect(prefs, &QAction::triggered, this, [this] {
+            SettingsDialog::showDialog(this);
+        });
+    }
 
-    // Window menu.
-    QMenu *windowMenu = mainMenu->addMenu(QString("Window"));
+    QMenu *fileMenu = menuBar->addMenu("File");
+    {
+        auto *newTab = fileMenu->addAction("New Tab");
+        newTab->setShortcut(QKeySequence::New);
+        connect(newTab, &QAction::triggered, this, [this] {
+            this->notebook_->addPage(true);
+        });
 
-    // Window->Minimize item
-    QAction *minimizeWindow = windowMenu->addAction(QString("Minimize"));
-    minimizeWindow->setShortcuts({QKeySequence("Meta+M")});
-    connect(minimizeWindow, &QAction::triggered, this, [this] {
-        this->setWindowState(Qt::WindowMinimized);
-    });
+        auto *newSplit = fileMenu->addAction("New Split");
+        newSplit->setShortcut(QKeySequence("Ctrl+Shift+N"));
+        connect(newSplit, &QAction::triggered, this, [this] {
+            if (auto *page = this->notebook_->getSelectedPage())
+            {
+                page->appendNewSplit(true);
+            }
+        });
 
-    QAction *nextTab = windowMenu->addAction(QString("Select next tab"));
-    nextTab->setShortcuts({QKeySequence("Meta+Tab")});
-    connect(nextTab, &QAction::triggered, this, [this] {
-        this->notebook_->selectNextTab();
-    });
+        fileMenu->addSeparator();
 
-    QAction *prevTab = windowMenu->addAction(QString("Select previous tab"));
-    prevTab->setShortcuts({QKeySequence("Meta+Shift+Tab")});
-    connect(prevTab, &QAction::triggered, this, [this] {
-        this->notebook_->selectPreviousTab();
-    });
+        auto *closeTab = fileMenu->addAction("Close Tab");
+        closeTab->setShortcut(QKeySequence::Close);
+        connect(closeTab, &QAction::triggered, this, [this] {
+            this->notebook_->removeCurrentPage();
+        });
 
-    // Help menu.
-    QMenu *helpMenu = mainMenu->addMenu(QString("Help"));
+        fileMenu->addSeparator();
 
-    // Help->Chatterino Wiki item
-    QAction *helpWiki = helpMenu->addAction(QString("Chatterino Wiki"));
-    connect(helpWiki, &QAction::triggered, this, []() {
-        QDesktopServices::openUrl(QUrl(LINK_CHATTERINO_WIKI.toString()));
-    });
+        auto *changeChannel = fileMenu->addAction("Change Channel...");
+        changeChannel->setShortcut(QKeySequence("Ctrl+K"));
+        connect(changeChannel, &QAction::triggered, this, [this] {
+            if (auto *page = this->notebook_->getSelectedPage())
+            {
+                if (auto *split = page->getSelectedSplit())
+                {
+                    split->changeChannel();
+                }
+            }
+        });
 
-    // Help->Chatterino Github
-    QAction *helpGithub = helpMenu->addAction(QString("Chatterino GitHub"));
-    connect(helpGithub, &QAction::triggered, this, []() {
-        QDesktopServices::openUrl(QUrl(LINK_CHATTERINO_SOURCE.toString()));
-    });
+        auto *popupSplit = fileMenu->addAction("Popout Split");
+        connect(popupSplit, &QAction::triggered, this, [this] {
+            if (auto *page = this->notebook_->getSelectedPage())
+            {
+                if (auto *split = page->getSelectedSplit())
+                {
+                    split->popup();
+                }
+            }
+        });
+    }
 
-    // Help->Chatterino Discord
-    QAction *helpDiscord = helpMenu->addAction(QString("Chatterino Discord"));
-    connect(helpDiscord, &QAction::triggered, this, []() {
-        QDesktopServices::openUrl(QUrl(LINK_CHATTERINO_DISCORD.toString()));
-    });
+    QMenu *editMenu = menuBar->addMenu("Edit");
+    {
+        auto *undo = editMenu->addAction("Undo");
+        undo->setShortcut(QKeySequence::Undo);
+        connect(undo, &QAction::triggered, this, [] {
+            if (auto *w = qApp->focusWidget())
+                QMetaObject::invokeMethod(w, "undo");
+        });
+
+        auto *redo = editMenu->addAction("Redo");
+        redo->setShortcut(QKeySequence::Redo);
+        connect(redo, &QAction::triggered, this, [] {
+            if (auto *w = qApp->focusWidget())
+                QMetaObject::invokeMethod(w, "redo");
+        });
+
+        editMenu->addSeparator();
+
+        auto *cut = editMenu->addAction("Cut");
+        cut->setShortcut(QKeySequence::Cut);
+        connect(cut, &QAction::triggered, this, [] {
+            if (auto *w = qApp->focusWidget())
+                QMetaObject::invokeMethod(w, "cut");
+        });
+
+        auto *copy = editMenu->addAction("Copy");
+        copy->setShortcut(QKeySequence::Copy);
+        connect(copy, &QAction::triggered, this, [] {
+            if (auto *w = qApp->focusWidget())
+                QMetaObject::invokeMethod(w, "copy");
+        });
+
+        auto *paste = editMenu->addAction("Paste");
+        paste->setShortcut(QKeySequence::Paste);
+        connect(paste, &QAction::triggered, this, [] {
+            if (auto *w = qApp->focusWidget())
+                QMetaObject::invokeMethod(w, "paste");
+        });
+
+        editMenu->addSeparator();
+
+        auto *selectAll = editMenu->addAction("Select All");
+        selectAll->setShortcut(QKeySequence::SelectAll);
+        connect(selectAll, &QAction::triggered, this, [] {
+            if (auto *w = qApp->focusWidget())
+                QMetaObject::invokeMethod(w, "selectAll");
+        });
+
+        editMenu->addSeparator();
+
+        auto *find = editMenu->addAction("Find...");
+        find->setShortcut(QKeySequence::Find);
+        editMenu->addSeparator();
+
+        auto *clearChat = editMenu->addAction("Clear Messages");
+        connect(clearChat, &QAction::triggered, this, [this] {
+            if (auto *page = this->notebook_->getSelectedPage())
+            {
+                if (auto *split = page->getSelectedSplit())
+                {
+                    split->getChannelView().clearMessages();
+                }
+            }
+        });
+    }
+
+    QMenu *viewMenu = menuBar->addMenu("View");
+    {
+        auto *toggleTopMost = viewMenu->addAction("Always on Top");
+        toggleTopMost->setCheckable(true);
+        toggleTopMost->setChecked(
+            getSettings()->windowTopMost.getValue());
+        connect(toggleTopMost, &QAction::triggered, [](bool checked) {
+            getSettings()->windowTopMost.setValue(checked);
+        });
+
+        viewMenu->addSeparator();
+
+        auto *zoomIn = viewMenu->addAction("Zoom In");
+        zoomIn->setShortcut(QKeySequence::ZoomIn);
+        connect(zoomIn, &QAction::triggered, [] {
+            auto s = getSettings()->getClampedUiScale() + 0.1f;
+            getSettings()->setClampedUiScale(std::min(s, 5.0f));
+        });
+
+        auto *zoomOut = viewMenu->addAction("Zoom Out");
+        zoomOut->setShortcut(QKeySequence::ZoomOut);
+        connect(zoomOut, &QAction::triggered, [] {
+            auto s = getSettings()->getClampedUiScale() - 0.1f;
+            getSettings()->setClampedUiScale(std::max(s, 0.2f));
+        });
+
+        auto *resetZoom = viewMenu->addAction("Reset Zoom");
+        resetZoom->setShortcut(QKeySequence("Ctrl+0"));
+        connect(resetZoom, &QAction::triggered, [] {
+            getSettings()->setClampedUiScale(1.0f);
+        });
+
+        viewMenu->addSeparator();
+
+        auto *fullScreen = viewMenu->addAction("Enter Full Screen");
+        fullScreen->setShortcut(QKeySequence("Ctrl+Meta+F"));
+        fullScreen->setCheckable(true);
+        connect(fullScreen, &QAction::triggered, this, [this] {
+            this->setWindowState(
+                this->windowState() ^ Qt::WindowFullScreen);
+        });
+    }
+
+    auto *profileMenu = menuBar->addMenu("Profile");
+    {
+        connect(profileMenu, &QMenu::aboutToShow, this,
+                [this, profileMenu] {
+                    profileMenu->clear();
+
+                    auto &accounts =
+                        getApp()->getAccounts()->twitch.accounts;
+                    auto current =
+                        getApp()->getAccounts()->twitch.getCurrent();
+
+                    for (auto &account : accounts)
+                    {
+                        if (account->isAnon())
+                        {
+                            continue;
+                        }
+                        QString name = account->getUserName();
+                        auto *action =
+                            profileMenu->addAction(name);
+                        action->setCheckable(true);
+                        action->setChecked(
+                            account.get() == current.get());
+                        connect(action, &QAction::triggered,
+                                [name] {
+                                    getApp()
+                                        ->getAccounts()
+                                        ->twitch.currentUsername =
+                                        name;
+                                });
+                    }
+
+                    if (accounts.empty())
+                    {
+                        profileMenu->addAction(
+                            "No accounts logged in")
+                            ->setEnabled(false);
+                    }
+
+                    profileMenu->addSeparator();
+
+                    auto *addAccount =
+                        profileMenu->addAction("Add Account...");
+                    connect(addAccount, &QAction::triggered, this,
+                            [this] {
+                                SettingsDialog::showDialog(
+                                    this,
+                                    SettingsDialogPreference::
+                                        Accounts);
+                            });
+
+                    auto *manage =
+                        profileMenu->addAction("Manage Accounts...");
+                    connect(manage, &QAction::triggered, this,
+                            [this] {
+                                SettingsDialog::showDialog(
+                                    this,
+                                    SettingsDialogPreference::
+                                        Accounts);
+                            });
+                });
+    }
+
+    QMenu *windowMenu = menuBar->addMenu("Window");
+    {
+        auto *minimize = windowMenu->addAction("Minimize");
+        minimize->setShortcut(QKeySequence("Ctrl+M"));
+        connect(minimize, &QAction::triggered, this, [this] {
+            this->setWindowState(Qt::WindowMinimized);
+        });
+
+        auto *zoom = windowMenu->addAction("Zoom");
+        connect(zoom, &QAction::triggered, this, [this] {
+            if (this->isMaximized())
+                this->showNormal();
+            else
+                this->showMaximized();
+        });
+
+        windowMenu->addSeparator();
+
+        auto *bringAll = windowMenu->addAction("Bring All to Front");
+        connect(bringAll, &QAction::triggered, this, [] {
+            for (auto *w : qApp->topLevelWidgets())
+            {
+                if (w->isWindow())
+                {
+                    w->raise();
+                    w->activateWindow();
+                }
+            }
+        });
+
+        windowMenu->addSeparator();
+
+        auto *nextSplit = windowMenu->addAction("Focus Next Split");
+        nextSplit->setShortcut(QKeySequence("Alt+Right"));
+        auto *prevSplit = windowMenu->addAction(
+            "Focus Previous Split");
+        prevSplit->setShortcut(QKeySequence("Alt+Left"));
+    }
+
+    QMenu *helpMenu = menuBar->addMenu("Help");
+    {
+        auto *helpWiki = helpMenu->addAction("YaseenChat Wiki");
+        connect(helpWiki, &QAction::triggered, this, [] {
+            QDesktopServices::openUrl(
+                QUrl(LINK_CHATTERINO_WIKI.toString()));
+        });
+
+        auto *helpGithub = helpMenu->addAction("YaseenChat GitHub");
+        connect(helpGithub, &QAction::triggered, this, [] {
+            QDesktopServices::openUrl(
+                QUrl(LINK_CHATTERINO_SOURCE.toString()));
+        });
+
+        auto *helpDiscord = helpMenu->addAction("Discord");
+        connect(helpDiscord, &QAction::triggered, this, [] {
+            QDesktopServices::openUrl(
+                QUrl(LINK_CHATTERINO_DISCORD.toString()));
+        });
+    }
 }
 
 void Window::onAccountSelected()

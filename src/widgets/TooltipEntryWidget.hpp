@@ -22,6 +22,7 @@ public:
 
     void setImageScale(int w, int h);
     void setWordWrap(bool wrap);
+    void capTextWidth(int maxWidth);
 
     void setText(const QString &text);
     void setImage(ImagePtr image);

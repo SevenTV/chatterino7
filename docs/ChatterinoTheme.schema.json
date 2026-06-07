@@ -409,6 +409,40 @@
             "text": { "$ref": "#/definitions/qt-color" }
           },
           "required": ["background", "text"]
+        },
+        "ui": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "borderRadius": { "type": "integer" },
+            "spacing": { "type": "integer" },
+            "input": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "background": { "$ref": "#/definitions/qt-color" },
+                "backgroundHover": { "$ref": "#/definitions/qt-color" },
+                "backgroundFocus": { "$ref": "#/definitions/qt-color" },
+                "border": { "$ref": "#/definitions/qt-color" },
+                "borderBottom": { "$ref": "#/definitions/qt-color" },
+                "borderHover": { "$ref": "#/definitions/qt-color" },
+                "borderFocus": { "$ref": "#/definitions/qt-color" }
+              }
+            },
+            "button": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "background": { "$ref": "#/definitions/qt-color" },
+                "backgroundHover": { "$ref": "#/definitions/qt-color" },
+                "backgroundDown": { "$ref": "#/definitions/qt-color" },
+                "border": { "$ref": "#/definitions/qt-color" },
+                "borderBottom": { "$ref": "#/definitions/qt-color" },
+                "borderHover": { "$ref": "#/definitions/qt-color" },
+                "borderDown": { "$ref": "#/definitions/qt-color" }
+              }
+            }
+          }
         }
       },
       "required": [

@@ -161,6 +161,33 @@ public:
         QPixmap copy;
     } buttons;
 
+    struct {
+        int borderRadius{4};
+        int spacing{4};
+
+        struct {
+            QColor background;
+            QColor backgroundHover;
+            QColor backgroundFocus;
+            QColor border;
+            QColor borderBottom;
+            QColor borderHover;
+            QColor borderFocus;
+        } input;
+
+        struct {
+            QColor background;
+            QColor backgroundHover;
+            QColor backgroundDown;
+            QColor border;
+            QColor borderBottom;
+            QColor borderHover;
+            QColor borderDown;
+        } button;
+    } ui;
+
+    QString styleSheet;
+
     QPalette palette;
 
     void normalizeColor(QColor &color) const;

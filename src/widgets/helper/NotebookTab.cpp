@@ -20,6 +20,10 @@
 #include "widgets/splits/DraggedSplit.hpp"
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitContainer.hpp"
+#include "providers/kick/KickChannel.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
+#include "messages/Image.hpp"
+#include "common/Aliases.hpp"
 
 #include <boost/bind/bind.hpp>
 #include <boost/container_hash/hash.hpp>
@@ -32,6 +36,7 @@
 #include <QLineEdit>
 #include <QMimeData>
 #include <QPainter>
+#include <QPainterPath>
 
 #include <algorithm>
 
@@ -115,6 +120,8 @@ NotebookTab::NotebookTab(Notebook *notebook)
 
     this->setMouseTracking(true);
 
+    this->tooltipWidget_ = new TooltipWidget(this);
+
     this->menu_.addAction("Rename Tab", [this]() {
         this->showRenameDialog();
     });
@@ -166,6 +173,62 @@ NotebookTab::NotebookTab(Notebook *notebook)
     this->menu_.addSeparator();
 
     this->notebook_->addNotebookActionsToMenu(&this->menu_);
+
+    // Add split-specific actions dynamically before the menu shows
+    this->splitMenuSeparator_ = this->menu_.addSeparator();
+    this->splitMenuSeparator_->setVisible(false);
+    QObject::connect(&this->menu_, &QMenu::aboutToShow, this, [this] {
+        // Remove previously-added dynamic split actions
+        for (auto *action : this->dynamicSplitActions_)
+        {
+            this->menu_.removeAction(action);
+        }
+        this->dynamicSplitActions_.clear();
+        this->splitMenuSeparator_->setVisible(false);
+
+        auto *container = dynamic_cast<SplitContainer *>(this->page);
+        if (!container)
+        {
+            return;
+        }
+        auto *split = container->getSelectedSplit();
+        if (!split)
+        {
+            return;
+        }
+
+        this->splitMenuSeparator_->setVisible(true);
+
+        auto *changeChannel = this->menu_.addAction(
+            "Change channel",
+            getApp()->getHotkeys()->getDisplaySequence(
+                HotkeyCategory::Split, "changeChannel"),
+            split, &Split::changeChannel);
+        this->dynamicSplitActions_.append(changeChannel);
+
+        auto *closeSplit = this->menu_.addAction(
+            "Close split",
+            getApp()->getHotkeys()->getDisplaySequence(
+                HotkeyCategory::Split, "delete"),
+            split, &Split::deleteFromContainer);
+        this->dynamicSplitActions_.append(closeSplit);
+
+        auto *popup = this->menu_.addAction(
+            "Popup split",
+            getApp()->getHotkeys()->getDisplaySequence(
+                HotkeyCategory::Window, "popup", {{"split"}}),
+            split, &Split::popup);
+        this->dynamicSplitActions_.append(popup);
+
+        auto *search = this->menu_.addAction(
+            "Search",
+            getApp()->getHotkeys()->getDisplaySequence(
+                HotkeyCategory::Split, "showSearch"),
+            this, [split] {
+                split->showSearch(true);
+            });
+        this->dynamicSplitActions_.append(search);
+    });
 }
 
 void NotebookTab::recreateCloseMultipleTabsMenu(
@@ -427,12 +490,12 @@ int NotebookTab::normalTabWidthForHeight(int height) const
     if (this->hasXButton())
     {
         width = static_cast<int>(metrics.horizontalAdvance(this->getTitle()) +
-                                 (32 / compactDivider * scale));
+                                 (40 / compactDivider * scale));
     }
     else
     {
         width = static_cast<int>(metrics.horizontalAdvance(this->getTitle()) +
-                                 (16 / compactDivider * scale));
+                                 (24 / compactDivider * scale));
     }
 
     if (static_cast<float>(height) > 150 * scale)
@@ -586,6 +649,7 @@ void NotebookTab::updateHighlightStateDueSourcesChange()
         {
             this->highlightState_ = HighlightState::NewMessage;
             this->update();
+            this->notebook_->updateBadgeCount();
         }
     }
     else
@@ -594,6 +658,7 @@ void NotebookTab::updateHighlightStateDueSourcesChange()
         {
             this->highlightState_ = HighlightState::None;
             this->update();
+            this->notebook_->updateBadgeCount();
         }
     }
 
@@ -737,6 +802,7 @@ void NotebookTab::setHighlightState(HighlightState newHighlightStyle)
 
     this->highlightState_ = newHighlightStyle;
     this->update();
+    this->notebook_->updateBadgeCount();
 }
 
 void NotebookTab::updateHighlightState(HighlightState newHighlightStyle,
@@ -892,67 +958,64 @@ void NotebookTab::paintEvent(QPaintEvent *)
     }
 
     bool windowFocused = this->window() == QApplication::activeWindow();
+    float compactDivider = getCompactDivider(getSettings()->tabStyle);
 
-    QBrush tabBackground = /*this->mouseOver_ ? colors.backgrounds.hover
-                                 :*/
-        (windowFocused ? colors.backgrounds.regular
-                       : colors.backgrounds.unfocused);
+    int insetH = std::max(3, int(3 * scale));
+    int insetV = std::max(2, int(2 * scale));
+    QRect pillRect = this->rect().adjusted(insetH, insetV, -insetH, -insetV);
+    int radius = std::max(4, int(8 * scale));
 
-    auto selectionOffset = ceil((this->selected_ ? 0.f : 1.f) * scale);
+    painter.setRenderHint(QPainter::Antialiasing);
 
-    // fill the tab background
-    auto bgRect = this->rect();
-    switch (this->tabLocation_)
+    QPainterPath pillPath;
+    pillPath.addRoundedRect(pillRect, radius, radius);
+
+    if (this->selected_)
     {
-        case NotebookTabLocation::Top:
-            bgRect.setTop(selectionOffset);
-            break;
-        case NotebookTabLocation::Left:
-            bgRect.setLeft(selectionOffset);
-            break;
-        case NotebookTabLocation::Right:
-            bgRect.setRight(bgRect.width() - selectionOffset);
-            break;
-        case NotebookTabLocation::Bottom:
-            bgRect.setBottom(bgRect.height() - selectionOffset);
-            break;
+        painter.fillPath(pillPath,
+                         windowFocused ? colors.backgrounds.regular
+                                       : colors.backgrounds.unfocused);
     }
-
-    painter.fillRect(bgRect, tabBackground);
-
-    // draw color indicator line
-    auto lineThickness = ceil((this->selected_ ? 2.f : 1.f) * scale);
-    auto lineColor = this->mouseOver_ ? colors.line.hover
-                                      : (windowFocused ? colors.line.regular
-                                                       : colors.line.unfocused);
-
-    QRect lineRect;
-    switch (this->tabLocation_)
+    else if (this->highlightState_ == HighlightState::Highlighted)
     {
-        case NotebookTabLocation::Top:
-            lineRect =
-                QRect(bgRect.left(), bgRect.y(), bgRect.width(), lineThickness);
-            break;
-        case NotebookTabLocation::Left:
-            lineRect =
-                QRect(bgRect.x(), bgRect.top(), lineThickness, bgRect.height());
-            break;
-        case NotebookTabLocation::Right:
-            lineRect = QRect(bgRect.right() - lineThickness, bgRect.top(),
-                             lineThickness, bgRect.height());
-            break;
-        case NotebookTabLocation::Bottom:
-            lineRect = QRect(bgRect.left(), bgRect.bottom() - lineThickness,
-                             bgRect.width(), lineThickness);
-            break;
+        QColor bg = this->theme->tabs.highlighted.backgrounds.regular;
+        bg.setAlpha(100);
+        painter.fillPath(pillPath, bg);
     }
+    else if (this->highlightState_ == HighlightState::NewMessage)
+    {
+        QColor bg = this->theme->tabs.newMessage.backgrounds.regular;
+        bg.setAlpha(80);
+        painter.fillPath(pillPath, bg);
+    }
+    else if (this->mouseOver_)
+    {
+        QColor bg = colors.backgrounds.regular;
+        bg.setAlpha(70);
+        painter.fillPath(pillPath, bg);
+    }
+    if (!this->selected_ &&
+        this->highlightState_ != HighlightState::None)
+    {
+        QColor lineColor = (this->highlightState_ == HighlightState::Highlighted)
+                               ? this->theme->tabs.highlighted.line.regular
+                               : this->theme->tabs.newMessage.line.regular;
+        int lineH = std::max(2, int(2 * scale));
+        QRect lineRect(pillRect.left() + radius, pillRect.bottom() - lineH,
+                       pillRect.width() - 2 * radius, lineH);
 
-    painter.fillRect(lineRect, lineColor);
+        QPainterPath clipPath;
+        clipPath.addRoundedRect(pillRect, radius, radius);
+        clipPath.setCachingEnabled(true);
+        painter.save();
+        painter.setClipPath(clipPath);
+        painter.fillRect(lineRect, lineColor);
+        painter.restore();
+    }
 
     // draw live indicator
     if ((this->isLive_ || this->isRerun_) && getSettings()->showTabLive)
     {
-        // Live overrides rerun
         QBrush b;
         if (this->isLive_)
         {
@@ -965,7 +1028,6 @@ void NotebookTab::paintEvent(QPaintEvent *)
             b.setColor(this->theme->tabs.rerunIndicator);
         }
 
-        painter.setRenderHint(QPainter::Antialiasing);
         b.setStyle(Qt::SolidPattern);
         painter.setBrush(b);
 
@@ -973,26 +1035,20 @@ void NotebookTab::paintEvent(QPaintEvent *)
         auto y = 4 * scale;
         auto diameter = 4 * scale;
         QRect liveIndicatorRect(x, y, diameter, diameter);
-        translateRectForLocation(liveIndicatorRect, this->tabLocation_,
-                                 this->selected_ ? 0 : -1);
         painter.drawEllipse(liveIndicatorRect);
     }
 
     // set the pen color
     painter.setPen(colors.text);
 
-    float compactDivider = getCompactDivider(getSettings()->tabStyle);
     // set area for text
     int rectW =
         (!getSettings()->showTabCloseButton ? 0
                                             : int(16 * scale / compactDivider));
     QRect rect(0, 0, this->width() - rectW, height);
 
-    // draw text
     int offset = int(scale * 4 / compactDivider);
-    QRect textRect(offset, 0, this->width() - offset - offset, height);
-    translateRectForLocation(textRect, this->tabLocation_,
-                             this->selected_ ? -1 : -2);
+    QRect textRect(offset, -1, this->width() - offset - offset, height);
 
     if (this->shouldDrawXButton())
     {
@@ -1043,27 +1099,6 @@ void NotebookTab::paintEvent(QPaintEvent *)
         this->fancyPaint(painter);
     }
 
-    // draw line at border
-    if (!this->selected_ && this->isInLastRow_)
-    {
-        QRect borderRect;
-        switch (this->tabLocation_)
-        {
-            case NotebookTabLocation::Top:
-                borderRect = QRect(0, this->height() - 1, this->width(), 1);
-                break;
-            case NotebookTabLocation::Left:
-                borderRect = QRect(this->width() - 1, 0, 1, this->height());
-                break;
-            case NotebookTabLocation::Right:
-                borderRect = QRect(0, 0, 1, this->height());
-                break;
-            case NotebookTabLocation::Bottom:
-                borderRect = QRect(0, 0, this->width(), 1);
-                break;
-        }
-        painter.fillRect(borderRect, app->getThemes()->window.background);
-    }
 }
 
 bool NotebookTab::hasXButton() const
@@ -1173,6 +1208,214 @@ void NotebookTab::enterEvent(QEnterEvent *event)
 
     this->update();
 
+    if (!getSettings()->compactHeaders.getValue())
+    {
+        Button::enterEvent(event);
+        return;
+    }
+
+    auto showTooltip = [this](ImagePtr image, const QString &text) {
+        TooltipEntry entry;
+        entry.image = image;
+        entry.text = text;
+        float s = this->scale();
+        if (image)
+        {
+            entry.customWidth = static_cast<int>(200 * s);
+            entry.customHeight = static_cast<int>(113 * s);
+        }
+
+        this->tooltipWidget_->setOne(entry);
+
+        if (!image)
+        {
+            this->tooltipWidget_->capTextWidth(static_cast<int>(200 * s));
+        }
+
+        this->tooltipWidget_->adjustSize();
+
+        auto pos = this->mapToGlobal(
+            QPoint((this->width() - this->tooltipWidget_->width()) / 2,
+                   this->height() + 4));
+        this->tooltipWidget_->moveTo(pos,
+                                     widgets::BoundsChecking::CursorPosition);
+        this->tooltipWidget_->show();
+    };
+
+    if (auto *container = dynamic_cast<SplitContainer *>(this->page))
+    {
+        auto *split = container->getSelectedSplit();
+        if (!split && !container->getSplits().empty())
+        {
+            split = container->getSplits().front();
+        }
+
+        if (split)
+        {
+            auto selectedChannel = split->getSelectedChannel();
+            auto channelName = selectedChannel->getLocalizedName();
+            ImagePtr previewImage;
+            auto fsPx = [this](int base) -> QString {
+                return QString::number(
+                    std::max(8, static_cast<int>(base * this->scale())));
+            };
+            QString text =
+                QString("<span style='font-size:%1px;'><b>%2</b></span>")
+                    .arg(fsPx(12), channelName.toHtmlEscaped());
+
+            if (auto *twitchChannel =
+                    dynamic_cast<TwitchChannel *>(selectedChannel.get()))
+            {
+                const auto status = twitchChannel->accessStreamStatus();
+                auto statusColor = status->rerun ? "#ff9800" : "#f44336";
+                auto statusText = status->rerun ? "Rerun" : "Live";
+
+                if (status->live)
+                {
+                    text += QString("<span style='color:%1;'> &middot; %2</span>")
+                                .arg(statusColor, statusText);
+                    if (getSettings()->headerStreamTitle &&
+                        !status->title.isEmpty())
+                    {
+                        text += QString("<div style='margin-top:3px; font-size:%1px;'>%2</div>")
+                                    .arg(fsPx(11), status->title.toHtmlEscaped());
+                    }
+                    if (getSettings()->headerGame && !status->game.isEmpty())
+                    {
+                        text += QString("<div style='margin-top:1px; color:#aaa; font-size:%1px;'>%2</div>")
+                                    .arg(fsPx(10), status->game.toHtmlEscaped());
+                    }
+                    QString meta;
+                    if (getSettings()->headerUptime)
+                    {
+                        meta = status->uptime;
+                    }
+                    if (getSettings()->headerViewerCount)
+                    {
+                        if (!meta.isEmpty())
+                        {
+                            meta += " &middot; ";
+                        }
+                        meta += localizeNumbers(status->viewerCount) +
+                                " viewers";
+                    }
+                    if (!meta.isEmpty())
+                    {
+                        text += QString(
+                                    "<div style='margin-top:2px; color:#888; "
+                                    "font-size:%1px;'>%2</div>")
+                                    .arg(fsPx(10), meta);
+                    }
+
+                    QString previewUrl =
+                        QString("https://static-cdn.jtvnw.net/previews-ttv/"
+                                "live_user_%1-320x180.jpg")
+                            .arg(selectedChannel->getName().toLower());
+                    previewImage =
+                        Image::fromUrl(Url{previewUrl}, 1, QSize(320, 180));
+                }
+                else
+                {
+                    text += "<span style='color:#888;'> &middot; Offline</span>";
+                    if (getSettings()->headerStreamTitle &&
+                        !status->title.isEmpty())
+                    {
+                        text += QString("<div style='margin-top:3px; color:#aaa; font-size:%1px;'>%2</div>")
+                                    .arg(fsPx(11), status->title.toHtmlEscaped());
+                    }
+                }
+                showTooltip(previewImage, text);
+            }
+            else if (auto *kickChannel =
+                         dynamic_cast<KickChannel *>(selectedChannel.get()))
+            {
+                const auto &data = kickChannel->streamData();
+                if (data.isLive)
+                {
+                    text += "<span style='color:#f44336;'> &middot; Live</span>";
+                    if (getSettings()->headerStreamTitle &&
+                        !data.title.isEmpty())
+                    {
+                        text += QString("<div style='margin-top:3px; font-size:%1px;'>%2</div>")
+                                    .arg(fsPx(11), data.title.toHtmlEscaped());
+                    }
+                    if (getSettings()->headerGame && !data.category.isEmpty())
+                    {
+                        text += QString("<div style='margin-top:1px; color:#aaa; font-size:%1px;'>%2</div>")
+                                    .arg(fsPx(10), data.category.toHtmlEscaped());
+                    }
+                    QString meta;
+                    if (getSettings()->headerUptime)
+                    {
+                        meta = data.uptime;
+                    }
+                    if (getSettings()->headerViewerCount)
+                    {
+                        if (!meta.isEmpty())
+                        {
+                            meta += " &middot; ";
+                        }
+                        meta += localizeNumbers(data.viewerCount) +
+                                " viewers";
+                    }
+                    if (!meta.isEmpty())
+                    {
+                        text += QString(
+                                    "<div style='margin-top:2px; color:#888; "
+                                    "font-size:%1px;'>%2</div>")
+                                    .arg(fsPx(10), meta);
+                    }
+                }
+                else
+                {
+                    text += "<span style='color:#888;'> &middot; Offline</span>";
+                    if (getSettings()->headerStreamTitle &&
+                        !data.title.isEmpty())
+                    {
+                        text += QString("<div style='margin-top:3px; color:#aaa; font-size:%1px;'>%2</div>")
+                                    .arg(fsPx(11), data.title.toHtmlEscaped());
+                    }
+                }
+                showTooltip(previewImage, text);
+            }
+            else
+            {
+                auto typeName = [](Channel::Type t) -> QString {
+                    switch (t)
+                    {
+                        case Channel::Type::TwitchWhispers:
+                            return "Whispers";
+                        case Channel::Type::TwitchWatching:
+                            return "Watching";
+                        case Channel::Type::TwitchMentions:
+                            return "Mentions";
+                        case Channel::Type::TwitchLive:
+                            return "Live";
+                        case Channel::Type::TwitchAutomod:
+                            return "Automod";
+                        default:
+                            return "";
+                    }
+                };
+                auto extra = typeName(selectedChannel->getType());
+                if (!extra.isEmpty())
+                {
+                    text += QString("<span style='color:#888;'> &middot; %1</span>")
+                                .arg(extra);
+                }
+                showTooltip(nullptr, text);
+            }
+        }
+        else
+        {
+            showTooltip(nullptr, this->getTitle());
+        }
+    }
+    else
+    {
+        showTooltip(nullptr, this->getTitle());
+    }
+
     Button::enterEvent(event);
 }
 
@@ -1180,6 +1423,8 @@ void NotebookTab::leaveEvent(QEvent *event)
 {
     this->mouseOverX_ = false;
     this->mouseOver_ = false;
+
+    this->tooltipWidget_->hide();
 
     this->update();
 
@@ -1272,17 +1517,18 @@ void NotebookTab::mouseMoveEvent(QMouseEvent *event)
 void NotebookTab::wheelEvent(QWheelEvent *event)
 {
     const auto defaultMouseDelta = 120;
-    const auto verticalDelta = event->angleDelta().y();
-    const auto selectTab = [this](int delta) {
-        delta > 0 ? this->notebook_->selectPreviousTab()
-                  : this->notebook_->selectNextTab();
-    };
-    // If it's true
-    // Then the user uses the trackpad or perhaps the most accurate mouse
-    // Which has small delta.
-    if (std::abs(verticalDelta) < defaultMouseDelta)
+    int delta = event->angleDelta().y();
+    if (delta == 0)
     {
-        this->mouseWheelDelta_ += verticalDelta;
+        delta = event->angleDelta().x();
+    }
+    const auto selectTab = [this](int d) {
+        d > 0 ? this->notebook_->selectPreviousTab()
+              : this->notebook_->selectNextTab();
+    };
+    if (std::abs(delta) < defaultMouseDelta)
+    {
+        this->mouseWheelDelta_ += delta;
         if (std::abs(this->mouseWheelDelta_) >= defaultMouseDelta)
         {
             selectTab(this->mouseWheelDelta_);
@@ -1291,7 +1537,7 @@ void NotebookTab::wheelEvent(QWheelEvent *event)
     }
     else
     {
-        selectTab(verticalDelta);
+        selectTab(delta);
     }
 }
 
@@ -1306,18 +1552,13 @@ QRect NotebookTab::getXRect() const
     float s = this->scale();
     int size = static_cast<int>(16 * s);
 
-    int centerAdjustment = this->tabLocation_ == NotebookTabLocation::Top
-                               ? (size / 3)   // slightly off true center
-                               : (size / 2);  // true center
+    int centerAdjustment = size / 2;  // true center for all tab locations
 
-    float compactReducer = getCompactReducer(getSettings()->tabStyle);
-    QRect xRect(rect.right() - static_cast<int>((20 - compactReducer) * s),
+    int insetH = std::max(3, static_cast<int>(3 * s));
+    int rightMargin = insetH + static_cast<int>(2 * s);
+
+    QRect xRect(rect.right() - rightMargin - size,
                 rect.center().y() - centerAdjustment, size, size);
-
-    if (this->selected_)
-    {
-        translateRectForLocation(xRect, this->tabLocation_, 1);
-    }
 
     return xRect;
 }

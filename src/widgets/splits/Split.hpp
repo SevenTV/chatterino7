@@ -203,6 +203,8 @@ public Q_SLOTS:
     void openChatterList();
     void openSubPage();
     void reconnect();
+    void showHeaderModeMenu(QPoint globalPos);
+    void showHeaderDropdown();
 };
 
 }  // namespace chatterino

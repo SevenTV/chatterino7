@@ -133,7 +133,7 @@ bool ResizingTextEdit::eventFilter(QObject *obj, QEvent *event)
     {
         return false;
     }
-    return true;
+    return false;
 }
 void ResizingTextEdit::keyPressEvent(QKeyEvent *event)
 {

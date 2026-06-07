@@ -28,6 +28,7 @@
 #include <QActionGroup>
 #include <QDebug>
 #include <QFile>
+#include <QGuiApplication>
 #include <QFormLayout>
 #include <QLayout>
 #include <QList>
@@ -370,6 +371,8 @@ void Notebook::select(QWidget *page, bool focusPage)
 
     this->selectedPage_ = page;
 
+    this->pageSelected.invoke();
+
     this->performLayout();
     this->updateTabVisibility();
 }
@@ -538,6 +541,20 @@ void Notebook::selectLastTab(bool focusPage)
 int Notebook::getPageCount() const
 {
     return this->items_.count();
+}
+
+void Notebook::updateBadgeCount()
+{
+    int highlighted = 0;
+    for (const auto &item : this->items_)
+    {
+        if (item.tab &&
+            item.tab->highlightState() == HighlightState::Highlighted)
+        {
+            ++highlighted;
+        }
+    }
+    qApp->setBadgeNumber(highlighted);
 }
 
 QWidget *Notebook::getPageAt(int index) const
@@ -709,7 +726,7 @@ void Notebook::setShowAddButton(bool value)
 
 void Notebook::resizeAddButton()
 {
-    int h = static_cast<int>((NOTEBOOK_TAB_HEIGHT - 1) * this->scale());
+    int h = static_cast<int>(28 * this->scale());
     this->addButton_->setFixedSize(h, h);
 }
 
@@ -763,8 +780,8 @@ void Notebook::performLayout(bool animated)
         .addButtonWidth = this->showAddButton_ ? tabHeight : 0,
         .lineThickness = static_cast<int>(2 * scale),
         .tabSpacer = std::max(1, static_cast<int>(scale)),
-        .buttonWidth = tabHeight,
-        .buttonHeight = tabHeight - 1,
+        .buttonWidth = static_cast<int>(28 * scale),
+        .buttonHeight = static_cast<int>(28 * scale),
         .items = filteredItems,
     };
 
@@ -803,6 +820,8 @@ void Notebook::performHorizontalLayout(const LayoutContext &ctx, bool animated)
     auto consumedButtonHeights = 0;
 
     // set size of custom buttons (settings, user, ...)
+    const auto buttonYOffset =
+        (ctx.tabHeight - ctx.buttonHeight) / 2;
     for (auto *btn : this->customButtons_)
     {
         // We use isHidden here since the layout can happen when the button has
@@ -813,7 +832,7 @@ void Notebook::performHorizontalLayout(const LayoutContext &ctx, bool animated)
         }
 
         btn->setFixedSize(ctx.buttonWidth, ctx.buttonHeight);
-        btn->move(x, y);
+        btn->move(x, y + buttonYOffset);
         x += ctx.buttonWidth;
 
         consumedButtonHeights = ctx.tabHeight;
@@ -862,7 +881,9 @@ void Notebook::performHorizontalLayout(const LayoutContext &ctx, bool animated)
         // move misc buttons
         if (this->showAddButton_)
         {
-            this->addButton_->move(x, y);
+            const auto addBtnYOffset =
+                (ctx.tabHeight - this->addButton_->height()) / 2;
+            this->addButton_->move(x, y + addBtnYOffset + 1);
         }
 
         if (!isBottom)
@@ -922,6 +943,9 @@ void Notebook::performVerticalLayout(const LayoutContext &ctx, bool animated)
 
     const bool isRight = this->tabLocation_ == NotebookTabLocation::Right;
 
+    const auto buttonXOffset =
+        (ctx.tabHeight - ctx.buttonWidth) / 2;
+
     if (isRight)
     {
         x = ctx.right;
@@ -938,7 +962,7 @@ void Notebook::performVerticalLayout(const LayoutContext &ctx, bool animated)
 
             x -= ctx.buttonWidth;
             btn->setFixedSize(ctx.buttonWidth, ctx.buttonHeight);
-            btn->move(x, y);
+            btn->move(x, y + buttonXOffset);
         }
 
         consumedButtonWidths = ctx.right - x;
@@ -957,7 +981,7 @@ void Notebook::performVerticalLayout(const LayoutContext &ctx, bool animated)
             }
 
             btn->setFixedSize(ctx.buttonWidth, ctx.buttonHeight);
-            btn->move(x, y);
+            btn->move(x, y + buttonXOffset);
             x += ctx.buttonWidth;
         }
 
@@ -1142,9 +1166,10 @@ void Notebook::paintEvent(QPaintEvent *event)
     if (this->tabLocation_ == NotebookTabLocation::Top ||
         this->tabLocation_ == NotebookTabLocation::Bottom)
     {
-        /// horizontal line
-        painter.fillRect(0, this->lineOffset_, this->width(), int(2 * scale),
-                         this->theme->tabs.dividerLine);
+        QColor divColor = this->theme->tabs.dividerLine;
+        divColor.setAlpha(25);
+        painter.fillRect(0, this->lineOffset_, this->width(),
+                         std::max(1, int(scale)), divColor);
     }
     else if (this->tabLocation_ == NotebookTabLocation::Left ||
              this->tabLocation_ == NotebookTabLocation::Right)
@@ -1154,7 +1179,8 @@ void Notebook::paintEvent(QPaintEvent *event)
             if (this->tabLocation_ == NotebookTabLocation::Left)
             {
                 painter.fillRect(0, int(NOTEBOOK_TAB_HEIGHT * scale),
-                                 this->lineOffset_, int(2 * scale),
+                                 this->lineOffset_,
+                                 std::max(1, int(scale)),
                                  this->theme->tabs.dividerLine);
             }
             else
@@ -1162,12 +1188,14 @@ void Notebook::paintEvent(QPaintEvent *event)
                 painter.fillRect(this->lineOffset_,
                                  int(NOTEBOOK_TAB_HEIGHT * scale),
                                  this->width() - this->lineOffset_,
-                                 int(2 * scale), this->theme->tabs.dividerLine);
+                                 std::max(1, int(scale)),
+                                 this->theme->tabs.dividerLine);
             }
         }
 
         /// vertical line
-        painter.fillRect(this->lineOffset_, 0, int(2 * scale), this->height(),
+        painter.fillRect(this->lineOffset_, 0,
+                         std::max(1, int(scale)), this->height(),
                          this->theme->tabs.dividerLine);
     }
 }
@@ -1467,7 +1495,11 @@ void SplitNotebook::addCustomButtons()
         .light = ":/buttons/settings-lightMode.svg",
     });
 
+#ifdef Q_OS_MACOS
+    settingsBtn->setPadding({2, 2});
+#else
     settingsBtn->setPadding({0, 0});
+#endif
 
     // This is to ensure you can't lock yourself out of the settings
     if (getApp()->getArgs().safeMode)
@@ -1502,7 +1534,11 @@ void SplitNotebook::addCustomButtons()
         .light = ":/buttons/account-lightMode.svg",
     });
 
+#ifdef Q_OS_MACOS
+    userBtn->setPadding({2, 2});
+#else
     userBtn->setPadding({0, 0});
+#endif
 
     userBtn->setVisible(!getSettings()->hideUserButton.getValue());
     getSettings()->hideUserButton.connect(

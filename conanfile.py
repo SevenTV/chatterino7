@@ -22,16 +22,16 @@ class Chatterino(ConanFile):
     generators = "CMakeDeps"
 
     def requirements(self):
-        self.requires("boost/1.90.0")
+        self.requires("boost/1.91.0")
 
         if self.settings.os != "Windows":
             return
 
-        self.requires("libavif/1.4.1")
+        self.requires("libavif/1.4.2")
         if self.options.get_safe("with_benchmark", False):
-            self.requires("benchmark/1.9.0")
+            self.requires("benchmark/1.9.5")
 
-        self.requires("openssl/3.6.1")
+        self.requires("openssl/3.6.2")
         self.requires("hunspell/1.7.2")
 
     def generate(self):

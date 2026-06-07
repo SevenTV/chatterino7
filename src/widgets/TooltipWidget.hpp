@@ -45,6 +45,7 @@ public:
              TooltipStyle style = TooltipStyle::Vertical);
 
     void setWordWrap(bool wrap);
+    void capTextWidth(int maxWidth);
     void clearEntries();
 
 protected:

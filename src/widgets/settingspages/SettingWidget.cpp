@@ -27,15 +27,6 @@
 
 #include <algorithm>
 
-namespace {
-
-constexpr int MAX_TOOLTIP_LINE_LENGTH = 50;
-const auto MAX_TOOLTIP_LINE_LENGTH_PATTERN =
-    QStringLiteral(R"(.{%1}\S*\K(\s+))").arg(MAX_TOOLTIP_LINE_LENGTH);
-const QRegularExpression MAX_TOOLTIP_LINE_LENGTH_REGEX(
-    MAX_TOOLTIP_LINE_LENGTH_PATTERN);
-
-}  // namespace
 
 namespace chatterino {
 
@@ -535,30 +526,28 @@ SettingWidget *SettingWidget::setTooltip(QString tooltip)
 {
     assert(!tooltip.isEmpty());
 
-    if (tooltip.length() > MAX_TOOLTIP_LINE_LENGTH)
-    {
-        // match MAX_TOOLTIP_LINE_LENGTH characters, any remaining
-        // non-space, and then capture the following space for
-        // replacement with newline
-        tooltip.replace(MAX_TOOLTIP_LINE_LENGTH_REGEX, "\n");
-    }
+    const QString htmlTip =
+        QStringLiteral(
+            "<p style='max-width:380px; white-space:normal; "
+            "margin:0; padding:0;'>%1</p>")
+            .arg(tooltip.toHtmlEscaped());
 
     int sz = 0;
     if (this->label != nullptr)
     {
-        this->label->setToolTip(tooltip);
+        this->label->setToolTip(htmlTip);
         sz = this->label->sizeHint().height();
     }
 
     if (this->actionWidget != nullptr)
     {
-        this->actionWidget->setToolTip(tooltip);
+        this->actionWidget->setToolTip(htmlTip);
         sz = std::max(sz, this->actionWidget->sizeHint().height());
     }
 
     this->tooltipIcon->setVisible(true);
     this->tooltipIcon->load(u":/settings/hint.svg"_qs);
-    this->tooltipIcon->setToolTip(tooltip);
+    this->tooltipIcon->setToolTip(htmlTip);
     auto *r = this->tooltipIcon->renderer();
     auto vb = r->viewBox();
     this->tooltipIcon->setFixedHeight(sz);

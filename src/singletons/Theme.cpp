@@ -21,6 +21,7 @@
 #include <QSet>
 #include <QStyleHints>
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 
@@ -212,12 +213,114 @@ void parseSplits(const QJsonObject &splits, const QJsonObject &splitsFallback,
     }
 }
 
+void parseUi(const QJsonObject &ui, const QJsonObject &uiFallback,
+             chatterino::Theme &theme)
+{
+    auto getInt = [&](const QLatin1String key, int fallback) -> int {
+        auto v = ui[key];
+        if (v.isDouble())
+            return v.toInt();
+        auto vf = uiFallback[key];
+        if (vf.isDouble())
+            return vf.toInt();
+        return fallback;
+    };
+
+    theme.ui.borderRadius = getInt("borderRadius"_L1, 4);
+    theme.ui.spacing = getInt("spacing"_L1, 4);
+
+    {
+        const auto input = ui["input"_L1].toObject();
+        const auto inputFallback = uiFallback["input"_L1].toObject();
+        parseInto(input, inputFallback, "background"_L1,
+                  theme.ui.input.background);
+        parseInto(input, inputFallback, "backgroundHover"_L1,
+                  theme.ui.input.backgroundHover);
+        parseInto(input, inputFallback, "backgroundFocus"_L1,
+                  theme.ui.input.backgroundFocus);
+        parseInto(input, inputFallback, "border"_L1, theme.ui.input.border);
+        parseInto(input, inputFallback, "borderBottom"_L1,
+                  theme.ui.input.borderBottom);
+        parseInto(input, inputFallback, "borderHover"_L1,
+                  theme.ui.input.borderHover);
+        parseInto(input, inputFallback, "borderFocus"_L1,
+                  theme.ui.input.borderFocus);
+    }
+
+    {
+        const auto button = ui["button"_L1].toObject();
+        const auto buttonFallback = uiFallback["button"_L1].toObject();
+        parseInto(button, buttonFallback, "background"_L1,
+                  theme.ui.button.background);
+        parseInto(button, buttonFallback, "backgroundHover"_L1,
+                  theme.ui.button.backgroundHover);
+        parseInto(button, buttonFallback, "backgroundDown"_L1,
+                  theme.ui.button.backgroundDown);
+        parseInto(button, buttonFallback, "border"_L1,
+                  theme.ui.button.border);
+        parseInto(button, buttonFallback, "borderBottom"_L1,
+                  theme.ui.button.borderBottom);
+        parseInto(button, buttonFallback, "borderHover"_L1,
+                  theme.ui.button.borderHover);
+        parseInto(button, buttonFallback, "borderDown"_L1,
+                  theme.ui.button.borderDown);
+    }
+
+    auto shift = [](QColor c, int amt) {
+        c.setRed(std::clamp(c.red() + amt, 0, 255));
+        c.setGreen(std::clamp(c.green() + amt, 0, 255));
+        c.setBlue(std::clamp(c.blue() + amt, 0, 255));
+        return c;
+    };
+    const bool isLight = theme.isLightTheme();
+
+    if (!theme.ui.input.background.isValid())
+        theme.ui.input.background = theme.splits.input.background;
+    if (!theme.ui.input.backgroundHover.isValid())
+        theme.ui.input.backgroundHover =
+            shift(theme.ui.input.background, isLight ? -5 : 5);
+    if (!theme.ui.input.backgroundFocus.isValid())
+        theme.ui.input.backgroundFocus =
+            shift(theme.ui.input.background, isLight ? 4 : -10);
+    if (!theme.ui.input.border.isValid())
+        theme.ui.input.border = shift(theme.ui.input.background, isLight ? -12 : -3);
+    if (!theme.ui.input.borderBottom.isValid())
+        theme.ui.input.borderBottom =
+            shift(theme.ui.input.background, isLight ? -80 : 80);
+    if (!theme.ui.input.borderHover.isValid())
+        theme.ui.input.borderHover = theme.tabs.dividerLine;
+    if (!theme.ui.input.borderFocus.isValid())
+        theme.ui.input.borderFocus = theme.accent;
+
+    if (!theme.ui.button.background.isValid())
+        theme.ui.button.background = theme.splits.header.background;
+    if (!theme.ui.button.backgroundHover.isValid())
+        theme.ui.button.backgroundHover =
+            shift(theme.ui.button.background, isLight ? -5 : 5);
+    if (!theme.ui.button.backgroundDown.isValid())
+        theme.ui.button.backgroundDown =
+            shift(theme.ui.button.background, isLight ? -10 : -5);
+    if (!theme.ui.button.border.isValid())
+        theme.ui.button.border = shift(theme.ui.button.background, isLight ? -12 : -3);
+    if (!theme.ui.button.borderBottom.isValid())
+        theme.ui.button.borderBottom =
+            shift(theme.ui.button.background, isLight ? -20 : -6);
+    if (!theme.ui.button.borderHover.isValid())
+        theme.ui.button.borderHover = theme.ui.button.border;
+    if (!theme.ui.button.borderDown.isValid())
+        theme.ui.button.borderDown = theme.ui.button.border;
+}
+
 void parseColors(const QJsonObject &root, const QJsonObject &fallbackTheme,
                  chatterino::Theme &theme)
 {
     const auto colors = root["colors"_L1].toObject();
     const auto fallbackColors = fallbackTheme["colors"_L1].toObject();
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+    // Qt 6.6+: derive accent from system palette when not specified
+    theme.accent = QApplication::palette().accent().color();
+#endif
     parseInto(colors, fallbackColors, "accent"_L1, theme.accent);
 
     parseWindow(colors["window"_L1].toObject(),
@@ -233,6 +336,8 @@ void parseColors(const QJsonObject &root, const QJsonObject &fallbackTheme,
                     fallbackColors["scrollbars"_L1].toObject(), theme);
     parseSplits(colors["splits"_L1].toObject(),
                 fallbackColors["splits"_L1].toObject(), theme);
+    parseUi(colors["ui"_L1].toObject(),
+            fallbackColors["ui"_L1].toObject(), theme);
 }
 #undef parseColor
 #undef _c2StringLit
@@ -419,6 +524,22 @@ void Theme::update()
     this->parseFrom(*themeJSON, isCustomTheme);
     this->currentThemePath_ = themePath;
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+    // sync color scheme with Qt style hints
+    {
+        auto *hints = QApplication::styleHints();
+        if (this->isSystemTheme())
+        {
+            hints->setColorScheme(Qt::ColorScheme::Unknown);
+        }
+        else
+        {
+            hints->setColorScheme(this->isLight_ ? Qt::ColorScheme::Light
+                                                 : Qt::ColorScheme::Dark);
+        }
+    }
+#endif
+
     auto parseTs = double(timer.nsecsElapsed()) * nsToMs;
 
     this->updated.invoke();
@@ -543,6 +664,202 @@ void Theme::parseFrom(const QJsonObject &root, bool isCustomTheme)
         this->isLightTheme()
             ? u"#68B1FF"_s
             : this->tabs.selected.backgrounds.regular.name(QColor::HexArgb));
+
+    const auto hex = [](const QColor &c) { return c.name(QColor::HexArgb); };
+    const int br = this->ui.borderRadius;
+    const int sp = this->ui.spacing;
+
+    this->styleSheet = QStringLiteral(R"(
+QLineEdit {
+    background-color: %1;
+    border: 1px solid %2;
+    border-bottom: 1px solid %3;
+    border-radius: %4px;
+    padding: %5px %6px;
+    color: %7;
+    selection-background-color: %8;
+}
+QLineEdit:hover {
+    background-color: %9;
+}
+QLineEdit:focus {
+    background-color: %10;
+    border-bottom: 2px solid %11;
+}
+
+QComboBox, QDateTimeEdit {
+    background-color: %1;
+    border: 1px solid %2;
+    border-bottom: 1px solid %3;
+    border-radius: %4px;
+    padding: %5px %6px;
+    padding-left: 10px;
+    color: %7;
+    min-height: 24px;
+}
+QComboBox:hover, QDateTimeEdit:hover {
+    background-color: %9;
+}
+QComboBox:focus, QDateTimeEdit:focus {
+    background-color: %10;
+    border-bottom: 2px solid %11;
+}
+QComboBox::drop-down, QDateTimeEdit::drop-down {
+    border: none;
+    width: 22px;
+}
+QComboBox QAbstractItemView {
+    outline: 0px;
+    background-color: %1;
+    border: 1px solid %2;
+    border-radius: %4px;
+    padding: 2px;
+    margin-top: 2px;
+}
+QComboBox QAbstractItemView::item {
+    border-radius: %4px;
+    min-height: 26px;
+    color: %7;
+    padding-left: 6px;
+}
+QComboBox QAbstractItemView::item:selected {
+    background-color: %8;
+    color: %7;
+}
+
+QPushButton {
+    background-color: %12;
+    border: 1px solid %13;
+    border-bottom: 1px solid %14;
+    border-radius: %4px;
+    padding: %5px %6px;
+    color: %7;
+    min-height: 24px;
+}
+QPushButton:hover {
+    background-color: %15;
+    border: 1px solid %16;
+    border-bottom: 1px solid %14;
+}
+QPushButton:pressed {
+    background-color: %17;
+    border: 1px solid %18;
+    border-bottom: 1px solid %18;
+}
+QPushButton:disabled {
+    background-color: %1;
+    color: %19;
+}
+
+QGroupBox {
+    background: transparent;
+    border: 1px solid %2;
+    border-radius: %4px;
+    padding-top: %6px;
+    padding-bottom: %5px;
+    margin-top: %6px;
+    font-weight: bold;
+    color: %7;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: %5px;
+    top: 0px;
+}
+
+QSlider::groove:horizontal {
+    height: 4px;
+    background-color: %20;
+    border-radius: 2px;
+}
+QSlider::sub-page:horizontal {
+    background-color: %11;
+    border-radius: 2px;
+}
+QSlider::add-page:horizontal {
+    background-color: %20;
+    border-radius: 2px;
+}
+QSlider::handle:horizontal {
+    background-color: %11;
+    border: 5px solid %21;
+    width: 9px;
+    height: 9px;
+    margin: -7px 0;
+    border-radius: 9px;
+}
+QSlider::handle:horizontal:hover {
+    border: 4px solid %21;
+    width: 11px;
+    height: 11px;
+    margin: -7px 0;
+    border-radius: 9px;
+}
+QSlider::handle:horizontal:pressed {
+    border: 6px solid %21;
+    width: 7px;
+    height: 7px;
+    margin: -7px 0;
+    border-radius: 9px;
+}
+QSlider::groove:vertical {
+    width: 4px;
+    background-color: %20;
+    border-radius: 2px;
+}
+QSlider::sub-page:vertical {
+    background-color: %20;
+    border-radius: 2px;
+}
+QSlider::add-page:vertical {
+    background-color: %11;
+    border-radius: 2px;
+}
+QSlider::handle:vertical {
+    background-color: %11;
+    border: 5px solid %21;
+    width: 9px;
+    height: 9px;
+    margin: 0 -7px;
+    border-radius: 9px;
+}
+QSlider::handle:vertical:hover {
+    border: 4px solid %21;
+    width: 11px;
+    height: 11px;
+    margin: 0 -7px;
+    border-radius: 9px;
+}
+QSlider::handle:vertical:pressed {
+    border: 6px solid %21;
+    width: 7px;
+    height: 7px;
+    margin: 0 -7px;
+    border-radius: 9px;
+}
+)").arg(
+        hex(this->ui.input.background),
+        hex(this->ui.input.border),
+        hex(this->ui.input.borderBottom),
+        QString::number(br),
+        QString::number(sp),
+        QString::number(sp + 2),
+        hex(this->window.text),
+        hex(this->tabs.selected.backgrounds.regular),
+        hex(this->ui.input.backgroundHover),
+        hex(this->ui.input.backgroundFocus),
+        hex(this->ui.input.borderFocus),
+        hex(this->ui.button.background),
+        hex(this->ui.button.border),
+        hex(this->ui.button.borderBottom),
+        hex(this->ui.button.backgroundHover),
+        hex(this->ui.button.borderHover),
+        hex(this->ui.button.backgroundDown),
+        hex(this->ui.button.borderDown),
+        hex(this->tabs.regular.text),
+        hex(this->ui.input.borderBottom),
+        hex(this->ui.button.border)
+    );
 
     // Usercard buttons
     if (this->isLightTheme())

@@ -41,6 +41,22 @@ void TooltipEntryWidget::setWordWrap(bool wrap)
     this->displayText_->setWordWrap(wrap);
 }
 
+void TooltipEntryWidget::capTextWidth(int maxWidth)
+{
+    int natural = this->displayText_->sizeHint().width();
+    this->displayText_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    if (natural <= maxWidth)
+    {
+        this->displayText_->setFixedWidth(natural);
+        this->displayText_->setWordWrap(false);
+    }
+    else
+    {
+        this->displayText_->setFixedWidth(maxWidth);
+        this->displayText_->setWordWrap(true);
+    }
+}
+
 void TooltipEntryWidget::setImageScale(int w, int h)
 {
     if (this->customSize == QSize{w, h})
@@ -48,6 +64,19 @@ void TooltipEntryWidget::setImageScale(int w, int h)
         return;
     }
     this->customSize = QSize{w, h};
+    if (w > 0)
+    {
+        this->displayText_->setFixedWidth(w);
+        this->displayText_->setWordWrap(true);
+        this->displayText_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    }
+    else
+    {
+        this->displayText_->setMinimumWidth(0);
+        this->displayText_->setMaximumWidth(QWIDGETSIZE_MAX);
+        this->displayText_->setWordWrap(false);
+        this->displayText_->setAlignment(Qt::AlignHCenter);
+    }
     this->refreshPixmap();
 }
 

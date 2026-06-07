@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "widgets/splits/SplitHeader.hpp"
+#include "widgets/splits/RoomModeHelpers.hpp"
 
 #include "Application.hpp"
 #include "common/network/NetworkCommon.hpp"
@@ -53,94 +54,10 @@ using namespace chatterino;
 constexpr const int BUTTON_WIDTH = 28;
 
 /// The width of the "Add split" button.
-///
-/// This matches the scrollbar's full width.
 constexpr const int ADD_SPLIT_BUTTON_WIDTH = 16;
 
 // 5 minutes
 constexpr const qint64 THUMBNAIL_MAX_AGE_MS = 5LL * 60 * 1000;
-
-auto formatRoomModeUnclean(const TwitchChannel::RoomModes &modes) -> QString
-{
-    QString text;
-
-    if (modes.r9k)
-    {
-        text += "r9k, ";
-    }
-    if (modes.slowMode > 0)
-    {
-        text += QString("slow(%1), ").arg(localizeNumbers(modes.slowMode));
-    }
-    if (modes.emoteOnly)
-    {
-        text += "emote, ";
-    }
-    if (modes.submode)
-    {
-        text += "sub, ";
-    }
-    if (modes.followerOnly != -1)
-    {
-        if (modes.followerOnly != 0)
-        {
-            text += QString("follow(%1), ")
-                        .arg(formatDurationExact(
-                            std::chrono::minutes{modes.followerOnly}));
-        }
-        else
-        {
-            text += QString("follow, ");
-        }
-    }
-
-    return text;
-}
-
-QString formatRoomModeUnclean(const KickChannel::RoomModes &modes)
-{
-    TwitchChannel::RoomModes twitch{
-        .submode = modes.subscribersMode,
-        .r9k = false,
-        .emoteOnly = modes.emotesMode,
-        .followerOnly = -1,
-        .slowMode = 0,
-    };
-    if (modes.followersModeDuration)
-    {
-        twitch.followerOnly =
-            static_cast<int>(modes.followersModeDuration->count());
-    }
-    if (modes.slowModeDuration)
-    {
-        twitch.slowMode = static_cast<int>(modes.slowModeDuration->count());
-    }
-    return formatRoomModeUnclean(twitch);
-}
-
-void cleanRoomModeText(QString &text, bool hasModRights)
-{
-    if (text.length() > 2)
-    {
-        text = text.mid(0, text.size() - 2);
-    }
-
-    if (!text.isEmpty())
-    {
-        static QRegularExpression commaReplacement("^(.+?, .+?,) (.+)$");
-
-        auto match = commaReplacement.match(text);
-        if (match.hasMatch())
-        {
-            text = match.captured(1) + '\n' + match.captured(2);
-        }
-    }
-
-    if (text.isEmpty() && hasModRights)
-    {
-        text = "none";
-    }
-}
 
 auto formatTooltip(const TwitchChannel::StreamStatus &s, QString thumbnail,
                    bool limitSize = false)
@@ -278,6 +195,92 @@ auto distance(QPoint a, QPoint b)
 }
 
 }  // namespace
+
+namespace chatterino {
+
+QString formatRoomModeUnclean(const TwitchChannel::RoomModes &modes)
+{
+    QString text;
+
+    if (modes.r9k)
+    {
+        text += "r9k, ";
+    }
+    if (modes.slowMode > 0)
+    {
+        text += QString("slow(%1), ").arg(localizeNumbers(modes.slowMode));
+    }
+    if (modes.emoteOnly)
+    {
+        text += "emote, ";
+    }
+    if (modes.submode)
+    {
+        text += "sub, ";
+    }
+    if (modes.followerOnly != -1)
+    {
+        if (modes.followerOnly != 0)
+        {
+            text += QString("follow(%1), ")
+                        .arg(formatDurationExact(
+                            std::chrono::minutes{modes.followerOnly}));
+        }
+        else
+        {
+            text += QString("follow, ");
+        }
+    }
+
+    return text;
+}
+
+QString formatRoomModeUnclean(const KickChannel::RoomModes &modes)
+{
+    TwitchChannel::RoomModes twitch{
+        .submode = modes.subscribersMode,
+        .r9k = false,
+        .emoteOnly = modes.emotesMode,
+        .followerOnly = -1,
+        .slowMode = 0,
+    };
+    if (modes.followersModeDuration)
+    {
+        twitch.followerOnly =
+            static_cast<int>(modes.followersModeDuration->count());
+    }
+    if (modes.slowModeDuration)
+    {
+        twitch.slowMode = static_cast<int>(modes.slowModeDuration->count());
+    }
+    return formatRoomModeUnclean(twitch);
+}
+
+void cleanRoomModeText(QString &text, bool hasModRights)
+{
+    if (text.length() > 2)
+    {
+        text = text.mid(0, text.size() - 2);
+    }
+
+    if (!text.isEmpty())
+    {
+        static QRegularExpression commaReplacement("^(.+?, .+?,) (.+)$");
+
+        auto match = commaReplacement.match(text);
+        if (match.hasMatch())
+        {
+            text = match.captured(1) + '\n' + match.captured(2);
+        }
+    }
+
+    if (text.isEmpty() && hasModRights)
+    {
+        text = "none";
+    }
+}
+
+}  // namespace chatterino
 
 namespace chatterino {
 
@@ -887,6 +890,25 @@ void SplitHeader::updateRoomModes()
     else
     {
         this->modeButton_->hide();
+    }
+}
+
+void SplitHeader::showDropdown()
+{
+    auto menu = this->createMainMenu();
+    menu->exec(QCursor::pos());
+}
+
+void SplitHeader::showModeMenu(QPoint globalPos)
+{
+    if (!this->modeButton_)
+    {
+        return;
+    }
+    QMenu *m = this->modeButton_->menu();
+    if (m)
+    {
+        m->exec(globalPos);
     }
 }
 

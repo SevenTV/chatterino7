@@ -304,6 +304,11 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "indicate one of the channels in the tab is live.")
         ->addTo(layout);
 
+    SettingWidget::checkbox("Compact headers", s.compactHeaders)
+        ->setTooltip("Combines the split header into the titlebar for a "
+                     "cleaner look. Hover over tabs to see stream info.")
+        ->addTo(layout);
+
     layout.addTitle("Chat");
 
     layout.addDropdown<float>(

@@ -49,7 +49,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     this->setWindowFlags(this->windowFlags() &
                          ~Qt::WindowContextHelpButtonHint);
 
-    this->resize(915, 600);
+    this->resize(960, 640);
+    this->setMinimumSize(760, 520);
     this->themeChangedEvent();
     QFile styleFile(":/qss/settings.qss");
     if (!styleFile.open(QFile::ReadOnly))
@@ -270,7 +271,7 @@ void SettingsDialog::addTab(std::function<SettingsPage *()> page,
 {
     auto *tab =
         new SettingsDialogTab(this, std::move(page), name, iconPath, id);
-    tab->setFixedHeight(static_cast<int>(30 * this->dpi_));
+    tab->setFixedHeight(static_cast<int>(32 * this->dpi_));
 
     this->ui_.tabContainer->addWidget(tab, 0, alignment);
     this->tabs_.push_back(tab);
@@ -301,13 +302,9 @@ void SettingsDialog::selectTab(SettingsDialogTab *tab, bool byUser)
     if (this->selectedTab_ != nullptr)
     {
         this->selectedTab_->setSelected(false);
-        this->selectedTab_->setStyleSheet("color: #FFF");
     }
 
     tab->setSelected(true);
-    tab->setStyleSheet(
-        "background: #222; color: #4FC3F7;"  // Should this be same as accent color?
-        "/*border: 1px solid #555; border-right: none;*/");
     this->selectedTab_ = tab;
     if (byUser)
     {
@@ -417,7 +414,7 @@ void SettingsDialog::scaleChangedEvent(float newScale)
 
     for (SettingsDialogTab *tab : this->tabs_)
     {
-        tab->setFixedHeight(30);
+        tab->setFixedHeight(32);
     }
 
     if (this->ui_.tabContainerContainer)

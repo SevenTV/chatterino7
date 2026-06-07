@@ -6,6 +6,7 @@
 
 #include "singletons/Theme.hpp"
 
+
 #include <QSvgRenderer>
 
 namespace chatterino {
@@ -81,15 +82,12 @@ void SvgButton::paintContent(QPainter &painter)
 
     if (this->color_.has_value())
     {
+        // Set the composition mode so that the upcoming color fill only applies
+        // the color on top of the pre-existing SVG contents.
+        // More info: https://doc.qt.io/qt-6/qpainter.html#CompositionMode-enum
         painter.save();
-
-        // Set the composition mode so that the upcoming color fill only applies the color
-        // on top of the pre-existing SVG contents
-        //
-        // More info on how the composition modes work can be found here: https://doc.qt.io/qt-6/qpainter.html#CompositionMode-enum
         painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
         painter.fillRect(bounds, *this->color_);
-
         painter.restore();
     }
 }

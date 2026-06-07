@@ -8,6 +8,7 @@
 
 #include <QPainterPath>
 
+
 namespace chatterino {
 
 TitleBarButton::TitleBarButton(TitleBarButtonStyle style)

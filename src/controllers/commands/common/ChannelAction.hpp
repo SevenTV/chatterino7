@@ -6,7 +6,6 @@
 
 #include "util/Expected.hpp"
 
-#include <nonstd/expected.hpp>
 #include <QString>
 #include <QStringList>
 

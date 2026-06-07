@@ -8,7 +8,6 @@
 #include "widgets/settingspages/SettingsPage.hpp"
 
 #include <QPainter>
-#include <QStyleOption>
 
 namespace chatterino {
 
@@ -26,8 +25,7 @@ SettingsDialogTab::SettingsDialogTab(SettingsDialog *_dialog,
     this->ui_.icon.addFile(imageFileName);
 
     this->setCursor(QCursor(Qt::PointingHandCursor));
-
-    this->setStyleSheet("color: #FFF");
+    this->setMouseTracking(true);
 }
 
 void SettingsDialogTab::setSelected(bool _selected)
@@ -37,9 +35,8 @@ void SettingsDialogTab::setSelected(bool _selected)
         return;
     }
 
-    //    height: <checkbox-size>px;
-
     this->selected_ = _selected;
+    this->update();
     this->selectedChanged(this->selected_);
 }
 
@@ -59,24 +56,45 @@ void SettingsDialogTab::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
 
-    QStyleOption opt;
-    opt.initFrom(this);
+    painter.fillRect(rect(), palette().color(QPalette::Window));
 
-    this->style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
+    if (this->selected_)
+    {
+        painter.fillRect(rect(), QColor(255, 255, 255, 22));
+        painter.fillRect(0, 0, 3, this->height(), QColor(79, 195, 247));
+    }
+    else if (this->hovered_)
+    {
+        painter.fillRect(rect(), QColor(255, 255, 255, 12));
+    }
 
-    int iconSize = 20 * this->scale();
-    int pad = (this->height() - iconSize) / 2;
-    QPixmap pixmap = this->ui_.icon.pixmap(
-        QSize(this->height() - pad * 2, this->height() - pad * 2));
+    const int iconSize = 16;
+    const int pad = (this->height() - iconSize) / 2;
+    painter.setOpacity(this->selected_ ? 1.0 : 0.6);
+    painter.drawPixmap(pad + 2, pad,
+                       this->ui_.icon.pixmap(QSize(iconSize, iconSize)));
+    painter.setOpacity(1.0);
 
-    painter.drawPixmap(pad, pad, pixmap);
+    const int textX = pad + 2 + iconSize + 8;
+    painter.setPen(this->selected_ ? QColor(0xee, 0xee, 0xee)
+                                   : QColor(0xaa, 0xaa, 0xaa));
+    painter.drawText(QRect(textX, 0, this->width() - textX - 4, this->height()),
+                     Qt::AlignLeft | Qt::AlignVCenter,
+                     this->ui_.labelText);
+}
 
-    pad = (3 * pad) + iconSize;
+void SettingsDialogTab::enterEvent(QEnterEvent *event)
+{
+    this->hovered_ = true;
+    this->update();
+    BaseWidget::enterEvent(event);
+}
 
-    this->style()->drawItemText(
-        &painter, QRect(pad, 0, this->width() - pad, this->height()),
-        Qt::AlignLeft | Qt::AlignVCenter, this->palette(), false,
-        this->ui_.labelText);
+void SettingsDialogTab::leaveEvent(QEvent *event)
+{
+    this->hovered_ = false;
+    this->update();
+    BaseWidget::leaveEvent(event);
 }
 
 void SettingsDialogTab::mousePressEvent(QMouseEvent *event)

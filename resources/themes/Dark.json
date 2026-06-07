@@ -126,6 +126,28 @@
     "window": {
       "background": "#111111",
       "text": "#eeeeee"
+    },
+    "ui": {
+      "borderRadius": 4,
+      "spacing": 4,
+      "input": {
+        "background": "#2d2d2d",
+        "backgroundHover": "#323232",
+        "backgroundFocus": "#1f1f1f",
+        "border": "#303030",
+        "borderBottom": "#9a9a9a",
+        "borderHover": "#555555",
+        "borderFocus": "#76b9ed"
+      },
+      "button": {
+        "background": "#2d2d2d",
+        "backgroundHover": "#323232",
+        "backgroundDown": "#272727",
+        "border": "#353535",
+        "borderBottom": "#303030",
+        "borderHover": "#353535",
+        "borderDown": "#353535"
+      }
     }
   }
 }

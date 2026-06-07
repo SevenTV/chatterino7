@@ -2,6 +2,13 @@
 
 ## Unversioned
 
+- Major: Added compact headers option that moves split-header content (channel name, room modes, moderation/chatters buttons) into the window titlebar on macOS and Windows, and into the notebook tab row on Linux. Hovering over tabs now shows a browser-style preview card with stream info and thumbnail.
+- Minor: Redesigned notebook tabs with a pill-shaped (rounded) appearance and added a subtle bottom indicator line for highlighted tabs.
+- Minor: Expanded the theme JSON schema with a new `ui` section for styling standard Qt widgets (inputs, buttons, sliders, combo boxes) to match the active theme.
+- Minor: Updated dependency versions: Boost 1.91.0, libavif 1.4.2, benchmark 1.9.5, OpenSSL 3.6.2.
+- Dev: Bumped Qt to 6.11.1 on Windows and macOS release builds.
+- Dev: Added Qt 6.6+ system-accent colour support, Qt 6.8+ `ContextFontMerging` for better emoji/CJK fallback, and Qt 6.8+ native colour-scheme sync on macOS.
+- Dev: Removed hard-coded Windows-only `Segoe UI` font references from the settings dialog stylesheet; the UI now uses the platform default font family.
 - Minor: Added "Open 7TV user in browser" and "Open channel in browser" (same as left-click) when right-clicking the profile picture in a usercard (#400)
 
 ## 7.5.5-beta.1

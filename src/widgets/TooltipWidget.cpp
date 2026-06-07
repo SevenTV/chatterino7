@@ -10,7 +10,9 @@
 #include "singletons/WindowManager.hpp"
 
 #include <QPainter>
+#include <QPainterPath>
 
+#include <algorithm>
 #include <utility>
 
 namespace {
@@ -61,7 +63,7 @@ TooltipWidget::TooltipWidget(BaseWidget *parent)
     assert(parent != nullptr);
     QObject::connect(parent, &QObject::destroyed, this, &QObject::deleteLater);
 
-    this->setStyleSheet("color: #fff; background: rgba(11, 11, 11, 0.8)");
+    this->setStyleSheet("color: #fff;");
     this->setAttribute(Qt::WA_TranslucentBackground);
     this->setAttribute(Qt::WA_TransparentForMouseEvents);
     this->setWindowFlag(Qt::WindowStaysOnTopHint, true);
@@ -313,8 +315,15 @@ void TooltipWidget::themeChangedEvent()
 void TooltipWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
 
-    painter.fillRect(this->rect(), QColor(0, 0, 0, int(0.8 * 255)));
+    float s = this->scale();
+    int radius = std::max(4, static_cast<int>(6 * s));
+    QColor bg = QColor(0, 0, 0, int(0.8 * 255));
+
+    QPainterPath path;
+    path.addRoundedRect(this->rect().adjusted(1, 1, -1, -1), radius, radius);
+    painter.fillPath(path, bg);
 }
 
 void TooltipWidget::scaleChangedEvent(float)
@@ -336,6 +345,18 @@ void TooltipWidget::setWordWrap(bool wrap)
         if (entry)
         {
             entry->setWordWrap(wrap);
+        }
+    }
+}
+
+void TooltipWidget::capTextWidth(int maxWidth)
+{
+    for (int i = 0; i < this->visibleEntries_; ++i)
+    {
+        auto *entry = this->entryAt(i);
+        if (entry)
+        {
+            entry->capTextWidth(maxWidth);
         }
     }
 }

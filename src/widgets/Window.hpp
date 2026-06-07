@@ -12,8 +12,10 @@
 
 namespace chatterino {
 
+class DrawnButton;
 class PixmapButton;
 class LabelButton;
+class SvgButton;
 class Theme;
 class UpdateDialog;
 class SplitNotebook;
@@ -39,6 +41,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *event) override;
     bool event(QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     void themeChangedEvent() override;
 
 private:
@@ -57,11 +60,25 @@ private:
     LabelButton *userLabel_ = nullptr;
     std::shared_ptr<UpdateDialog> updateDialogHandle_;
 
+    bool macTitlebarSetup_ = false;
+
     pajlada::Signals::SignalHolder signalHolder_;
 
     // this is only used on Windows and only on the main window, for the one used otherwise, see SplitNotebook in Notebook.hpp
     PixmapButton *streamerModeTitlebarIcon_ = nullptr;
     void updateStreamerModeIcon();
+
+    // Compact header: buttons shown in titlebar/tab-row when compactHeaders is enabled
+    LabelButton *compactHeaderLabel_ = nullptr;
+    DrawnButton *compactDropdownButton_ = nullptr;  // Linux: notebook tab row
+    SvgButton *compactModButton_ = nullptr;
+    SvgButton *compactChattersButton_ = nullptr;
+    LabelButton *compactModeButton_ = nullptr;
+    pajlada::Signals::SignalHolder compactHeaderConnections_;
+    void updateCompactHeader();
+    void updateCompactHeaderButtons();
+    void updateCompactHeaderMode();
+    void setupCompactHeaderConnections();
 
     friend class Notebook;
 };
