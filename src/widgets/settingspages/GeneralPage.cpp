@@ -304,6 +304,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "indicate one of the channels in the tab is live.")
         ->addTo(layout);
 
+#if defined(Q_OS_MACOS) || defined(Q_OS_WIN)
     SettingWidget::checkbox("Compact headers", s.compactHeaders)
         ->setTooltip("Combines the split header into the titlebar for a "
                      "cleaner look. Hover over tabs to see stream info.")
@@ -311,9 +312,10 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     SettingWidget::checkbox("Append Original App title",
                             s.appendOriginalAppTitle)
-        ->setTooltip("Adds Chatterino title with username to the titlebar.")
+        ->setTooltip("Adds the original app title and username to the titlebar.")
         ->conditionallyEnabledBy(s.compactHeaders)
         ->addTo(layout);
+#endif
 
     layout.addTitle("Chat");
 

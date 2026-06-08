@@ -121,7 +121,7 @@ NotebookTab *Notebook::addPage(QWidget *page, QString title, bool select)
 }
 
 NotebookTab *Notebook::addPageAt(QWidget *page, int position, QString title,
-                                 bool select)
+                                 bool select, bool selectIfFirst)
 {
     // Queue up save because: Tab added
     getApp()->getWindows()->queueSave();
@@ -148,7 +148,7 @@ NotebookTab *Notebook::addPageAt(QWidget *page, int position, QString title,
     page->hide();
     page->setParent(this);
 
-    if (select || this->items_.count() == 1)
+    if (select || (selectIfFirst && this->items_.count() == 1))
     {
         this->select(page);
     }
@@ -1620,9 +1620,15 @@ void SplitNotebook::themeChangedEvent()
 SplitContainer *SplitNotebook::addPage(bool select)
 {
     auto *container = new SplitContainer(this);
-    auto *tab = Notebook::addPage(container, QString(), select);
+    const bool shouldSelect = select || this->getPageCount() == 0;
+    auto *tab =
+        Notebook::addPageAt(container, -1, QString(), false, false);
     container->setTab(tab);
     tab->setParent(this);
+    if (shouldSelect)
+    {
+        this->select(container);
+    }
     return container;
 }
 

@@ -228,7 +228,14 @@ public:
     FloatSetting boldScale = {"/appearance/boldScale", 63};
     BoolSetting showTabCloseButton = {"/appearance/showTabCloseButton", true};
     BoolSetting showTabLive = {"/appearance/showTabLiveButton", true};
-    BoolSetting compactHeaders = {"/appearance/compactHeaders", true};
+    BoolSetting compactHeaders = {
+        "/appearance/compactHeaders",
+#ifdef Q_OS_MACOS
+        true
+#else
+        false
+#endif
+    };
     BoolSetting appendOriginalAppTitle = {
         "/appearance/compactHeaders/appendOriginalAppTitle", false};
     EnumStringSetting<TabStyle> tabStyle = {

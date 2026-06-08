@@ -45,15 +45,22 @@ public:
     /// Sets the label to display rich text (Qt's HTML subset)
     void enableRichText();
 
+    /// Elides plain text to fit the available button width.
+    void setTextElideMode(Qt::TextElideMode mode);
+
 protected:
     void paintContent(QPainter &painter) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
+    void updateDisplayedText();
     void updatePadding();
 
     QHBoxLayout layout_;
     QLabel label_;
     QSize padding_;
+    QString text_;
+    Qt::TextElideMode elideMode_ = Qt::ElideNone;
 };
 
 }  // namespace chatterino

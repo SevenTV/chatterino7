@@ -47,7 +47,8 @@ public:
      * @param position if set to -1, adds the page to the end
      **/
     NotebookTab *addPageAt(QWidget *page, int position,
-                           QString title = QString(), bool select = false);
+                           QString title = QString(), bool select = false,
+                           bool selectIfFirst = true);
     void removePage(QWidget *page);
     void duplicatePage(QWidget *page);
     void removeCurrentPage();

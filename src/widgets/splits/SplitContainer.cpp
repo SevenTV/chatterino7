@@ -313,7 +313,12 @@ void SplitContainer::setSelected(Split *split)
         return;
     }
 
+    const bool selectedSplitChanged = this->selected_ != split;
     this->selected_ = split;
+    if (selectedSplitChanged)
+    {
+        this->selectedSplitChanged.invoke();
+    }
 
     if (Node *node = this->baseNode_->findNodeContainingSplit(split))
     {

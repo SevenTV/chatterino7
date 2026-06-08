@@ -25,6 +25,10 @@ class LabelButton;
 class Label;
 class Split;
 
+QString formatStreamTitle(bool rerun, const QString &streamType,
+                          const QString &uptime, unsigned viewerCount,
+                          const QString &game, const QString &streamTitle);
+
 class SplitHeader final : public BaseWidget
 {
     Q_OBJECT

@@ -227,6 +227,8 @@ public:
     void hideResizeHandles();
     void resetMouseStatus();
 
+    pajlada::Signals::NoArgSignal selectedSplitChanged;
+
     NodeDescriptor buildDescriptor() const;
     void applyFromDescriptor(const NodeDescriptor &rootNode);
 

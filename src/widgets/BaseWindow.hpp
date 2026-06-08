@@ -57,6 +57,7 @@ public:
 
     QWidget *getLayoutContainer();
     bool hasCustomWindowFrame() const;
+    void setCustomWindowTitleVisible(bool visible);
 
     template <typename T>
     T *addTitleBarButton(std::function<void()> onClicked, auto &&...args)

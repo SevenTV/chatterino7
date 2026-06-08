@@ -472,6 +472,14 @@ bool BaseWindow::hasCustomWindowFrame() const
     return BaseWindow::supportsCustomWindowFrame() && this->enableCustomFrame_;
 }
 
+void BaseWindow::setCustomWindowTitleVisible(bool visible)
+{
+    if (this->ui_.titleLabel)
+    {
+        this->ui_.titleLabel->setVisible(visible);
+    }
+}
+
 bool BaseWindow::supportsCustomWindowFrame()
 {
 #ifdef USEWINSDK

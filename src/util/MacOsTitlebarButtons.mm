@@ -33,7 +33,7 @@ NSButton *gModButton = nil;
 NSButton *gUsersButton = nil;
 NSButton *gDropdownButton = nil;
 NSButton *gModeButton = nil;
-NSTextField *gTitleLabel = nil;
+NSButton *gTitleLabel = nil;
 
 static constexpr CGFloat kBtnWidth = 28;
 static constexpr CGFloat kBtnHeight = 21;
@@ -106,23 +106,6 @@ void reflowTitlebarButtons(void)
     }
 
     NSView *container = gAccessory.view;
-    CGFloat containerWidth = 0;
-
-    // Title label — fixed max width so it never pushes buttons out of the bar.
-    static constexpr CGFloat kLabelMaxWidth = 200;
-    CGFloat labelX = 0;
-    CGFloat labelW = 0;
-    if (gTitleLabel && !gTitleLabel.hidden)
-    {
-        NSDictionary *attrs = @{NSFontAttributeName : gTitleLabel.font};
-        CGFloat textW = std::ceil(
-            [gTitleLabel.stringValue sizeWithAttributes:attrs].width);
-        // Clamp to max so long titles do not steal space from buttons.
-        labelW = std::min(textW + 8, kLabelMaxWidth);
-        gTitleLabel.frame = NSMakeRect(labelX, 2, labelW, kContainerHeight - 4);
-        containerWidth = labelW + kSpacing;
-    }
-
     // Match SplitHeader layout order: mode → mod → chatters → dropdown
     NSButton *ordered[] = {gModeButton, gModButton, gUsersButton,
                            gDropdownButton};
@@ -130,7 +113,7 @@ void reflowTitlebarButtons(void)
     // Center buttons vertically so they align with the traffic-light controls.
     CGFloat btnY = std::round((kContainerHeight - kBtnHeight) / 2.0);
 
-    CGFloat x = containerWidth;
+    CGFloat buttonWidth = 0;
     for (NSButton *btn : ordered)
     {
         if (!btn || btn.hidden)
@@ -147,26 +130,70 @@ void reflowTitlebarButtons(void)
             w = textW + 10;  // 5 px padding each side
         }
 
+        buttonWidth += w + kSpacing;
+    }
+
+    if (buttonWidth > kSpacing)
+    {
+        buttonWidth -= kSpacing;
+    }
+
+    // A right-aligned accessory can extend underneath the traffic lights when
+    // its intrinsic width is too large. Reserve their space and the action
+    // buttons first, then truncate the title into whatever remains.
+    static constexpr CGFloat kTitlebarMargin = 12;
+    static constexpr CGFloat kLabelMaxWidth = 280;
+    CGFloat availableWidth = NSWidth(container.window.frame);
+    if (auto *zoom =
+            [container.window standardWindowButton:NSWindowZoomButton])
+    {
+        NSRect trafficRect =
+            [zoom.superview convertRect:zoom.frame toView:nil];
+        availableWidth -= NSMaxX(trafficRect) + kTitlebarMargin;
+    }
+
+    CGFloat labelW = 0;
+    if (gTitleLabel && !gTitleLabel.hidden)
+    {
+        NSDictionary *attrs = @{NSFontAttributeName : gTitleLabel.font};
+        CGFloat textW = std::ceil(
+            [gTitleLabel.title sizeWithAttributes:attrs].width);
+        CGFloat remaining =
+            std::max<CGFloat>(0, availableWidth - buttonWidth - kSpacing);
+        labelW = std::min({textW + 8, kLabelMaxWidth, remaining});
+        gTitleLabel.frame = NSMakeRect(0, btnY, labelW, kBtnHeight);
+    }
+
+    CGFloat x = labelW > 0 ? labelW + kSpacing : 0;
+    for (NSButton *btn : ordered)
+    {
+        if (!btn || btn.hidden)
+        {
+            continue;
+        }
+
+        CGFloat w = kBtnWidth;
+        if (btn == gModeButton && btn.title.length > 0)
+        {
+            NSDictionary *attrs = @{NSFontAttributeName : btn.font};
+            w = std::ceil([btn.title sizeWithAttributes:attrs].width) + 10;
+        }
         btn.frame = NSMakeRect(x, btnY, w, kBtnHeight);
         x += w + kSpacing;
     }
-
-    // Strip trailing spacing if at least one button is shown.
     if (x > kSpacing)
     {
         x -= kSpacing;
     }
 
-    containerWidth = std::max(x, containerWidth);
-
-    // Resize the container so macOS knows the new accessory width.
+    // Resize the container so macOS knows the new, bounded accessory width.
     NSRect f = container.frame;
-    f.size.width = std::max(containerWidth, kBtnWidth);
+    f.size.width = std::max(std::min(x, availableWidth), kBtnWidth);
     container.frame = f;
 
-    // Ask the window to re-lay-out its titlebar so the change is visible
-    // immediately rather than on the next resize event.
-    [container.window layoutIfNeeded];
+    // Let AppKit coalesce titlebar layout. Forcing layout synchronously here
+    // can re-enter Qt while a tab is still being added or selected.
+    [container.superview setNeedsLayout:YES];
 }
 
 }  // namespace
@@ -315,14 +342,14 @@ void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook)
     gModeButton.hidden = YES;
 
     // Channel info label — sits to the left of the buttons in the accessory.
-    gTitleLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 2, 0, kContainerHeight - 4)];
-    gTitleLabel.editable = NO;
+    gTitleLabel =
+        [[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 0, kBtnHeight)];
     gTitleLabel.bordered = NO;
-    gTitleLabel.backgroundColor = [NSColor clearColor];
-    gTitleLabel.alignment = NSTextAlignmentRight;
-    gTitleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    gTitleLabel.buttonType = NSButtonTypeMomentaryChange;
+    gTitleLabel.alignment = NSTextAlignmentLeft;
+    gTitleLabel.cell.lineBreakMode = NSLineBreakByTruncatingTail;
     gTitleLabel.font = [NSFont systemFontOfSize:10];
-    gTitleLabel.textColor = [NSColor labelColor];
+    gTitleLabel.refusesFirstResponder = YES;
     // Show the label only when compact headers is enabled.
     gTitleLabel.hidden = !getSettings()->compactHeaders.getValue();
     [container addSubview:gTitleLabel];
@@ -359,6 +386,8 @@ void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook)
             BOOL hidden = !getSettings()->compactHeaders.getValue();
             gAccessory.hidden = hidden;
             gAccessory.view.hidden = hidden;
+            if (!hidden)
+                reflowTitlebarButtons();
         }];
 }
 
@@ -394,7 +423,8 @@ void setMacOsTitlebarLabelText(const QString &text)
     {
         return;
     }
-    gTitleLabel.stringValue = text.toNSString();
+    gTitleLabel.title = text.toNSString();
+    gTitleLabel.toolTip = text.toNSString();
     reflowTitlebarButtons();
 }
 

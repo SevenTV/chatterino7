@@ -109,14 +109,9 @@ Split::Split(QWidget *parent)
     this->vbox_->addWidget(this->view_, 1);
     this->vbox_->addWidget(this->input_);
 
-    if (getSettings()->compactHeaders.getValue())
-    {
-        this->header_->hide();
-    }
+    this->updateHeaderVisibility();
     getSettings()->compactHeaders.connect(
-        [this](bool compact) {
-            this->header_->setVisible(!compact);
-        },
+        [this](bool) { this->updateHeaderVisibility(); },
         this->signalHolder_, false);
 
     this->input_->ui_.textEdit->installEventFilter(parent);
@@ -345,6 +340,21 @@ Split::Split(QWidget *parent)
                                            this->clearShortcuts();
                                            this->addShortcuts();
                                        });
+}
+
+void Split::updateHeaderVisibility()
+{
+    auto *chatWindow = qobject_cast<Window *>(this->window());
+    const bool compact =
+        getSettings()->compactHeaders.getValue() && chatWindow &&
+        chatWindow->supportsCompactHeaders();
+    this->header_->setVisible(!compact);
+}
+
+void Split::showEvent(QShowEvent *event)
+{
+    this->updateHeaderVisibility();
+    BaseWidget::showEvent(event);
 }
 
 void Split::addShortcuts()

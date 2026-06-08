@@ -66,6 +66,7 @@
 #include <QPainter>
 #include <QPalette>
 #include <QStandardItemModel>
+#include <QTimer>
 #include <QVBoxLayout>
 
 namespace chatterino {
@@ -130,6 +131,22 @@ Window::Window(WindowType type, QWidget *parent)
 WindowType Window::getType()
 {
     return this->type_;
+}
+
+bool Window::supportsCompactHeaders() const
+{
+    if (this->type_ != WindowType::Main)
+    {
+        return false;
+    }
+
+#ifdef Q_OS_MACOS
+    return true;
+#elif defined(Q_OS_WIN)
+    return this->hasCustomWindowFrame();
+#else
+    return false;
+#endif
 }
 
 SplitNotebook &Window::getNotebook()
@@ -220,16 +237,12 @@ void Window::addLayout()
 
 void Window::addCustomTitlebarButtons()
 {
-    if (this->type_ != WindowType::Main)
+    if (!this->supportsCompactHeaders())
     {
         return;
     }
 
-#ifdef Q_OS_MACOS
-    // setupMacOsTitlebarButtons() is called in showEvent()
-    return;
-#endif
-
+#ifndef Q_OS_MACOS
     if (this->hasCustomWindowFrame())
     {
         this->addTitleBarButton<TitleBarButton>(
@@ -258,11 +271,12 @@ void Window::addCustomTitlebarButtons()
         this->compactHeaderLabel_ = this->addTitleBarLabel([] {});
         this->compactHeaderLabel_->setVisible(
             getSettings()->compactHeaders.getValue());
-        this->compactHeaderLabel_->setMinimumWidth(120 * this->scale());
-        // MinimumExpanding lets the label fill remaining space without pushing
-        // titlebar buttons out (matches SplitHeader::titleLabel_ behaviour).
-        this->compactHeaderLabel_->setSizePolicy(
-            QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+        this->compactHeaderLabel_->setMinimumWidth(0);
+        this->compactHeaderLabel_->setTextElideMode(Qt::ElideRight);
+        QSizePolicy compactTitlePolicy(QSizePolicy::Ignored,
+                                       QSizePolicy::Fixed);
+        compactTitlePolicy.setHorizontalStretch(1);
+        this->compactHeaderLabel_->setSizePolicy(compactTitlePolicy);
 
         this->compactModeButton_ = this->addTitleBarButton<LabelButton>([this] {
             auto *page = this->notebook_->getSelectedPage();
@@ -299,144 +313,20 @@ void Window::addCustomTitlebarButtons()
             });
         this->compactChattersButton_->setVisible(
             getSettings()->compactHeaders.getValue());
-    }
-    else
-    {
-        bool compact = getSettings()->compactHeaders.getValue();
-
-        this->compactModButton_ =
-            this->notebook_->addCustomButton<SvgButton>(SvgButton::Src{
-                .dark = ":/buttons/moderationDisabled-darkMode.svg",
-                .light = ":/buttons/moderationDisabled-lightMode.svg",
-            });
-        QObject::connect(
-            this->compactModButton_, &Button::leftClicked, this, [this] {
-                if (auto *page = this->notebook_->getSelectedPage())
-                    if (auto *split = page->getSelectedSplit())
-                        split->setModerationMode(!split->getModerationMode());
-            });
-        this->compactModButton_->setVisible(false);
-
-        this->compactChattersButton_ =
-            this->notebook_->addCustomButton<SvgButton>(SvgButton::Src{
-                .dark = ":/buttons/chatters-darkMode.svg",
-                .light = ":/buttons/chatters-lightMode.svg",
-            });
-        QObject::connect(
-            this->compactChattersButton_, &Button::leftClicked, this, [this] {
-                if (auto *page = this->notebook_->getSelectedPage())
-                    if (auto *split = page->getSelectedSplit())
-                        split->openChatterList();
-            });
-        this->compactChattersButton_->setVisible(false);
-
+        const bool compact = getSettings()->compactHeaders.getValue();
         this->compactDropdownButton_ =
-            this->notebook_->addCustomButton<DrawnButton>(
-                DrawnButton::Symbol::Kebab, DrawnButton::Options{});
-        QObject::connect(
-            this->compactDropdownButton_, &Button::leftMousePress, this,
-            [this] {
+            this->addTitleBarButton<DrawnButton>([this] {
                 auto *page = this->notebook_->getSelectedPage();
                 auto *split = page ? page->getSelectedSplit() : nullptr;
-                if (!split)
-                    return;
-                const auto &h = getApp()->getHotkeys();
-                auto menu = std::make_unique<QMenu>();
-                menu->addAction(
-                    "Change channel",
-                    h->getDisplaySequence(HotkeyCategory::Split,
-                                          "changeChannel"),
-                    split, &Split::changeChannel);
-                menu->addAction(
-                    "Close",
-                    h->getDisplaySequence(HotkeyCategory::Split, "delete"),
-                    split, &Split::deleteFromContainer);
-                menu->addSeparator();
-                menu->addAction(
-                    "Popup",
-                    h->getDisplaySequence(HotkeyCategory::Window, "popup",
-                                          {{"split"}}),
-                    split, &Split::popup);
-                menu->addAction(
-                    "Search",
-                    h->getDisplaySequence(HotkeyCategory::Split, "showSearch"),
-                    split, [split] { split->showSearch(true); });
-                menu->addAction(
-                    "Set filters",
-                    h->getDisplaySequence(HotkeyCategory::Split, "pickFilters"),
-                    split, &Split::setFiltersDialog);
-                menu->addSeparator();
-                auto selected = split->getSelectedChannel();
-                if (auto *tc =
-                        dynamic_cast<TwitchChannel *>(selected.get()))
+                if (split)
                 {
-                    menu->addAction(
-                        "Open in browser",
-                        h->getDisplaySequence(HotkeyCategory::Split,
-                                              "openInBrowser"),
-                        split, &Split::openInBrowser);
-                    menu->addAction(
-                        "Open player in browser",
-                        h->getDisplaySequence(HotkeyCategory::Split,
-                                              "openPlayerInBrowser"),
-                        split, &Split::openBrowserPlayer);
-                    menu->addAction(
-                        "Open in streamlink",
-                        h->getDisplaySequence(HotkeyCategory::Split,
-                                              "openInStreamlink"),
-                        split, &Split::openInStreamlink);
-                    if (split->getChannel()->hasModRights())
-                    {
-                        menu->addAction(
-                            "Open mod view",
-                            h->getDisplaySequence(HotkeyCategory::Split,
-                                                  "openModView"),
-                            split, &Split::openModViewInBrowser);
-                    }
-                    if (tc->isLive())
-                    {
-                        menu->addAction(
-                            "Create a clip",
-                            h->getDisplaySequence(HotkeyCategory::Split,
-                                                  "createClip"),
-                            split, [tc] { tc->createClip({}, {}); });
-                    }
-                    menu->addSeparator();
-                    menu->addAction(
-                        "Reload channel emotes",
-                        h->getDisplaySequence(HotkeyCategory::Split,
-                                              "reloadEmotes", {{"channel"}}),
-                        split, [tc] {
-                            tc->refreshFFZChannelEmotes(true);
-                            tc->refreshBTTVChannelEmotes(true);
-                            tc->refreshSevenTVChannelEmotes(true);
-                        });
-                    menu->addAction(
-                        "Reload subscriber emotes",
-                        h->getDisplaySequence(HotkeyCategory::Split,
-                                              "reloadEmotes", {{"subscriber"}}),
-                        split, [tc] {
-                            tc->refreshTwitchChannelEmotes(true);
-                        });
+                    split->showHeaderDropdown();
                 }
-                if (split->getChannel()->canReconnect())
-                {
-                    menu->addAction(
-                        "Reconnect",
-                        h->getDisplaySequence(HotkeyCategory::Split,
-                                              "reconnect"),
-                        split, &Split::reconnect);
-                }
-                menu->addSeparator();
-                menu->addAction(
-                    "Clear messages",
-                    h->getDisplaySequence(HotkeyCategory::Split,
-                                          "clearMessages"),
-                    split, &Split::clear);
-                this->compactDropdownButton_->setMenu(std::move(menu));
-            });
+            }, DrawnButton::Symbol::Kebab, DrawnButton::Options{}, nullptr);
         this->compactDropdownButton_->setVisible(compact);
+        this->setCustomWindowTitleVisible(!compact);
     }
+#endif
 
     getSettings()->compactHeaders.connect(
         [this](bool compact) {
@@ -452,6 +342,7 @@ void Window::addCustomTitlebarButtons()
                     this->compactModeButton_->setVisible(false);
                 if (this->compactHeaderLabel_)
                     this->compactHeaderLabel_->setVisible(false);
+                this->setCustomWindowTitleVisible(true);
 #ifdef Q_OS_MACOS
                 setMacOsTitlebarTitleVisible(true);
 #endif
@@ -462,6 +353,7 @@ void Window::addCustomTitlebarButtons()
                     this->compactDropdownButton_->setVisible(true);
                 if (this->compactHeaderLabel_)
                     this->compactHeaderLabel_->setVisible(true);
+                this->setCustomWindowTitleVisible(false);
                 this->updateCompactHeader();
                 this->updateCompactHeaderButtons();
                 this->updateCompactHeaderMode();
@@ -513,12 +405,6 @@ void Window::showEvent(QShowEvent *event)
         this->macTitlebarSetup_ = true;
         setupMacOsTitlebarButtons(this, this->notebook_);
 
-        this->signalHolder_.managedConnect(
-            this->notebook_->pageSelected, [this] {
-                this->setupCompactHeaderConnections();
-                this->updateCompactHeader();
-                this->updateCompactHeaderButtons();
-            });
         this->setupCompactHeaderConnections();
         this->updateCompactHeader();
         this->updateCompactHeaderButtons();
@@ -584,6 +470,15 @@ void Window::setupCompactHeaderConnections()
     {
         return;
     }
+
+    this->compactHeaderConnections_.managedConnect(
+        page->selectedSplitChanged, [this] {
+            QTimer::singleShot(0, this, [this] {
+                this->setupCompactHeaderConnections();
+                this->updateCompactHeader();
+                this->updateCompactHeaderButtons();
+            });
+        });
 
     for (auto *s : page->getSplits())
     {
@@ -674,32 +569,10 @@ void Window::updateCompactHeader()
             const auto streamStatus = twitchChannel->accessStreamStatus();
             if (streamStatus->live)
             {
-                if (streamStatus->rerun)
-                {
-                    text += " (rerun)";
-                }
-                else
-                {
-                    text += " (live)";
-                }
-                if (getSettings()->headerViewerCount)
-                {
-                    text += " - " + localizeNumbers(streamStatus->viewerCount);
-                }
-                if (getSettings()->headerUptime)
-                {
-                    text += " - " + streamStatus->uptime;
-                }
-                if (getSettings()->headerGame &&
-                    !streamStatus->game.isEmpty())
-                {
-                    text += " - " + streamStatus->game;
-                }
-                if (getSettings()->headerStreamTitle &&
-                    !streamStatus->title.isEmpty())
-                {
-                    text += " - " + streamStatus->title.simplified();
-                }
+                text += formatStreamTitle(
+                    streamStatus->rerun, streamStatus->streamType,
+                    streamStatus->uptime, streamStatus->viewerCount,
+                    streamStatus->game, streamStatus->title);
             }
         }
         else if (auto *kickChannel =
@@ -708,38 +581,19 @@ void Window::updateCompactHeader()
             const auto &stream = kickChannel->streamData();
             if (stream.isLive)
             {
-                text += " (live)";
-                if (getSettings()->headerViewerCount)
-                {
-                    text += " - " + localizeNumbers(stream.viewerCount);
-                }
-                if (getSettings()->headerUptime)
-                {
-                    text += " - " + stream.uptime;
-                }
-                if (getSettings()->headerGame && !stream.category.isEmpty())
-                {
-                    text += " - " + stream.category;
-                }
-                if (getSettings()->headerStreamTitle &&
-                    !stream.title.isEmpty())
-                {
-                    text += " - " + stream.title.simplified();
-                }
+                text += formatStreamTitle(
+                    false, "live", stream.uptime,
+                    static_cast<unsigned>(stream.viewerCount), stream.category,
+                    stream.title);
             }
         }
     }
     else
     {
-        text = page->getTab()->getTitle();
+        auto *tab = page->getTab();
+        text = tab ? tab->getTitle() : QString();
     }
 
-    if (this->compactHeaderLabel_)
-    {
-        this->compactHeaderLabel_->setText(text.isEmpty() ? "<empty>" : text);
-    }
-
-#ifdef Q_OS_MACOS
     QString labelText = text.isEmpty() ? "<empty>" : text;
     if (getSettings()->appendOriginalAppTitle)
     {
@@ -759,6 +613,13 @@ void Window::updateCompactHeader()
         }
         labelText = base + " | " + labelText;
     }
+
+    if (this->compactHeaderLabel_)
+    {
+        this->compactHeaderLabel_->setText(labelText);
+    }
+
+#ifdef Q_OS_MACOS
     setMacOsTitlebarLabelText(labelText);
 #endif
 }

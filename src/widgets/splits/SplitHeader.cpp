@@ -134,43 +134,10 @@ auto formatOfflineTooltip(const TwitchChannel::StreamStatus &s)
         .arg(s.title.toHtmlEscaped());
 }
 
-auto formatTitle(const TwitchChannel::StreamStatus &s, Settings &settings)
+auto formatTitle(const TwitchChannel::StreamStatus &s)
 {
-    auto title = QString();
-
-    // live
-    if (s.rerun)
-    {
-        title += " (rerun)";
-    }
-    else if (s.streamType.isEmpty())
-    {
-        title += " (" + s.streamType + ")";
-    }
-    else
-    {
-        title += " (live)";
-    }
-
-    // description
-    if (settings.headerUptime)
-    {
-        title += " - " + s.uptime;
-    }
-    if (settings.headerViewerCount)
-    {
-        title += " - " + localizeNumbers(s.viewerCount);
-    }
-    if (settings.headerGame && !s.game.isEmpty())
-    {
-        title += " - " + s.game;
-    }
-    if (settings.headerStreamTitle && !s.title.isEmpty())
-    {
-        title += " - " + s.title.simplified();
-    }
-
-    return title;
+    return formatStreamTitle(s.rerun, s.streamType, s.uptime, s.viewerCount,
+                             s.game, s.title);
 }
 
 TwitchChannel::StreamStatus toTwitchStreamStatus(
@@ -197,6 +164,40 @@ auto distance(QPoint a, QPoint b)
 }  // namespace
 
 namespace chatterino {
+
+QString formatStreamTitle(bool rerun, const QString &streamType,
+                          const QString &uptime, unsigned viewerCount,
+                          const QString &game, const QString &streamTitle)
+{
+    QStringList details;
+    details.append(rerun ? "Rerun"
+                         : (streamType.isEmpty() || streamType == "live"
+                                ? "Live"
+                                : streamType));
+
+    const bool hidePrivateStreamData =
+        getApp()->getStreamerMode()->isEnabled() &&
+        getSettings()->streamerModeHideViewerCountAndDuration;
+    if (!hidePrivateStreamData && getSettings()->headerUptime &&
+        !uptime.isEmpty())
+    {
+        details.append(uptime);
+    }
+    if (!hidePrivateStreamData && getSettings()->headerViewerCount)
+    {
+        details.append(localizeNumbers(viewerCount) + " viewers");
+    }
+    if (getSettings()->headerGame && !game.isEmpty())
+    {
+        details.append(game);
+    }
+    if (getSettings()->headerStreamTitle && !streamTitle.isEmpty())
+    {
+        details.append(streamTitle.simplified());
+    }
+
+    return " | " + details.join(" | ");
+}
 
 QString formatRoomModeUnclean(const TwitchChannel::RoomModes &modes)
 {
@@ -383,6 +384,7 @@ void SplitHeader::initializeLayout()
             w->setSizePolicy(QSizePolicy::MinimumExpanding,
                              QSizePolicy::Preferred);
             w->setCentered(true);
+            w->setShouldElide(true);
             w->setPadding(QMargins{});
         }),
         // space
@@ -1036,7 +1038,7 @@ void SplitHeader::updateChannelText()
                 this->lastThumbnail_.restart();
             }
             this->tooltipText_ = formatTooltip(*streamStatus, this->thumbnail_);
-            title += formatTitle(*streamStatus, *getSettings());
+            title += formatTitle(*streamStatus);
         }
         else
         {
@@ -1069,7 +1071,7 @@ void SplitHeader::updateChannelText()
                 this->lastThumbnail_.restart();
             }
             this->tooltipText_ = formatTooltip(twitch, this->thumbnail_, true);
-            title += formatTitle(twitch, *getSettings());
+            title += formatTitle(twitch);
         }
         else
         {

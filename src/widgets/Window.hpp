@@ -35,6 +35,7 @@ public:
 
     WindowType getType();
     SplitNotebook &getNotebook();
+    bool supportsCompactHeaders() const;
 
     pajlada::Signals::NoArgSignal closed;
 

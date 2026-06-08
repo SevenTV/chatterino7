@@ -112,6 +112,7 @@ public:
     pajlada::Signals::Signal<SplitDirection, Split *> insertSplitRequested;
 
 protected:
+    void showEvent(QShowEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
@@ -124,6 +125,7 @@ protected:
     void dropEvent(QDropEvent *event) override;
 
 private:
+    void updateHeaderVisibility();
     void channelNameUpdated(const QString &newChannelName);
     void handleModifiers(Qt::KeyboardModifiers modifiers);
     void updateInputPlaceholder();
