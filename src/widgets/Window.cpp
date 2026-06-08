@@ -259,8 +259,10 @@ void Window::addCustomTitlebarButtons()
         this->compactHeaderLabel_->setVisible(
             getSettings()->compactHeaders.getValue());
         this->compactHeaderLabel_->setMinimumWidth(120 * this->scale());
-        this->compactHeaderLabel_->setSizePolicy(QSizePolicy::Expanding,
-                                                 QSizePolicy::Fixed);
+        // MinimumExpanding lets the label fill remaining space without pushing
+        // titlebar buttons out (matches SplitHeader::titleLabel_ behaviour).
+        this->compactHeaderLabel_->setSizePolicy(
+            QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
 
         this->compactModeButton_ = this->addTitleBarButton<LabelButton>([this] {
             auto *page = this->notebook_->getSelectedPage();
@@ -478,6 +480,8 @@ void Window::addCustomTitlebarButtons()
                                              this->signalHolder_);
     getSettings()->headerGame.connect(refreshHeader, this->signalHolder_);
     getSettings()->headerUptime.connect(refreshHeader, this->signalHolder_);
+    getSettings()->showOldTitleInCompactHeader.connect(
+        refreshHeader, this->signalHolder_);
 
     this->signalHolder_.managedConnect(
         getApp()->getAccounts()->twitch.currentUserChanged, [this] {
@@ -733,25 +737,26 @@ void Window::updateCompactHeader()
     }
 
 #ifdef Q_OS_MACOS
-    // On macOS there is no custom titlebar label; append the channel info to
-    // the native window title so it appears in the titlebar.
-    QString windowTitle = Version::instance().fullVersion();
-    auto user = getApp()->getAccounts()->twitch.getCurrent();
-    if (user->isAnon())
+    // On macOS the custom titlebar label is never created (addCustomTitlebarButtons
+    // returns early). Use the native window title for the channel info.
+    QString windowTitle = text.isEmpty() ? "<empty>" : text;
+    if (getSettings()->showOldTitleInCompactHeader)
     {
-        windowTitle += " - not logged in";
-    }
-    else
-    {
-        windowTitle += " - " + user->getUserName();
-    }
-    if (getApp()->getArgs().safeMode)
-    {
-        windowTitle += " (safe mode)";
-    }
-    if (!text.isEmpty() && text != "No tab selected")
-    {
-        windowTitle += " | " + text;
+        QString base = Version::instance().fullVersion();
+        auto user = getApp()->getAccounts()->twitch.getCurrent();
+        if (user->isAnon())
+        {
+            base += " - not logged in";
+        }
+        else
+        {
+            base += " - " + user->getUserName();
+        }
+        if (getApp()->getArgs().safeMode)
+        {
+            base += " (safe mode)";
+        }
+        windowTitle = base + " | " + windowTitle;
     }
     this->setWindowTitle(windowTitle);
 #endif
@@ -1620,14 +1625,19 @@ void Window::onAccountSelected()
         windowTitle += " (safe mode)";
     }
 
-    this->setWindowTitle(windowTitle);
-
 #ifdef Q_OS_MACOS
-    // Re-append channel info to the new base title when compact headers is on.
     if (getSettings()->compactHeaders.getValue())
     {
+        // Let updateCompactHeader() set the window title so the channel info
+        // is preserved (it handles the optional old-title prefix itself).
         this->updateCompactHeader();
     }
+    else
+    {
+        this->setWindowTitle(windowTitle);
+    }
+#else
+    this->setWindowTitle(windowTitle);
 #endif
 
     // update user

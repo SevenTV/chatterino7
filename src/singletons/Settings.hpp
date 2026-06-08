@@ -229,6 +229,8 @@ public:
     BoolSetting showTabCloseButton = {"/appearance/showTabCloseButton", true};
     BoolSetting showTabLive = {"/appearance/showTabLiveButton", true};
     BoolSetting compactHeaders = {"/appearance/compactHeaders", true};
+    BoolSetting showOldTitleInCompactHeader = {
+        "/appearance/compactHeaders/showOldTitle", false};
     EnumStringSetting<TabStyle> tabStyle = {
         "/appearance/tabStyle",
         TabStyle::Normal,
