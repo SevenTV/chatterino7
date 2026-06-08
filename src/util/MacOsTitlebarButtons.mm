@@ -323,7 +323,8 @@ void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook)
     gTitleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     gTitleLabel.font = [NSFont systemFontOfSize:10];
     gTitleLabel.textColor = [NSColor labelColor];
-    gTitleLabel.hidden = YES;
+    // Show the label only when compact headers is enabled.
+    gTitleLabel.hidden = !getSettings()->compactHeaders.getValue();
     [container addSubview:gTitleLabel];
 
     gAccessory = [[NSTitlebarAccessoryViewController alloc] init];

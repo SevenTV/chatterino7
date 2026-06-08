@@ -520,6 +520,7 @@ void Window::showEvent(QShowEvent *event)
                 this->updateCompactHeaderButtons();
             });
         this->setupCompactHeaderConnections();
+        this->updateCompactHeader();
         this->updateCompactHeaderButtons();
 
         getSettings()->compactHeaders.connect(
