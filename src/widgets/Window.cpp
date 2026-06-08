@@ -737,7 +737,26 @@ void Window::updateCompactHeader()
     }
 
 #ifdef Q_OS_MACOS
-    setMacOsTitlebarLabelText(text.isEmpty() ? "<empty>" : text);
+    QString labelText = text.isEmpty() ? "<empty>" : text;
+    if (getSettings()->appendOriginalAppTitle)
+    {
+        QString base = Version::instance().fullVersion();
+        auto user = getApp()->getAccounts()->twitch.getCurrent();
+        if (user->isAnon())
+        {
+            base += " - not logged in";
+        }
+        else
+        {
+            base += " - " + user->getUserName();
+        }
+        if (getApp()->getArgs().safeMode)
+        {
+            base += " (safe mode)";
+        }
+        labelText = base + " | " + labelText;
+    }
+    setMacOsTitlebarLabelText(labelText);
 #endif
 }
 
