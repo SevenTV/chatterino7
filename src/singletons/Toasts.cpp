@@ -288,7 +288,7 @@ void Toasts::ensureInitialized()
     this->initialized_ = true;
 
     auto *instance = WinToast::instance();
-    instance->setAppName(L"Chatterino7");
+    instance->setAppName(L"Chatterino7TV");
     instance->setAppUserModelId(Version::instance().appUserModelID());
     if (!getSettings()->createShortcutForToasts)
     {
@@ -350,7 +350,7 @@ void Toasts::ensureInitialized()
     {
         return;
     }
-    auto result = notify_init("Chatterino");
+    auto result = notify_init("Chatterino 7TV");
 
     if (result == 0)
     {

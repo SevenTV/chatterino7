@@ -815,68 +815,6 @@ void WindowManager::encodeFilters(Split *split, QJsonArray &arr)
     }
 }
 
-IndirectChannel WindowManager::decodeChannel(const SplitDescriptor &descriptor)
-{
-    assertInGuiThread();
-
-    if (descriptor.type_ == "twitch")
-    {
-        return getApp()->getTwitch()->getOrAddChannel(descriptor.channelName_);
-    }
-    else if (descriptor.type_ == "mentions")
-    {
-        return getApp()->getTwitch()->getMentionsChannel();
-    }
-    else if (descriptor.type_ == "watching")
-    {
-        return getApp()->getTwitch()->getWatchingChannel();
-    }
-    else if (descriptor.type_ == "whispers")
-    {
-        return getApp()->getTwitch()->getWhispersChannel();
-    }
-    else if (descriptor.type_ == "live")
-    {
-        return getApp()->getTwitch()->getLiveChannel();
-    }
-    else if (descriptor.type_ == "automod")
-    {
-        return getApp()->getTwitch()->getAutomodChannel();
-    }
-    else if (descriptor.type_ == "misc")
-    {
-        return getApp()->getTwitch()->getChannelOrEmpty(
-            descriptor.channelName_);
-    }
-    else if (descriptor.type_ == "kick")
-    {
-        return getApp()->getKickChatServer()->getOrCreate(
-            descriptor.channelName_, KickChannel::UserInit{
-                                         .roomID = descriptor.kickRoomID,
-                                         .userID = descriptor.kickUserID,
-                                         .channelID = descriptor.kickChannelID,
-                                     });
-    }
-    else if (descriptor.type_ == u"multi")
-    {
-        QVarLengthArray<MultiChannel::Spec, 4> specs;
-        for (const auto &child : descriptor.children)
-        {
-            auto spec = MultiChannel::Spec::fromDescriptor(child);
-            if (spec)
-            {
-                specs.emplace_back(*std::move(spec));
-            }
-        }
-        auto ptr =
-            std::make_shared<MultiChannel>(specs, descriptor.mcIndicator);
-        ptr->setActiveChannelIndex(descriptor.mcIndex);
-        return {std::move(ptr)};
-    }
-
-    return Channel::getEmpty();
-}
-
 void WindowManager::closeAll()
 {
     assertInGuiThread();

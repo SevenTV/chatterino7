@@ -136,7 +136,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: Chatterino-x86_64-Qt-${{ matrix.qt-version }}.AppImage
-          path: build/Chatterino-x86_64.AppImage
+          path: build/Chatterino_7TV-x86_64.AppImage
 
       - name: Package - .deb (Ubuntu)
         if: matrix.build-deb
