@@ -309,10 +309,10 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "cleaner look. Hover over tabs to see stream info.")
         ->addTo(layout);
 
-    SettingWidget::checkbox("Show old title in compact headers",
-                            s.showOldTitleInCompactHeader)
-        ->setTooltip("Also show the Chatterino version and username in the "
-                     "titlebar when compact headers is enabled.")
+    SettingWidget::checkbox("Append Original App title",
+                            s.appendOriginalAppTitle)
+        ->setTooltip("Adds Chatterino title with username to the titlebar.")
+        ->conditionallyEnabledBy(s.compactHeaders)
         ->addTo(layout);
 
     layout.addTitle("Chat");

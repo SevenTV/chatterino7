@@ -480,7 +480,7 @@ void Window::addCustomTitlebarButtons()
                                              this->signalHolder_);
     getSettings()->headerGame.connect(refreshHeader, this->signalHolder_);
     getSettings()->headerUptime.connect(refreshHeader, this->signalHolder_);
-    getSettings()->showOldTitleInCompactHeader.connect(
+    getSettings()->appendOriginalAppTitle.connect(
         refreshHeader, this->signalHolder_);
 
     this->signalHolder_.managedConnect(
@@ -740,7 +740,7 @@ void Window::updateCompactHeader()
     // On macOS the custom titlebar label is never created (addCustomTitlebarButtons
     // returns early). Use the native window title for the channel info.
     QString windowTitle = text.isEmpty() ? "<empty>" : text;
-    if (getSettings()->showOldTitleInCompactHeader)
+    if (getSettings()->appendOriginalAppTitle)
     {
         QString base = Version::instance().fullVersion();
         auto user = getApp()->getAccounts()->twitch.getCurrent();
