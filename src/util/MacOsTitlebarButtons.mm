@@ -33,6 +33,7 @@ NSButton *gModButton = nil;
 NSButton *gUsersButton = nil;
 NSButton *gDropdownButton = nil;
 NSButton *gModeButton = nil;
+NSTextField *gTitleLabel = nil;
 
 static constexpr CGFloat kBtnWidth = 28;
 static constexpr CGFloat kBtnHeight = 21;
@@ -95,13 +96,31 @@ Split *currentSplit(SplitNotebook *notebook)
     return page ? page->getSelectedSplit() : nullptr;
 }
 
-// Repack all visible buttons left-to-right with no dead space, and resize the
-// container to exactly fit.  Call after changing any button's hidden/title.
+// Repack the title label (left) then buttons left-to-right with no dead space,
+// and resize the container to exactly fit.
 void reflowTitlebarButtons(void)
 {
     if (!gAccessory)
     {
         return;
+    }
+
+    NSView *container = gAccessory.view;
+    CGFloat containerWidth = 0;
+
+    // Title label — fixed max width so it never pushes buttons out of the bar.
+    static constexpr CGFloat kLabelMaxWidth = 200;
+    CGFloat labelX = 0;
+    CGFloat labelW = 0;
+    if (gTitleLabel && !gTitleLabel.hidden)
+    {
+        NSDictionary *attrs = @{NSFontAttributeName : gTitleLabel.font};
+        CGFloat textW = std::ceil(
+            [gTitleLabel.stringValue sizeWithAttributes:attrs].width);
+        // Clamp to max so long titles do not steal space from buttons.
+        labelW = std::min(textW + 8, kLabelMaxWidth);
+        gTitleLabel.frame = NSMakeRect(labelX, 2, labelW, kContainerHeight - 4);
+        containerWidth = labelW + kSpacing;
     }
 
     // Match SplitHeader layout order: mode → mod → chatters → dropdown
@@ -111,7 +130,7 @@ void reflowTitlebarButtons(void)
     // Center buttons vertically so they align with the traffic-light controls.
     CGFloat btnY = std::round((kContainerHeight - kBtnHeight) / 2.0);
 
-    CGFloat x = 0;
+    CGFloat x = containerWidth;
     for (NSButton *btn : ordered)
     {
         if (!btn || btn.hidden)
@@ -138,10 +157,11 @@ void reflowTitlebarButtons(void)
         x -= kSpacing;
     }
 
+    containerWidth = std::max(x, containerWidth);
+
     // Resize the container so macOS knows the new accessory width.
-    NSView *container = gAccessory.view;
     NSRect f = container.frame;
-    f.size.width = std::max(x, kBtnWidth);
+    f.size.width = std::max(containerWidth, kBtnWidth);
     container.frame = f;
 
     // Ask the window to re-lay-out its titlebar so the change is visible
@@ -294,6 +314,18 @@ void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook)
     gUsersButton.hidden = YES;
     gModeButton.hidden = YES;
 
+    // Channel info label — sits to the left of the buttons in the accessory.
+    gTitleLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 2, 0, kContainerHeight - 4)];
+    gTitleLabel.editable = NO;
+    gTitleLabel.bordered = NO;
+    gTitleLabel.backgroundColor = [NSColor clearColor];
+    gTitleLabel.alignment = NSTextAlignmentRight;
+    gTitleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    gTitleLabel.font = [NSFont systemFontOfSize:11];
+    gTitleLabel.textColor = [NSColor labelColor];
+    gTitleLabel.hidden = YES;
+    [container addSubview:gTitleLabel];
+
     gAccessory = [[NSTitlebarAccessoryViewController alloc] init];
     gAccessory.view = container;
     gAccessory.layoutAttribute = NSLayoutAttributeRight;
@@ -334,17 +366,29 @@ void setMacOsTitlebarButtonsVisible(bool visible)
         if (gModButton) gModButton.hidden = YES;
         if (gUsersButton) gUsersButton.hidden = YES;
         if (gDropdownButton) gDropdownButton.hidden = YES;
+        if (gTitleLabel) gTitleLabel.hidden = YES;
         reflowTitlebarButtons();
     }
     else
     {
         if (gDropdownButton) gDropdownButton.hidden = NO;
+        if (gTitleLabel) gTitleLabel.hidden = NO;
         reflowTitlebarButtons();
     }
 
     BOOL hidden = !visible;
     gAccessory.hidden = hidden;
     gAccessory.view.hidden = hidden;
+}
+
+void setMacOsTitlebarLabelText(const QString &text)
+{
+    if (!gTitleLabel)
+    {
+        return;
+    }
+    gTitleLabel.stringValue = text.toNSString();
+    reflowTitlebarButtons();
 }
 
 void updateMacOsTitlebarButtonsForSplit(Split *split)

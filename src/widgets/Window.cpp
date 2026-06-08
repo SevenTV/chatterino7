@@ -737,28 +737,7 @@ void Window::updateCompactHeader()
     }
 
 #ifdef Q_OS_MACOS
-    // On macOS the custom titlebar label is never created (addCustomTitlebarButtons
-    // returns early). Use the native window title for the channel info.
-    QString windowTitle = text.isEmpty() ? "<empty>" : text;
-    if (getSettings()->appendOriginalAppTitle)
-    {
-        QString base = Version::instance().fullVersion();
-        auto user = getApp()->getAccounts()->twitch.getCurrent();
-        if (user->isAnon())
-        {
-            base += " - not logged in";
-        }
-        else
-        {
-            base += " - " + user->getUserName();
-        }
-        if (getApp()->getArgs().safeMode)
-        {
-            base += " (safe mode)";
-        }
-        windowTitle = base + " | " + windowTitle;
-    }
-    this->setWindowTitle(windowTitle);
+    setMacOsTitlebarLabelText(text.isEmpty() ? "<empty>" : text);
 #endif
 }
 
@@ -1625,20 +1604,7 @@ void Window::onAccountSelected()
         windowTitle += " (safe mode)";
     }
 
-#ifdef Q_OS_MACOS
-    if (getSettings()->compactHeaders.getValue())
-    {
-        // Let updateCompactHeader() set the window title so the channel info
-        // is preserved (it handles the optional old-title prefix itself).
-        this->updateCompactHeader();
-    }
-    else
-    {
-        this->setWindowTitle(windowTitle);
-    }
-#else
     this->setWindowTitle(windowTitle);
-#endif
 
     // update user
     if (this->userLabel_)

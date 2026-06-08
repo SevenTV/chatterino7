@@ -1,5 +1,6 @@
 #pragma once
 
+class QString;
 class QWidget;
 
 namespace chatterino {
@@ -10,5 +11,6 @@ class SplitNotebook;
 void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook);
 void setMacOsTitlebarButtonsVisible(bool visible);
 void updateMacOsTitlebarButtonsForSplit(Split *split);
+void setMacOsTitlebarLabelText(const QString &text);
 
 }  // namespace chatterino
