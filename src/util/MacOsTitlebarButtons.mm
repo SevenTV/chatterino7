@@ -321,7 +321,7 @@ void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook)
     gTitleLabel.backgroundColor = [NSColor clearColor];
     gTitleLabel.alignment = NSTextAlignmentRight;
     gTitleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-    gTitleLabel.font = [NSFont systemFontOfSize:11];
+    gTitleLabel.font = [NSFont systemFontOfSize:10];
     gTitleLabel.textColor = [NSColor labelColor];
     gTitleLabel.hidden = YES;
     [container addSubview:gTitleLabel];
