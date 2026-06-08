@@ -453,8 +453,7 @@ void Window::addCustomTitlebarButtons()
                 if (this->compactHeaderLabel_)
                     this->compactHeaderLabel_->setVisible(false);
 #ifdef Q_OS_MACOS
-                // Restore the base window title (removes channel info suffix).
-                this->onAccountSelected();
+                setMacOsTitlebarTitleVisible(true);
 #endif
             }
             else
@@ -466,6 +465,9 @@ void Window::addCustomTitlebarButtons()
                 this->updateCompactHeader();
                 this->updateCompactHeaderButtons();
                 this->updateCompactHeaderMode();
+#ifdef Q_OS_MACOS
+                setMacOsTitlebarTitleVisible(false);
+#endif
             }
             this->notebook_->performLayout();
         },

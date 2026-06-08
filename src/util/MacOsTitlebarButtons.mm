@@ -342,6 +342,12 @@ void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook)
         gAccessory.hidden = initiallyHidden;
         gAccessory.view.hidden = initiallyHidden;
     }
+    // Hide the native titlebar text when compact headers is on — the
+    // accessory view (label + buttons) replaces it.
+    nsWindow.titleVisibility = getSettings()->compactHeaders.getValue()
+                                   ? NSWindowTitleHidden
+                                   : NSWindowTitleVisible;
+
     [[NSNotificationCenter defaultCenter]
         addObserverForName:NSWindowDidResizeNotification
         object:nsWindow
@@ -389,6 +395,17 @@ void setMacOsTitlebarLabelText(const QString &text)
     }
     gTitleLabel.stringValue = text.toNSString();
     reflowTitlebarButtons();
+}
+
+void setMacOsTitlebarTitleVisible(bool visible)
+{
+    NSWindow *nsWindow = gAccessory ? gAccessory.view.window : nil;
+    if (!nsWindow)
+    {
+        return;
+    }
+    nsWindow.titleVisibility = visible ? NSWindowTitleVisible
+                                       : NSWindowTitleHidden;
 }
 
 void updateMacOsTitlebarButtonsForSplit(Split *split)

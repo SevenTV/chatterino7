@@ -12,5 +12,6 @@ void setupMacOsTitlebarButtons(QWidget *window, SplitNotebook *notebook);
 void setMacOsTitlebarButtonsVisible(bool visible);
 void updateMacOsTitlebarButtonsForSplit(Split *split);
 void setMacOsTitlebarLabelText(const QString &text);
+void setMacOsTitlebarTitleVisible(bool visible);
 
 }  // namespace chatterino
