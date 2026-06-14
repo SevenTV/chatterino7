@@ -320,7 +320,6 @@ HighlightingPage::HighlightingPage()
         layout.append(createCheckBox(
             "Flash taskbar only stops highlighting when Chatterino is focused",
             getSettings()->longAlerts));
-        layout.addCheckbox("Enable paints on @usernames", getSettings()->enablePaintsOnMentions);
     }
 
     // ---- misc
