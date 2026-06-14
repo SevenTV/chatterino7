@@ -26,6 +26,7 @@
 #    include "mocks/TwitchIrcServer.hpp"
 #    include "NetworkHelpers.hpp"
 #    include "singletons/Logging.hpp"
+#    include "singletons/WindowManager.hpp"
 #    include "Test.hpp"
 
 #    include <lauxlib.h>
@@ -96,6 +97,8 @@ public:
         : mock::BaseApplication(TEST_SETTINGS)
         , plugins(this->paths_)
         , commands(this->paths_)
+        , windows(this->args_, this->paths_, this->settings, this->theme,
+                  this->fonts)
     {
     }
 
@@ -129,6 +132,11 @@ public:
         return &this->accounts;
     }
 
+    WindowManager *getWindows() override
+    {
+        return &this->windows;
+    }
+
     PluginController plugins;
     mock::Logging logging;
     CommandController commands;
@@ -136,6 +144,7 @@ public:
     MockTwitch twitch;
     AccountController accounts;
     mock::Helix helix;
+    WindowManager windows;
 };
 
 QDir luaTestBaseDir(const QString &category)
@@ -984,11 +993,13 @@ TEST_F(PluginTest, MessageElementFlag)
                          "EmojiText=0x1000000,"
                          "EmoteImage=0x10,"
                          "EmoteText=0x20,"
-                         "KickUsername=0x4000000000,"
+                         "KickUsername=0x4000000000000,"
                          "LowercaseLinks=0x20000000,"
                          "Mention=0x8000000,"
                          "Misc=0x1,"
                          "ModeratorTools=0x400000,"
+                         "PlatformBadgeAlways=0x8000000000000,"
+                         "PlatformBadgeIfUnselected=0x10000000000000,"
                          "RepliedMessage=0x100000000,"
                          "ReplyButton=0x200000000,"
                          "Text=0x2,"

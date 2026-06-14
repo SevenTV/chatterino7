@@ -450,12 +450,12 @@ HighlightController::HighlightController(Settings &settings,
             this->rebuildChecks(settings);
         });
 
-    this->bConnections.emplace_back(
-        accounts->twitch.currentUserChanged.connect([this, &settings] {
+    this->signalHolder_.managedConnect(
+        accounts->twitch.currentUserChanged, [this, &settings] {
             qCDebug(chatterinoHighlights)
                 << "Rebuild checks because user swapped accounts";
             this->rebuildChecks(settings);
-        }));
+        });
 
     this->signalHolder_.managedConnect(
         accounts->twitch.currentUserNameChanged, [this, &settings] {

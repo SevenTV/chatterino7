@@ -10,6 +10,8 @@
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
+#include "util/MultiChannel.hpp"
+#include "widgets/BasePopup.hpp"
 #include "widgets/helper/MicroNotebook.hpp"
 
 #include <QDialogButtonBox>
@@ -25,6 +27,124 @@
 #include <QVBoxLayout>
 
 #include <vector>
+
+namespace {
+
+using namespace chatterino;
+
+class AddToMultiChannel : public BasePopup
+{
+    Q_OBJECT
+
+public:
+    AddToMultiChannel(QWidget *parent = nullptr)
+        : BasePopup(
+              {
+                  BaseWindow::EnableCustomFrame,
+                  BaseWindow::DisableLayoutSave,
+                  BaseWindow::BoundsCheckOnShow,
+              },
+              parent)
+        , platform(new QComboBox)
+        , name(new QLineEdit)
+    {
+        this->setAttribute(Qt::WA_DeleteOnClose);
+        this->setWindowTitle("Add Channel");
+
+        auto *layout = new QVBoxLayout(this->getLayoutContainer());
+
+        this->platform->addItem(
+            "Twitch", QVariant::fromValue(MultiChannel::Platform::Twitch));
+        this->platform->addItem(
+            "Kick", QVariant::fromValue(MultiChannel::Platform::Kick));
+        layout->addWidget(this->platform);
+
+        this->name->setPlaceholderText("Name");
+        layout->addWidget(this->name);
+
+        auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                             QDialogButtonBox::Cancel);
+        QObject::connect(buttons, &QDialogButtonBox::accepted, this,
+                         &AddToMultiChannel::accept);
+        QObject::connect(buttons, &QDialogButtonBox::rejected, this,
+                         &AddToMultiChannel::close);
+        layout->addStretch();
+        layout->addWidget(buttons);
+
+        this->addShortcuts();
+        this->name->setFocus();
+    }
+
+    void addShortcuts() override
+    {
+        HotkeyController::HotkeyMap actions{
+            {"accept",
+             [this](const std::vector<QString> &) -> QString {
+                 this->accept();
+                 return {};
+             }},
+            {"reject",
+             [this](const std::vector<QString> &) -> QString {
+                 this->close();
+                 return {};
+             }},
+        };
+
+        this->shortcuts_ = getApp()->getHotkeys()->shortcutsForCategory(
+            HotkeyCategory::PopupWindow, actions, this);
+    }
+
+Q_SIGNALS:
+    // NOLINTNEXTLINE(readability-inconsistent-declaration-parameter-name)
+    void specAdded(chatterino::MultiChannel::Spec spec);
+
+private:
+    void accept()
+    {
+        auto nameText = this->name->text();
+        auto platform =
+            this->platform->currentData().value<MultiChannel::Platform>();
+        if (!nameText.isEmpty())
+        {
+            this->specAdded(MultiChannel::Spec{
+                .platform = platform,
+                .name = nameText,
+            });
+        }
+        this->close();
+    }
+
+    QComboBox *platform = nullptr;
+    QLineEdit *name = nullptr;
+};
+
+QListWidgetItem *makeMultiChannelItem(const MultiChannel::Spec &spec)
+{
+    QString name;
+    switch (spec.platform)
+    {
+        case MultiChannel::Platform::Twitch:
+            name += u"[T] ";
+            break;
+        case MultiChannel::Platform::Kick:
+            name += u"[K] ";
+            break;
+    }
+    name += spec.name;
+    auto *item = new QListWidgetItem(name);
+    item->setData(Qt::UserRole, QVariant::fromValue(spec));
+    return item;
+}
+
+QListWidgetItem *makeMultiChannelItem(const MultiChannel::ChildChannel &chan)
+{
+    return makeMultiChannelItem(MultiChannel::Spec{
+        .platform = chan.platform,
+        .name = chan.channel->getName(),
+    });
+}
+
+}  // namespace
 
 namespace chatterino {
 
@@ -194,6 +314,73 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
 
         ui.notebook->addPage(ui.kickPage, "Kick");
     }
+    // Multi
+    {
+        ui.multiPage = new QWidget;
+        ui.multiView = new QListWidget;
+        ui.multiIndicatorMode = new QComboBox;
+        auto *layout = new QVBoxLayout(ui.multiPage);
+        {
+            auto *descriptionLabel = new QLabel(
+                "Show multiple channels in one split. From the input box, you "
+                "can select an active/context channel to send messages in. "
+                "Report issues <a "
+                "href=\"https://github.com/SevenTV/chatterino7/issues\">here</"
+                "a>.");
+            descriptionLabel->setWordWrap(true);
+            descriptionLabel->setOpenExternalLinks(true);
+            layout->addWidget(descriptionLabel);
+
+            auto *header = new QWidget;
+            auto *add = new QPushButton("Add");
+            auto *remove = new QPushButton("Remove");
+            auto *headerLayout = new QHBoxLayout(header);
+            headerLayout->addWidget(add, 1);
+            headerLayout->addWidget(remove, 1);
+            layout->addWidget(header);
+
+            QObject::connect(add, &QPushButton::clicked, this, [this] {
+                auto *diag = new AddToMultiChannel(this);
+                QObject::connect(diag, &AddToMultiChannel::specAdded, this,
+                                 [this](const MultiChannel::Spec &spec) {
+                                     this->ui_.multiView->addItem(
+                                         makeMultiChannelItem(spec));
+                                 });
+                diag->show();
+            });
+            QObject::connect(remove, &QPushButton::clicked, this, [this] {
+                delete this->ui_.multiView->currentItem();
+            });
+        }
+
+        ui.multiView->setAutoScroll(true);
+        ui.multiView->setSelectionMode(QListWidget::SingleSelection);
+        ui.multiView->setSelectionBehavior(QListWidget::SelectRows);
+        ui.multiView->setDragDropMode(QListWidget::InternalMove);
+        ui.multiView->setFrameStyle(QFrame::NoFrame);
+        ui.multiView->setSizeAdjustPolicy(QListView::AdjustToContents);
+        layout->addWidget(ui.multiView, 1);
+
+        layout->addWidget(new QLabel("Channel indicator:"));
+        {
+            using Mode = MultiChannelIndicatorMode;
+
+            auto v = [](Mode mode) {
+                return QVariant::fromValue(mode);
+            };
+            ui.multiIndicatorMode->addItem("None", v(Mode::None));
+            ui.multiIndicatorMode->addItem("Platform badge if unselected",
+                                           v(Mode::PlatformBadgeIfUnselected));
+            ui.multiIndicatorMode->addItem("Platform badge",
+                                           v(Mode::PlatformBadgeAlways));
+            ui.multiIndicatorMode->addItem("Channel name",
+                                           v(Mode::ChannelName));
+            ui.multiIndicatorMode->setCurrentIndex(1);
+        }
+        layout->addWidget(ui.multiIndicatorMode);
+
+        ui.notebook->addPage(ui.multiPage, "Multi");
+    }
 
     auto *buttonBox =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -270,6 +457,25 @@ void SelectChannelDialog::setSelectedChannel(
             this->ui_.notebook->select(this->ui_.kickPage);
         }
         break;
+        case Channel::Type::Multi: {
+            const auto *mc = dynamic_cast<const MultiChannel *>(channel.get());
+            if (mc)
+            {
+                for (const auto &child : mc->channels())
+                {
+                    this->ui_.multiView->addItem(makeMultiChannelItem(child));
+                }
+                int indicatorIdx = this->ui_.multiIndicatorMode->findData(
+                    QVariant::fromValue(mc->indicatorMode()));
+                if (indicatorIdx >= 0)
+                {
+                    this->ui_.multiIndicatorMode->setCurrentIndex(indicatorIdx);
+                }
+                this->mcChannelIndex = mc->activeChannelIndex();
+            }
+            this->ui_.notebook->select(this->ui_.multiPage);
+        }
+        break;
         default: {
             this->ui_.channel->setChecked(true);
         }
@@ -289,6 +495,30 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
     {
         return getApp()->getKickChatServer()->getOrCreate(
             this->ui_.kickName->text().trimmed());
+    }
+
+    if (this->ui_.notebook->isSelected(this->ui_.multiPage))
+    {
+        QVarLengthArray<MultiChannel::Spec, 4> specs;
+        for (int i = 0; i < this->ui_.multiView->count(); i++)
+        {
+            auto *item = this->ui_.multiView->item(i);
+            if (!item)
+            {
+                continue;
+            }
+            QVariant data = item->data(Qt::UserRole);
+            auto *spec = get_if<MultiChannel::Spec>(&data);
+            if (spec)
+            {
+                specs.emplace_back(std::move(*spec));
+            }
+        }
+        auto ptr = std::make_shared<MultiChannel>(
+            specs, this->ui_.multiIndicatorMode->currentData()
+                       .value<MultiChannelIndicatorMode>());
+        ptr->setActiveChannelIndex(this->mcChannelIndex);
+        return {std::move(ptr)};
     }
 
     if (this->ui_.channel->isChecked())
@@ -470,3 +700,5 @@ void SelectChannelDialog::addShortcuts()
 }
 
 }  // namespace chatterino
+
+#include "SelectChannelDialog.moc"

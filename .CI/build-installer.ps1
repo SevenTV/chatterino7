@@ -16,12 +16,12 @@ if ($isTagged) {
     # Make sure, any existing `modes` file is overwritten for the user,
     # for example when updating from nightly to stable.
     Write-Output "" | Out-File Chatterino2/modes -Encoding ASCII;
-    $installerBaseName = "Chatterino7.Installer";
+    $installerBaseName = "Chatterino7TV.Installer";
 }
 else {
     Write-Output nightly | Out-File Chatterino2/modes -Encoding ASCII;
     $defines = "/DIS_NIGHTLY=1";
-    $installerBaseName = "Chatterino7.Nightly.Installer";
+    $installerBaseName = "Chatterino7TV.Nightly.Installer";
 }
 
 $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()

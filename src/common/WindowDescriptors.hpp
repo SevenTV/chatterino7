@@ -5,6 +5,7 @@
 #pragma once
 
 #include "common/ProviderId.hpp"
+#include "util/MultiChannelIndicatorMode.hpp"
 
 #include <QJsonObject>
 #include <QList>
@@ -17,6 +18,8 @@
 #include <vector>
 
 namespace chatterino {
+
+class IndirectChannel;
 
 /**
  * A WindowLayout contains one or more windows.
@@ -34,6 +37,14 @@ namespace chatterino {
 
 // from widgets/Window.hpp
 enum class WindowType;
+
+struct ChildChannelDescriptor {
+    QString platform;
+    QString channelName;
+
+    static ChildChannelDescriptor fromJson(const QJsonObject &obj);
+    QJsonObject toJson() const;
+};
 
 struct SplitDescriptor {
     // Twitch or mentions or watching or live or automod or whispers or IRC
@@ -56,13 +67,22 @@ struct SplitDescriptor {
     uint64_t kickUserID = 0;
     uint64_t kickRoomID = 0;
 
+    std::vector<ChildChannelDescriptor> children;
+
+    MultiChannelIndicatorMode mcIndicator = MultiChannelIndicatorMode::None;
+    uint32_t mcIndex = 0;
+
     static void loadFromJSON(SplitDescriptor &descriptor,
                              const QJsonObject &root, const QJsonObject &data);
+
+    IndirectChannel decodeChannel() const;
 };
 
 struct SplitNodeDescriptor : SplitDescriptor {
     qreal flexH_ = 1;
     qreal flexV_ = 1;
+
+    static SplitNodeDescriptor loadFromJSON(const QJsonObject &root);
 };
 
 struct ContainerNodeDescriptor;
@@ -77,16 +97,18 @@ struct ContainerNodeDescriptor {
     bool vertical_ = false;
 
     std::vector<NodeDescriptor> items_;
+
+    static ContainerNodeDescriptor loadFromJSON(const QJsonObject &root);
 };
 
 struct TabDescriptor {
-    static TabDescriptor loadFromJSON(const QJsonObject &root);
-
     QString customTitle_;
     bool selected_{false};
     bool highlightsEnabled_{true};
 
     std::optional<NodeDescriptor> rootNode_;
+
+    static TabDescriptor loadFromJSON(const QJsonObject &tabObj);
 };
 
 struct WindowDescriptor {

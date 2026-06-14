@@ -19,6 +19,7 @@ class ColorProvider;
 class Theme;
 class Settings;
 struct Selection;
+struct Message;
 
 // TODO: Figure out if this could be a subset of Theme instead (e.g. Theme::MessageColors)
 struct MessageColors {
@@ -56,6 +57,8 @@ struct MessagePreferences {
     bool enableSubHighlight{};
     bool enableWatchStreakHighlight{};
     bool enableAutomodHighlight{};
+    bool enableAnnouncementHighlight{};
+    bool enableColoredAnnouncementHighlight{};
 
     bool alternateMessages{};
     bool separateMessages{};
@@ -97,6 +100,9 @@ struct MessageLayoutContext {
     int width = 1;
     float scale = 1;
     float imageScale = 1;
+
+    Channel *selectedChannel = nullptr;
+    const Message &message;
 };
 
 }  // namespace chatterino

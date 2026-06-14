@@ -101,10 +101,10 @@ ReplyThreadPopup::ReplyThreadPopup(bool closeAutomatically, Split *split)
     this->ui_.replyInput =
         new SplitInput(this, this->split_, this->ui_.threadView, false);
 
-    this->bSignals_.emplace_back(
+    this->currentUserConnection_ =
         getApp()->getAccounts()->twitch.currentUserChanged.connect([this] {
             this->updateInputUI();
-        }));
+        });
 
     // We can safely ignore this signal's connection since threadView will always be deleted before
     // the ReplyThreadPopup
@@ -192,16 +192,17 @@ ReplyThreadPopup::ReplyThreadPopup(bool closeAutomatically, Split *split)
     }
 }
 
-void ReplyThreadPopup::setThread(std::shared_ptr<MessageThread> thread)
+void ReplyThreadPopup::setThread(std::shared_ptr<MessageThread> thread,
+                                 std::weak_ptr<Channel> channel)
 {
     this->thread_ = std::move(thread);
-    this->ui_.replyInput->setReply(this->thread_->root());
+    this->ui_.replyInput->setReply(this->thread_->root(), std::move(channel));
     this->addMessagesFromThread();
     this->updateInputUI();
 
     if (!this->thread_) [[unlikely]]
     {
-        this->replySubscriptionSignal_ = boost::signals2::scoped_connection{};
+        this->replySubscriptionSignal_ = pajlada::Signals::ScopedConnection{};
         return;
     }
 

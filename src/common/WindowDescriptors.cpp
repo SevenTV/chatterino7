@@ -4,7 +4,13 @@
 
 #include "common/WindowDescriptors.hpp"
 
+#include "Application.hpp"
 #include "common/QLogging.hpp"
+#include "debug/AssertInGuiThread.hpp"
+#include "providers/kick/KickChatServer.hpp"
+#include "providers/twitch/TwitchIrcServer.hpp"
+#include "util/MultiChannel.hpp"
+#include "util/QMagicEnum.hpp"
 #include "widgets/Window.hpp"
 
 #include <QFile>
@@ -28,58 +34,6 @@ QJsonArray loadWindowArray(const QString &settingsPath)
     return windows_arr;
 }
 
-template <typename T>
-T loadNodes(const QJsonObject &obj)
-{
-    static_assert("loadNodes must be called with the SplitNodeDescriptor "
-                  "or ContainerNodeDescriptor type");
-}
-
-template <>
-SplitNodeDescriptor loadNodes(const QJsonObject &root)
-{
-    SplitNodeDescriptor descriptor;
-
-    descriptor.flexH_ = root.value("flexh").toDouble(1.0);
-    descriptor.flexV_ = root.value("flexv").toDouble(1.0);
-
-    auto data = root.value("data").toObject();
-
-    SplitDescriptor::loadFromJSON(descriptor, root, data);
-
-    return descriptor;
-}
-
-template <>
-ContainerNodeDescriptor loadNodes(const QJsonObject &root)
-{
-    ContainerNodeDescriptor descriptor;
-
-    descriptor.flexH_ = root.value("flexh").toDouble(1.0);
-    descriptor.flexV_ = root.value("flexv").toDouble(1.0);
-
-    descriptor.vertical_ = root.value("type").toString() == "vertical";
-
-    for (QJsonValue _val : root.value("items").toArray())
-    {
-        auto _obj = _val.toObject();
-
-        auto _type = _obj.value("type");
-        if (_type == "split")
-        {
-            descriptor.items_.emplace_back(
-                loadNodes<SplitNodeDescriptor>(_obj));
-        }
-        else
-        {
-            descriptor.items_.emplace_back(
-                loadNodes<ContainerNodeDescriptor>(_obj));
-        }
-    }
-
-    return descriptor;
-}
-
 const QList<QUuid> loadFilters(QJsonValue val)
 {
     QList<QUuid> filterIds;
@@ -88,7 +42,7 @@ const QList<QUuid> loadFilters(QJsonValue val)
     {
         const auto array = val.toArray();
         filterIds.reserve(array.size());
-        for (const auto &id : array)
+        for (const auto id : array)
         {
             filterIds.append(QUuid::fromString(id.toString()));
         }
@@ -98,6 +52,22 @@ const QList<QUuid> loadFilters(QJsonValue val)
 }
 
 }  // namespace
+
+ChildChannelDescriptor ChildChannelDescriptor::fromJson(const QJsonObject &obj)
+{
+    return {
+        .platform = obj["platform"].toString(),
+        .channelName = obj["channel"].toString(),
+    };
+}
+
+QJsonObject ChildChannelDescriptor::toJson() const
+{
+    return {
+        {QLatin1StringView("platform"), this->platform},
+        {QLatin1StringView("channel"), this->channelName},
+    };
+}
 
 void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
                                    const QJsonObject &root,
@@ -128,6 +98,119 @@ void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
         descriptor.kickUserID = static_cast<uint64_t>(data["userID"].toInt());
         descriptor.kickRoomID = static_cast<uint64_t>(data["roomID"].toInt());
     }
+    else if (descriptor.type_ == u"multi")
+    {
+        const auto children = data["children"].toArray();
+        for (const auto child : children)
+        {
+            descriptor.children.emplace_back(
+                ChildChannelDescriptor::fromJson(child.toObject()));
+        }
+        auto modeStr = data["indicatorMode"].toString();
+        descriptor.mcIndicator =
+            qmagicenum::enumCast<MultiChannelIndicatorMode>(modeStr).value_or(
+                MultiChannelIndicatorMode::PlatformBadgeIfUnselected);
+        descriptor.mcIndex = static_cast<uint32_t>(data["activeIndex"].toInt());
+    }
+}
+
+IndirectChannel SplitDescriptor::decodeChannel() const
+{
+    assertInGuiThread();
+
+    if (this->type_ == "twitch")
+    {
+        return getApp()->getTwitch()->getOrAddChannel(this->channelName_);
+    }
+    else if (this->type_ == "mentions")
+    {
+        return getApp()->getTwitch()->getMentionsChannel();
+    }
+    else if (this->type_ == "watching")
+    {
+        return getApp()->getTwitch()->getWatchingChannel();
+    }
+    else if (this->type_ == "whispers")
+    {
+        return getApp()->getTwitch()->getWhispersChannel();
+    }
+    else if (this->type_ == "live")
+    {
+        return getApp()->getTwitch()->getLiveChannel();
+    }
+    else if (this->type_ == "automod")
+    {
+        return getApp()->getTwitch()->getAutomodChannel();
+    }
+    else if (this->type_ == "misc")
+    {
+        return getApp()->getTwitch()->getChannelOrEmpty(this->channelName_);
+    }
+    else if (this->type_ == "kick")
+    {
+        return getApp()->getKickChatServer()->getOrCreate(
+            this->channelName_, KickChannel::UserInit{
+                                    .roomID = this->kickRoomID,
+                                    .userID = this->kickUserID,
+                                    .channelID = this->kickChannelID,
+                                });
+    }
+    else if (this->type_ == u"multi")
+    {
+        QVarLengthArray<MultiChannel::Spec, 4> specs;
+        for (const auto &child : this->children)
+        {
+            auto spec = MultiChannel::Spec::fromDescriptor(child);
+            if (spec)
+            {
+                specs.emplace_back(*std::move(spec));
+            }
+        }
+        auto ptr = std::make_shared<MultiChannel>(specs, this->mcIndicator);
+        ptr->setActiveChannelIndex(this->mcIndex);
+        return {std::move(ptr)};
+    }
+
+    return Channel::getEmpty();
+}
+
+SplitNodeDescriptor SplitNodeDescriptor::loadFromJSON(const QJsonObject &root)
+{
+    SplitNodeDescriptor descriptor;
+    SplitDescriptor::loadFromJSON(descriptor, root, root["data"].toObject());
+    descriptor.flexH_ = root["flexh"].toDouble(1.0);
+    descriptor.flexV_ = root["flexv"].toDouble(1.0);
+    return descriptor;
+}
+
+ContainerNodeDescriptor ContainerNodeDescriptor::loadFromJSON(
+    const QJsonObject &root)
+{
+    ContainerNodeDescriptor descriptor;
+
+    descriptor.flexH_ = root.value("flexh").toDouble(1.0);
+    descriptor.flexV_ = root.value("flexv").toDouble(1.0);
+
+    descriptor.vertical_ = root.value("type").toString() == "vertical";
+
+    const auto items = root.value("items").toArray();
+    for (const auto val : items)
+    {
+        const auto obj = val.toObject();
+        auto type = obj.value("type");
+        if (type.toString() == "split")
+        {
+            descriptor.items_.emplace_back(
+                SplitNodeDescriptor::loadFromJSON(obj));
+        }
+        else
+        {
+            descriptor.items_.emplace_back(
+                ContainerNodeDescriptor::loadFromJSON(obj));
+        }
+    }
+
+    return descriptor;
 }
 
 TabDescriptor TabDescriptor::loadFromJSON(const QJsonObject &tabObj)
@@ -155,11 +238,11 @@ TabDescriptor TabDescriptor::loadFromJSON(const QJsonObject &tabObj)
         auto nodeType = splitRoot.value("type").toString();
         if (nodeType == "split")
         {
-            tab.rootNode_ = loadNodes<SplitNodeDescriptor>(splitRoot);
+            tab.rootNode_ = SplitNodeDescriptor::loadFromJSON(splitRoot);
         }
         else if (nodeType == "horizontal" || nodeType == "vertical")
         {
-            tab.rootNode_ = loadNodes<ContainerNodeDescriptor>(splitRoot);
+            tab.rootNode_ = ContainerNodeDescriptor::loadFromJSON(splitRoot);
         }
     }
 
@@ -173,7 +256,7 @@ WindowLayout WindowLayout::loadFromFile(const QString &path)
     bool hasSetAMainWindow = false;
 
     // "deserialize"
-    for (const QJsonValue &windowVal : loadWindowArray(path))
+    for (const auto windowVal : loadWindowArray(path))
     {
         QJsonObject windowObj = windowVal.toObject();
 

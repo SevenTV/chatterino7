@@ -7,9 +7,11 @@
 #include "widgets/BaseWindow.hpp"
 
 #include <pajlada/signals/signal.hpp>
+#include <QComboBox>
 #include <QFocusEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QRadioButton>
 
 #include <optional>
@@ -90,15 +92,21 @@ private:
 
         QLineEdit *kickName;
 
+        QListWidget *multiView;
+        QComboBox *multiIndicatorMode;
+
         MicroNotebook *notebook;
         QWidget *twitchPage;
         QWidget *kickPage;
+        QWidget *multiPage;
     } ui_{};
 
     EventFilter tabFilter_;
 
     ChannelPtr selectedChannel_;
     bool hasSelectedChannel_ = false;
+
+    size_t mcChannelIndex = 0;
 
     void ok();
     friend class EventFilter;

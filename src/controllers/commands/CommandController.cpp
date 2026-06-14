@@ -21,6 +21,7 @@
 #include "controllers/commands/builtin/twitch/GetModerators.hpp"
 #include "controllers/commands/builtin/twitch/GetVIPs.hpp"
 #include "controllers/commands/builtin/twitch/LowTrust.hpp"
+#include "controllers/commands/builtin/twitch/Pin.hpp"
 #include "controllers/commands/builtin/twitch/Poll.hpp"
 #include "controllers/commands/builtin/twitch/Prediction.hpp"
 #include "controllers/commands/builtin/twitch/Raid.hpp"
@@ -498,6 +499,11 @@ CommandController::CommandController(const Paths &paths)
                           &commands::relaunchWithConsole);
 #endif
 
+    this->registerCommand("/debug-disable-logfile", &commands::disableLogfile);
+    this->registerCommand("/debug-enable-logfile", &commands::enableLogfile);
+    this->registerCommand("/debug-relaunch-with-logfile",
+                          &commands::relaunchWithLogfile);
+
     this->registerCommand("/shield", &commands::shieldModeOn);
     this->registerCommand("/shieldoff", &commands::shieldModeOff);
 
@@ -511,6 +517,9 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/lockprediction", &commands::lockPrediction);
     this->registerCommand("/cancelprediction", &commands::cancelPrediction);
     this->registerCommand("/completeprediction", &commands::completePrediction);
+
+    this->registerCommand("/pin", &commands::pin);
+    this->registerCommand("/unpin", &commands::unpin);
 
     this->registerCommand("/c2-set-logging-rules", &commands::setLoggingRules);
     this->registerCommand("/c2-theme-autoreload", &commands::toggleThemeReload);

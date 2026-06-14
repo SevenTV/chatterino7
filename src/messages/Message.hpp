@@ -5,6 +5,7 @@
 #pragma once
 
 #include "messages/MessageFlag.hpp"
+#include "providers/twitch/api/HelixEnums.hpp"
 #include "providers/twitch/ChannelPointReward.hpp"
 #include "util/DebugCount.hpp"
 #include "util/QStringHash.hpp"
@@ -128,6 +129,8 @@ struct Message {
     std::shared_ptr<ChannelPointReward> reward = nullptr;
 
     uint32_t bits{0};
+
+    HelixAnnouncementColor announcementColor{HelixAnnouncementColor::Primary};
 
     /**
      * Clones this message.

@@ -161,6 +161,22 @@ public:
     /// @see #channel()
     ChannelPtr underlyingChannel() const;
 
+    /// Same as #underlyingChannel() except that it returns the active channel
+    /// for MultiChannels.
+    ChannelPtr selectedChannel() const;
+
+    enum class InferChannel : uint8_t {
+        UnderlyingOnly,
+        SourceChannelIfAvailable,
+        SearchParentIfAvailable,
+    };
+
+    /// Infer the channel this message originates from.
+    /// In MultiChannels, this uses the best matching channel.
+    ChannelPtr inferChannel(
+        const Message &msg,
+        InferChannel mode = InferChannel::SourceChannelIfAvailable) const;
+
     /// @brief Set the channel this view is displaying
     ///
     /// @see #underlyingChannel()
@@ -326,6 +342,9 @@ private:
     void setInputReply(const MessagePtr &message);
     void showReplyThreadPopup(const MessagePtr &message);
     bool canReplyToMessages() const;
+
+    /// Returns the selected channel as well as enabled flags.
+    std::pair<Channel *, MessageElementFlags> getMultiChannelInfo() const;
 
     void updateID();
     ChannelViewID id_{};

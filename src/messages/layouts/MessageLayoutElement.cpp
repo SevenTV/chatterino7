@@ -462,6 +462,7 @@ void TextLayoutElement::paint(QPainter &painter,
     }
 
     auto font = app->getFonts()->getFont(this->style_, this->scale_);
+    auto metrics = app->getFonts()->getFontMetrics(this->style_, this->scale_);
 
     bool isNametag = this->getLink().type == chatterino::Link::UserInfo ||
                      this->getLink().type == chatterino::Link::UserWhisper;
@@ -499,9 +500,8 @@ void TextLayoutElement::paint(QPainter &painter,
     painter.setPen(this->color_);
     painter.setFont(font);
 
-    painter.drawText(
-        QRectF(this->getRect().x(), this->getRect().y(), 10000, 10000), text,
-        QTextOption(Qt::AlignLeft | Qt::AlignTop));
+    QPointF pivot(this->getRect().x(), this->getRect().y() + metrics.ascent());
+    painter.drawText(pivot, text);
 }
 
 bool TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)

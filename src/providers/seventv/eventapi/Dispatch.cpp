@@ -137,7 +137,7 @@ EntitlementCreateDeleteDispatch::EntitlementCreateDeleteDispatch(
     const auto userObj = obj["user"_L1].toObject();
     this->seventvUsername = userObj["username"_L1].toString();
     const auto userConnections = userObj["connections"_L1].toArray();
-    for (const auto &connectionJson : userConnections)
+    for (const auto connectionJson : userConnections)
     {
         const auto connection = connectionJson.toObject();
         auto platform = connection["platform"_L1].toString();

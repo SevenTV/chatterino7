@@ -433,6 +433,10 @@ void HotkeyController::addDefaults(std::set<QString> &addedHotkeys)
         this->tryAddDefault(
             addedHotkeys, HotkeyCategory::Split, QKeySequence("Ctrl+Shift+U"),
             "toggleOverlayInertia", {"all"}, "toggle overlay click-through");
+        this->tryAddDefault(addedHotkeys, HotkeyCategory::Split,
+                            QKeySequence("Ctrl+F6"),
+                            "changeMultichannelContext", {"next"},
+                            "select next multi channel context");
     }
 
     // split input

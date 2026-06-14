@@ -33,13 +33,14 @@ using EmotePtr = std::shared_ptr<const Emote>;
 
 class Channel;
 class TwitchChannel;
+class ChannelChatters;
 class MessageThread;
 class IgnorePhrase;
 struct HelixVip;
 using HelixModerator = HelixVip;
 struct ChannelPointReward;
 struct TwitchEmoteOccurrence;
-class ChannelChatters;
+struct HelixPinnedChatMessage;
 
 namespace linkparser {
 struct Parsed;
@@ -264,6 +265,11 @@ public:
     static MessagePtrMut makeClearChatMessage(const QDateTime &now,
                                               const QString &actor,
                                               uint32_t count = 1);
+
+    static MessagePtrMut makePinSuccessMessage(QString text, const QString &id);
+
+    static MessagePtrMut makeCurrentPinnedMessage(
+        const TwitchChannel &channel, const HelixPinnedChatMessage &pin);
 
 private:
     struct TextState {

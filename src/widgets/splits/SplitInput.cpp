@@ -19,8 +19,10 @@
 #include "singletons/Fonts.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/Theme.hpp"
+#include "singletons/WindowManager.hpp"
 #include "util/Helpers.hpp"
 #include "util/LayoutCreator.hpp"
+#include "util/MultiChannel.hpp"
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/EmotePopup.hpp"
@@ -35,6 +37,7 @@
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitContainer.hpp"
 
+#include <QActionGroup>
 #include <QCompleter>
 #include <QPainter>
 #include <QSignalBlocker>
@@ -77,20 +80,13 @@ SplitInput::SplitInput(QWidget *parent, Split *_chatWidget,
     this->installEventFilter(this);
     this->initLayout();
 
-    auto *completer =
-        new QCompleter(this->split_->getChannel()->completionModel);
-    this->ui_.textEdit->setCompleter(completer);
-
     // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
     auto *spellChecker = getApp()->getSpellChecker();
     this->inputHighlighter = new InputHighlighter(*spellChecker, this);
-    this->inputHighlighter->setChannel(this->split_->getChannel());
+    this->updateChannel();
 
     this->signalHolder_.managedConnect(this->split_->channelChanged, [this] {
-        auto channel = this->split_->getChannel();
-        auto *completer = new QCompleter(channel->completionModel);
-        this->ui_.textEdit->setCompleter(completer);
-        this->inputHighlighter->setChannel(this->split_->getChannel());
+        this->updateChannel();
     });
 
     getSettings()->enableSpellChecking.connect(
@@ -255,7 +251,7 @@ void SplitInput::initLayout()
 
     // clear input and remove reply thread
     QObject::connect(this->ui_.cancelReplyButton, &Button::leftClicked, [this] {
-        this->setReply(nullptr);
+        this->setReply(nullptr, {});
     });
 
     // Forward selection change signal
@@ -394,7 +390,7 @@ void SplitInput::openEmotePopup()
             });
     }
 
-    this->emotePopup_->loadChannel(this->split_->getChannel());
+    this->emotePopup_->loadChannel(this->split_->getSelectedChannel());
     this->emotePopup_->show();
     this->emotePopup_->raise();
     this->emotePopup_->activateWindow();
@@ -402,7 +398,15 @@ void SplitInput::openEmotePopup()
 
 QString SplitInput::handleSendMessage(const std::vector<QString> &arguments)
 {
-    auto c = this->split_->getChannel();
+    ChannelPtr c;
+    if (this->replyTarget_)
+    {
+        c = this->replyChannel_.lock();
+    }
+    if (!c)
+    {
+        c = this->split_->getSelectedChannel();
+    }
     if (c == nullptr)
     {
         return "";
@@ -799,6 +803,45 @@ void SplitInput::installTextEditEvents()
 
     std::ignore = this->ui_.textEdit->contextMenuRequested.connect(
         [this](QMenu *menu, QPoint pos) {
+            auto channel = this->split_->getChannel();
+            if (auto *mc = dynamic_cast<MultiChannel *>(channel.get()))
+            {
+                auto channels = mc->channels();
+                auto currentIdx = mc->activeChannelIndex();
+                if (!channels.empty())
+                {
+                    auto *submenu = menu->addMenu("Set Context");
+                    auto *group = new QActionGroup(submenu);
+
+                    for (size_t i = 0; i < channels.size(); i++)
+                    {
+                        QString name = channels[i].channel->getName() % u" (";
+                        name +=
+                            qmagicenum::enumNameString(channels[i].platform);
+                        name += ')';
+                        auto *action = new QAction(name, submenu);
+                        action->setActionGroup(group);
+                        action->setCheckable(true);
+                        action->setChecked(i == currentIdx);
+                        QObject::connect(
+                            action, &QAction::toggled, this,
+                            [this, i](bool checked) {
+                                if (!checked)
+                                {
+                                    return;
+                                }
+                                auto *mc = dynamic_cast<MultiChannel *>(
+                                    this->split_->getChannel().get());
+                                mc->setActiveChannelIndex(i);
+                                getApp()
+                                    ->getWindows()
+                                    ->forceLayoutChannelViews();
+                            });
+                        submenu->addAction(action);
+                    }
+                }
+            }
+
 #ifdef CHATTERINO_WITH_SPELLCHECK
             menu->addSeparator();
             auto *spellcheckAction = new QAction("Check spelling", menu);
@@ -880,7 +923,7 @@ void SplitInput::onCursorPositionChanged()
 
 void SplitInput::updateCompletionPopup()
 {
-    auto *channel = this->split_->getChannel().get();
+    auto *channel = this->split_->getSelectedChannel().get();
     auto *tc = dynamic_cast<TwitchChannel *>(channel);
     bool showEmoteCompletion = getSettings()->emoteCompletionWithColon;
     bool showUsernameCompletion =
@@ -961,7 +1004,7 @@ void SplitInput::showCompletionPopup(const QString &text, CompletionKind kind)
     auto *popup = this->inputCompletionPopup_.data();
     assert(popup);
 
-    popup->updateCompletion(text, kind, this->split_->getChannel());
+    popup->updateCompletion(text, kind, this->split_->getSelectedChannel());
 
     auto pos = this->mapToGlobal(QPoint{0, 0}) - QPoint(0, popup->height()) +
                QPoint((this->width() - popup->width()) / 2, 0);
@@ -1091,7 +1134,7 @@ void SplitInput::editTextChanged()
     }
 
     if (text.startsWith("/r ", Qt::CaseInsensitive) &&
-        this->split_->getChannel()->isTwitchChannel())
+        this->split_->getSelectedChannel()->isTwitchChannel())
     {
         auto lastUser = app->getTwitch()->getLastUserThatWhisperedMe();
         if (!lastUser.isEmpty())
@@ -1241,7 +1284,7 @@ void SplitInput::giveFocus(Qt::FocusReason reason)
     this->ui_.textEdit->setFocus(reason);
 }
 
-void SplitInput::setReply(MessagePtr target)
+void SplitInput::setReply(MessagePtr target, std::weak_ptr<Channel> channel)
 {
     auto oldParent = this->replyTarget_;
     if (this->enableInlineReplying_ && oldParent)
@@ -1261,6 +1304,7 @@ void SplitInput::setReply(MessagePtr target)
     if (target != nullptr)
     {
         this->replyTarget_ = std::move(target);
+        this->replyChannel_ = std::move(channel);
 
         if (this->enableInlineReplying_)
         {
@@ -1311,6 +1355,7 @@ void SplitInput::setReply(MessagePtr target)
     else
     {
         this->replyTarget_.reset();
+        this->replyChannel_.reset();
 
         if (this->enableInlineReplying_)
         {
@@ -1353,7 +1398,7 @@ bool SplitInput::shouldPreventInput(const QString &text) const
         return false;
     }
 
-    auto channel = this->split_->getChannel();
+    auto channel = this->split_->getSelectedChannel();
 
     if (channel == nullptr)
     {
@@ -1488,6 +1533,27 @@ void SplitInput::setSendWaitStatus(const QString &text) const
     {
         this->ui_.sendWaitStatus->setHidden(!getSettings()->showSendWaitTimer);
     }
+}
+
+void SplitInput::updateChannel()
+{
+    this->channelConnections_.clear();
+
+    auto channel = this->split_->getChannel();
+    if (auto *multiChannel = dynamic_cast<MultiChannel *>(channel.get()))
+    {
+        this->channelConnections_.managedConnect(
+            multiChannel->activeChannelChanged, [this] {
+                auto selected = this->split_->getSelectedChannel();
+                this->ui_.textEdit->setCompleter(
+                    new QCompleter(selected->completionModel));
+                this->inputHighlighter->setChannel(selected);
+            });
+    }
+
+    auto selected = this->split_->getSelectedChannel();
+    this->ui_.textEdit->setCompleter(new QCompleter(selected->completionModel));
+    this->inputHighlighter->setChannel(selected);
 }
 
 }  // namespace chatterino

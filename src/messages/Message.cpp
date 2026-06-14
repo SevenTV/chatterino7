@@ -101,6 +101,16 @@ ScrollbarHighlight Message::getScrollBarHighlight() const
         };
     }
 
+    if (this->flags.has(MessageFlag::Announcement) &&
+        getSettings()->enableAnnouncementHighlight)
+    {
+        return {
+            ColorProvider::instance().color(colorTypeFromHelixAnnouncementColor(
+                this->announcementColor,
+                getSettings()->enableColoredAnnouncementHighlight)),
+        };
+    }
+
     return {};
 }
 
@@ -128,6 +138,7 @@ std::shared_ptr<Message> Message::clone() const
     cloned->reward = this->reward;
     cloned->platform = this->platform;
     cloned->bits = this->bits;
+    cloned->announcementColor = this->announcementColor;
     std::ranges::transform(this->elements, std::back_inserter(cloned->elements),
                            [](const auto &element) {
                                return element->clone();
@@ -194,6 +205,12 @@ QJsonObject Message::toJson() const
     if (this->bits > 0)
     {
         msg["bits"_L1] = static_cast<qint64>(this->bits);
+    }
+
+    if (this->flags.has(MessageFlag::Announcement))
+    {
+        msg["announcementColor"_L1] =
+            qmagicenum::enumNameString(this->announcementColor);
     }
 
     // XXX: figure out if we can add this in tests
