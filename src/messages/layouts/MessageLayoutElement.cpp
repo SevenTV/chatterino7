@@ -464,13 +464,16 @@ void TextLayoutElement::paint(QPainter &painter,
     auto font = app->getFonts()->getFont(this->style_, this->scale_);
     auto metrics = app->getFonts()->getFontMetrics(this->style_, this->scale_);
 
-    const bool isNametag = this->getLink().type == chatterino::Link::UserInfo ||
-                            this->getLink().type == chatterino::Link::UserWhisper;
-    const bool isMention = isNametag && !this->getCreator().getFlags().has(MessageElementFlag::Username);
+    const bool isNametag =
+        this->getLink().type == chatterino::Link::UserInfo ||
+        this->getLink().type == chatterino::Link::UserWhisper;
+    const bool isMention = isNametag && !this->getCreator().getFlags().has(
+                                            MessageElementFlag::Mention);
     bool drawPaint = isNametag && this->messageColor_ != MessageColor::System &&
                      getSettings()->displaySevenTVPaints;
-    
-    if (isMention && (!getSettings()->colorUsernames || !getSettings()->enablePaintsOnMentions))
+
+    if (isMention && (!getSettings()->colorUsernames ||
+                      !getSettings()->enablePaintsOnMentions))
     {
         drawPaint = false;
     }
@@ -516,13 +519,15 @@ bool TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)
     const bool isNametag =
         this->getLink().type == chatterino::Link::UserInfo ||
         this->getLink().type == chatterino::Link::UserWhisper;
-    const bool isMention = isNametag && !this->getCreator().getFlags().has(MessageElementFlag::Username);
+    const bool isMention = isNametag && !this->getCreator().getFlags().has(
+                                            MessageElementFlag::Mention);
     bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
-            if (isMention && (!getSettings()->colorUsernames || !getSettings()->enablePaintsOnMentions))
-            {
-                drawPaint = false;
-            }
-            
+    if (isMention && (!getSettings()->colorUsernames ||
+                      !getSettings()->enablePaintsOnMentions))
+    {
+        drawPaint = false;
+    }
+
     if (!drawPaint)
     {
         return false;

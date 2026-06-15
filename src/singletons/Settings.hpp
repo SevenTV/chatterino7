@@ -245,7 +245,8 @@ public:
                                             true};
     BoolSetting boldUsernames = {"/appearance/messages/boldUsernames", true};
     BoolSetting colorUsernames = {"/appearance/messages/colorUsernames", true};
-    BoolSetting enablePaintsOnMentions = {"/appearance/messages/enablePaintsOnMentions", true};
+    BoolSetting enablePaintsOnMentions = {
+        "/appearance/messages/enablePaintsOnMentions", true};
     BoolSetting findAllUsernames = {"/appearance/messages/findAllUsernames",
                                     false};
     // BoolSetting customizable splitheader
