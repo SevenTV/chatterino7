@@ -45,7 +45,6 @@ jobs:
         include:
           - os: ubuntu-22.04
             container: ghcr.io/chatterino/chatterino2-build-ubuntu-22.04:latest
-            qt-version: 6.7.2
             force-lto: false
             skip-artifact: false
             skip-crashpad: false
@@ -54,7 +53,6 @@ jobs:
             plugins: true
           - os: ubuntu-24.04
             container: ghcr.io/chatterino/chatterino2-build-ubuntu-24.04:latest
-            qt-version: 6.7.2
             force-lto: false
             skip-artifact: false
             skip-crashpad: false
@@ -63,12 +61,18 @@ jobs:
             plugins: true
           - os: ubuntu-24.04
             container: ghcr.io/chatterino/chatterino2-build-ubuntu-24.04:latest
-            qt-version: 6.7.2
             force-lto: false
             skip-artifact: false
             skip-crashpad: false
             build-deb: false
             plugins: false
+          - os: ubuntu-26.04
+            container: ghcr.io/chatterino/chatterino2-build-ubuntu-26.04:latest
+            force-lto: false
+            skip-artifact: false
+            skip-crashpad: false
+            build-deb: true
+            plugins: true
     env:
       C2_ENABLE_LTO: ${{ matrix.force-lto }}
       C2_ENABLE_CRASHPAD: ${{ matrix.skip-crashpad == false }}
@@ -135,7 +139,7 @@ jobs:
         if: matrix.build-appimage
         uses: actions/upload-artifact@v7
         with:
-          name: Chatterino-x86_64-Qt-${{ matrix.qt-version }}.AppImage
+          name: Chatterino-x86_64-Qt-6.7.2.AppImage
           path: build/Chatterino_7TV-x86_64.AppImage
 
       - name: Package - .deb (Ubuntu)
@@ -148,7 +152,7 @@ jobs:
         if: matrix.build-deb
         uses: actions/upload-artifact@v7
         with:
-          name: Chatterino-${{ matrix.os }}-Qt-${{ matrix.qt-version }}.deb
+          name: Chatterino-${{ matrix.os }}.deb
           path: build/Chatterino-${{ matrix.os }}-x86_64.deb
 
   build-flatpak:

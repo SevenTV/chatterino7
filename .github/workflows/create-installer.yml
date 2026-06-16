@@ -150,9 +150,6 @@ jobs:
         working-directory: build
         run: |
           ls -l
-          mv Chatterino-ubuntu-22.04-Qt-6.7.2.deb Chatterino-Ubuntu-22.04-Qt6.deb
-          mv Chatterino-ubuntu-24.04-Qt-6.7.2.deb Chatterino-Ubuntu-24.04-Qt6.deb
-
           mv Chatterino-x86_64-Qt-6.7.2.AppImage Chatterino-x86_64-Qt6.AppImage
 
           mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino.dmg

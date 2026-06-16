@@ -504,8 +504,6 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     builder->messageText = messageText;
 
     MessageParseArgs args;
-    args.isStaffOrBroadcaster = kickChannel->isBroadcaster();
-
     auto highlightAlert = processHighlights(builder, args);
 
     return {builder.release(), highlightAlert};
@@ -735,7 +733,6 @@ std::tuple<MessagePtrMut, MessagePtrMut, HighlightAlert>
 
         MessageParseArgs args;
         args.isSubscriptionMessage = true;
-        args.isStaffOrBroadcaster = channel->isBroadcaster();
         alert = processHighlights(builder, args);
         customMessage = builder.release();
     }
