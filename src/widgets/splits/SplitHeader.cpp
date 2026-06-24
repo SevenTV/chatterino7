@@ -903,8 +903,20 @@ void SplitHeader::handleChannelChanged()
     this->updateChannelText();
 
     this->channelConnections_.clear();
-
     auto channel = this->split_->getChannel();
+    if (auto *multiChannel = dynamic_cast<MultiChannel *>(channel.get()))
+    {
+        this->channelConnections_.managedConnect(
+            multiChannel->activeChannelChanged, [this] {
+                this->handleChannelChanged();
+                this->updateRoomModes();
+            });
+        if (const auto *active = multiChannel->activeChannel())
+        {
+            channel = active->channel;
+        }
+    }
+
     if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get()))
     {
         this->channelConnections_.managedConnect(
@@ -918,14 +930,6 @@ void SplitHeader::handleChannelChanged()
                                                  [this]() {
                                                      this->updateChannelText();
                                                  });
-    }
-    else if (auto *multiChannel = dynamic_cast<MultiChannel *>(channel.get()))
-    {
-        this->channelConnections_.managedConnect(
-            multiChannel->activeChannelChanged, [this] {
-                this->updateChannelText();
-                this->updateRoomModes();
-            });
     }
 }
 
@@ -950,13 +954,12 @@ void SplitHeader::setAddButtonVisible(bool value)
 void SplitHeader::updateChannelText()
 {
     auto indirectChannel = this->split_->getIndirectChannel();
-    auto channel = this->split_->getChannel();
     this->isLive_ = false;
     this->tooltipText_ = QString();
 
     auto selectedChannel = this->split_->getSelectedChannel();
 
-    auto title = channel->getLocalizedName();
+    auto title = selectedChannel->getLocalizedName();
 
     if (indirectChannel.getType() == Channel::Type::TwitchWatching)
     {

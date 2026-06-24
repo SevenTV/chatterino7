@@ -1226,22 +1226,39 @@ void ChannelView::setChannel(const ChannelPtr &underlyingChannel)
     this->queueUpdate();
 
     // Notifications
-    auto *twitchChannel =
-        dynamic_cast<TwitchChannel *>(underlyingChannel.get());
-    if (twitchChannel != nullptr)
+    auto *mc = dynamic_cast<MultiChannel *>(underlyingChannel.get());
+    auto handleChan = [this](Channel *chan) {
+        auto *twitchChannel = dynamic_cast<TwitchChannel *>(chan);
+        if (twitchChannel != nullptr)
+        {
+            this->channelConnections_.managedConnect(
+                twitchChannel->streamStatusChanged, [this]() {
+                    this->liveStatusChanged.invoke();
+                });
+        }
+        else if (auto *kickChannel = dynamic_cast<KickChannel *>(chan))
+        {
+            this->channelConnections_.managedConnect(
+                kickChannel->liveStatusChanged, [this] {
+                    this->liveStatusChanged.invoke();
+                });
+        }
+    };
+
+    if (mc)
     {
+        for (const auto &child : mc->channels())
+        {
+            handleChan(child.channel.get());
+        }
         this->channelConnections_.managedConnect(
-            twitchChannel->streamStatusChanged, [this]() {
+            mc->activeChannelChanged, [this] {
                 this->liveStatusChanged.invoke();
             });
     }
-    else if (auto *kickChannel =
-                 dynamic_cast<KickChannel *>(underlyingChannel.get()))
+    else
     {
-        this->channelConnections_.managedConnect(
-            kickChannel->liveStatusChanged, [this] {
-                this->liveStatusChanged.invoke();
-            });
+        handleChan(underlyingChannel.get());
     }
 }
 
