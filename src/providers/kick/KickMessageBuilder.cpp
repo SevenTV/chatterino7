@@ -36,7 +36,7 @@ using namespace Qt::Literals;
 EmotePtr lookupEmote(const KickChannel &channel, uint64_t senderID,
                      QStringView word)
 {
-    EmoteName wordStr(word.toString());  // FIXME: don't do this...
+    EmoteName wordStr{word.toString()};  // FIXME: don't do this...
     const auto *globalFfzEmotes = getApp()->getFfzEmotes();
     const auto *globalBttvEmotes = getApp()->getBttvEmotes();
     const auto *globalSeventvEmotes = getApp()->getSeventvEmotes();
