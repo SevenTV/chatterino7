@@ -46,4 +46,6 @@ QString disableLogfile(const CommandContext &ctx);
 QString enableLogfile(const CommandContext &ctx);
 QString relaunchWithLogfile(const CommandContext &ctx);
 
+QString seventvPresence(const CommandContext &ctx);
+
 }  // namespace chatterino::commands

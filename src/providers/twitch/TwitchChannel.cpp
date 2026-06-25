@@ -2479,7 +2479,7 @@ void TwitchChannel::updateSevenTVActivity()
 
     qCDebug(chatterinoSeventv) << "Sending activity in" << this->getName();
 
-    getApp()->getSeventvAPI()->updatePresence(
+    getApp()->getSeventvAPI()->updateTwitchPresence(
         this->roomId(), currentSeventvUserID,
         [chan = weakOf<Channel>(this)]() {
             const auto self =

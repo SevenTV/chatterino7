@@ -504,6 +504,9 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/debug-relaunch-with-logfile",
                           &commands::relaunchWithLogfile);
 
+    this->registerCommand("/debug-seventv-presence",
+                          &commands::seventvPresence);
+
     this->registerCommand("/shield", &commands::shieldModeOn);
     this->registerCommand("/shieldoff", &commands::shieldModeOff);
 
