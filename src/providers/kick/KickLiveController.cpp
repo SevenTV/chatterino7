@@ -15,7 +15,7 @@ namespace {
 using namespace std::chrono_literals;
 
 constexpr auto IMMEDIATE_DELAY = 1s;
-constexpr auto REFRESH_INTERVAL = 1min;
+constexpr auto REFRESH_INTERVAL = 30s;
 
 constexpr size_t CHUNK_SIZE = 50;
 

@@ -36,6 +36,13 @@ struct KickPrivateChatroomInfo {
     std::optional<std::chrono::minutes> followersModeDuration;
 };
 
+struct KickPrivateChannelSubBadge {
+    KickPrivateChannelSubBadge(BoostJsonObject obj);
+
+    unsigned months;
+    QString badgeImageUrl;
+};
+
 struct KickPrivateChannelInfo {
     KickPrivateChannelInfo(BoostJsonObject obj);
 
@@ -44,6 +51,7 @@ struct KickPrivateChannelInfo {
     QString slug;
     KickPrivateUserInfo user;
     KickPrivateChatroomInfo chatroom;
+    std::vector<KickPrivateChannelSubBadge> subBadges;
 };
 
 struct KickPrivateUserInChannelInfo {
@@ -115,6 +123,9 @@ public:
     static void privateEmotesInChannel(
         const QString &username,
         Callback<std::vector<KickPrivateEmoteSetInfo>> cb);
+
+    static void privateChannelHistory(uint64_t channelID,
+                                      Callback<BoostJsonObject> cb);
 
     void sendMessage(uint64_t broadcasterUserID, const QString &message,
                      const QString &replyToMessageID, Callback<void> cb);
