@@ -11,6 +11,7 @@
 #include <QUuid>
 #include <QVarLengthArray>
 
+#include <algorithm>
 #include <set>
 
 namespace {
@@ -297,22 +298,16 @@ bool MultiChannel::hasHighRateLimit() const
 
 bool MultiChannel::isLive() const
 {
-    const auto *active = this->activeChannel();
-    if (active)
-    {
-        return active->channel->isLive();
-    }
-    return false;
+    return std::ranges::any_of(this->channels_, [](const auto &c) {
+        return c.channel->isLive();
+    });
 }
 
 bool MultiChannel::isRerun() const
 {
-    const auto *active = this->activeChannel();
-    if (active)
-    {
-        return active->channel->isRerun();
-    }
-    return false;
+    return std::ranges::any_of(this->channels_, [](const auto &c) {
+        return c.channel->isRerun();
+    });
 }
 
 bool MultiChannel::shouldIgnoreHighlights() const
