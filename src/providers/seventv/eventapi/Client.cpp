@@ -5,6 +5,7 @@
 #include "providers/seventv/eventapi/Client.hpp"
 
 #include "Application.hpp"
+#include "providers/chatterino/ChatterinoBadges.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/eventapi/Message.hpp"
 #include "providers/seventv/eventapi/Subscription.hpp"
@@ -12,7 +13,9 @@
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/seventv/SeventvPaints.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
+#include "util/PostToThread.hpp"
 #include "util/QMagicEnum.hpp"
+#include "util/Variant.hpp"
 
 #include <QJsonArray>
 
@@ -344,6 +347,35 @@ void Client::onEntitlementCreate(
     if (!app)
     {
         return;  // shutting down
+    }
+
+    if (entitlement.connections.size() >= 2)
+    {
+        QString twitchID;
+        uint64_t kickID = 0;
+        for (const auto &conn : entitlement.connections)
+        {
+            std::visit(variant::Overloaded{
+                           [&](const KickUser &kick) {
+                               kickID = kick.id;
+                           },
+                           [&](const TwitchUser &twitch) {
+                               twitchID = twitch.id;
+                           },
+                       },
+                       conn);
+        }
+        if (!twitchID.isEmpty() && kickID != 0)
+        {
+            postToThread([twitchID, kickID] {
+                auto *app = tryGetApp();
+                if (app)
+                {
+                    app->getChatterinoBadges()->setKickMapping(twitchID,
+                                                               kickID);
+                }
+            });
+        }
     }
 
     auto *badges = app->getSeventvBadges();

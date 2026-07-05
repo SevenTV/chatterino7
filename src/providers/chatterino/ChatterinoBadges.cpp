@@ -33,6 +33,27 @@ std::optional<EmotePtr> ChatterinoBadges::getBadge(const UserId &id)
     return std::nullopt;
 }
 
+EmotePtr ChatterinoBadges::getKickBadge(uint64_t kickID)
+{
+    auto it = this->kickMapping.find(kickID);
+    if (it != this->kickMapping.end())
+    {
+        return this->emotes[it->second];
+    }
+    return {};
+}
+
+void ChatterinoBadges::setKickMapping(const QString &twitchID, uint64_t kickID)
+{
+    // Lookup by Twitch ID first. Assume that most users don't have a Chatterino badge.
+    auto existing = this->badgeMap.find(twitchID);
+    if (existing == this->badgeMap.end())
+    {
+        return;
+    }
+    this->kickMapping.emplace(kickID, existing->second);
+}
+
 void ChatterinoBadges::loadChatterinoBadges()
 {
     static QUrl url("https://api.chatterino.com/badges");

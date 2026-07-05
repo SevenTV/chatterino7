@@ -10,6 +10,7 @@
 #include "messages/MessageElement.hpp"
 #include "messages/MessageThread.hpp"
 #include "providers/bttv/BttvEmotes.hpp"
+#include "providers/chatterino/ChatterinoBadges.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
 #include "providers/kick/KickAccount.hpp"
@@ -382,6 +383,19 @@ void appendSeventvBadge(KickMessageBuilder &builder)
     }
 }
 
+void appendChatterinoBadge(KickMessageBuilder &builder)
+{
+    if (auto badge =
+            getApp()->getChatterinoBadges()->getKickBadge(builder.senderID))
+    {
+        builder.emplace<BadgeElement>(badge,
+                                      MessageElementFlag::BadgeChatterino);
+
+        /// e.g. "chatterino:Chatterino Top donator"
+        builder->externalBadges.emplace_back(badge->name.string);
+    }
+}
+
 HighlightAlert processHighlights(KickMessageBuilder &builder,
                                  const MessageParseArgs &args)
 {
@@ -489,6 +503,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     builder.emplace<TwitchModerationElement>();
 
     appendKickBadges(builder, identity["badges"].toArray());
+    appendChatterinoBadge(builder);
     appendSeventvBadge(builder);
 
     builder.appendUsername(identity);

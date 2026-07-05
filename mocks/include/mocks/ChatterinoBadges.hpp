@@ -24,6 +24,15 @@ public:
         this->users.emplace(std::move(id), std::move(emote));
     }
 
+    EmotePtr getKickBadge(uint64_t /* kickID */) override
+    {
+        return {};
+    }
+
+    void setKickMapping(const QString &twitchID, uint64_t kickID) override
+    {
+    }
+
 private:
     std::unordered_map<UserId, EmotePtr> users;
 };
