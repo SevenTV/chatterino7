@@ -11,6 +11,7 @@
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "messages/Message.hpp"
 #include "messages/MessageThread.hpp"
+#include "providers/kick/KickAccount.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/Settings.hpp"
@@ -282,30 +283,41 @@ void ReplyThreadPopup::addMessagesFromThread()
 
 void ReplyThreadPopup::updateInputUI()
 {
-    auto channel = this->split_->getChannel();
+    auto channel = this->split_->getSelectedChannel();
     // Bail out if not a twitch channel.
     // Special twitch channels will hide their reply input box.
-    if (!channel || !channel->isTwitchChannel())
+    if (!channel || !channel->isTwitchOrKickChannel())
     {
         return;
     }
 
     this->ui_.replyInput->setVisible(channel->isWritable());
 
-    auto user = getApp()->getAccounts()->twitch.getCurrent();
+    QString name;
+    if (channel->isTwitchChannel())
+    {
+        auto user = getApp()->getAccounts()->twitch.getCurrent();
+        if (!user->isAnon())
+        {
+            name = user->getUserName();
+        }
+    }
+    else
+    {
+        auto user = getApp()->getAccounts()->kick.current();
+        if (!user->isAnonymous())
+        {
+            name = user->username();
+        }
+    }
     QString placeholderText;
-
-    if (user->isAnon())
+    if (name.isEmpty())
     {
         placeholderText = QStringLiteral("Log in to send messages...");
     }
     else
     {
-        placeholderText = QStringLiteral("Reply as %1...")
-                              .arg(getApp()
-                                       ->getAccounts()
-                                       ->twitch.getCurrent()
-                                       ->getUserName());
+        placeholderText = QStringLiteral("Reply as %1...").arg(name);
     }
 
     this->ui_.replyInput->setPlaceholderText(placeholderText);
