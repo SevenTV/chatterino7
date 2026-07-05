@@ -469,6 +469,43 @@ void KickChannel::setSendWait(std::chrono::seconds waitTime)
     }
 }
 
+EmotePtr KickChannel::getSubBadge(unsigned months)
+{
+    auto cIt = this->subBadges_.find(months);
+    if (cIt != this->subBadges_.end())
+    {
+        return cIt->second;
+    }
+    auto baseIt = this->subBadgeImages_.lower_bound(months);
+    if (baseIt == this->subBadgeImages_.end())
+    {
+        return {};
+    }
+    if (baseIt->first != months)
+    {
+        if (baseIt == this->subBadgeImages_.begin())
+        {
+            return {};
+        }
+        --baseIt;
+    }
+
+    auto name = [&]() -> QString {
+        if (months == 1)
+        {
+            return u"1-Month Subscriber"_s;
+        }
+        return QString::number(months) % u"-Months Subscriber";
+    }();
+    auto emote = std::make_shared<const Emote>(Emote{
+        .name = {name},
+        .images = ImageSet{baseIt->second},
+        .tooltip = Tooltip{name},
+    });
+    this->subBadges_.emplace(months, emote);
+    return emote;
+}
+
 void KickChannel::messageRemovedFromStart(const MessagePtr &msg)
 {
     if (msg->replyThread)
@@ -502,6 +539,7 @@ void KickChannel::resolveChannelInfo()
                 return;
             }
 
+            self->initSubBadges(res->subBadges);
             self->slug_ = res->slug;
             self->setUserInfo(UserInit{
                 .roomID = res->chatroom.roomID,
@@ -864,6 +902,18 @@ void KickChannel::emitSendWait()
     else
     {
         this->sendWaitUpdate.invoke(formatTime(remaining, 2));
+    }
+}
+
+void KickChannel::initSubBadges(
+    std::span<const KickPrivateChannelSubBadge> infos)
+{
+    this->subBadges_.clear();
+    this->subBadgeImages_.clear();
+    for (const auto &info : infos)
+    {
+        this->subBadgeImages_.emplace(
+            info.months, Image::fromAutoscaledUrl({info.badgeImageUrl}, 18));
     }
 }
 
