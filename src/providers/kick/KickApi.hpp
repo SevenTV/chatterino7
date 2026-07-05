@@ -124,6 +124,9 @@ public:
         const QString &username,
         Callback<std::vector<KickPrivateEmoteSetInfo>> cb);
 
+    static void privateChannelHistory(uint64_t channelID,
+                                      Callback<BoostJsonObject> cb);
+
     void sendMessage(uint64_t broadcasterUserID, const QString &message,
                      const QString &replyToMessageID, Callback<void> cb);
 

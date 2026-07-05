@@ -17,12 +17,14 @@
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/kick/KickLiveUpdates.hpp"
+#include "providers/kick/KickMessageBuilder.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvAPI.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Settings.hpp"
+#include "util/BoostJsonWrap.hpp"
 #include "util/FormatTime.hpp"
 #include "util/Helpers.hpp"
 #include "util/PostToThread.hpp"
@@ -559,6 +561,7 @@ void KickChannel::resolveChannelInfo()
                 .slowModeDuration = res->chatroom.slowModeDuration,
                 .followersModeDuration = res->chatroom.followersModeDuration,
             });
+            self->loadChannelHistory();
         });
 }
 
@@ -915,6 +918,43 @@ void KickChannel::initSubBadges(
         this->subBadgeImages_.emplace(
             info.months, Image::fromAutoscaledUrl({info.badgeImageUrl}, 18));
     }
+}
+
+void KickChannel::loadChannelHistory()
+{
+    KickApi::privateChannelHistory(
+        this->channelID_, [weak = this->weakFromThis()](const auto &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            if (!res)
+            {
+                qCWarning(chatterinoKick)
+                    << *self << "Failed to load channel history" << res.error();
+                return;
+            }
+            BoostJsonObject obj(*res);
+            std::vector<MessagePtr> messages;
+            for (auto msg :
+                 obj["data"]["messages"].toArray() | std::views::reverse)
+            {
+                if (msg["type"].toStringView() != "message")
+                {
+                    continue;
+                }
+                auto [ptr, highlight] = KickMessageBuilder::makeChatMessage(
+                    self.get(), msg.toObject());
+                messages.emplace_back(std::move(ptr));
+            }
+
+            // Just use the Twitch setting here.
+            if (getSettings()->loadTwitchMessageHistoryOnConnect)
+            {
+                self->fillInMissingMessages(messages);
+            }
+        });
 }
 
 QDebug operator<<(QDebug dbg, const KickChannel &chan)

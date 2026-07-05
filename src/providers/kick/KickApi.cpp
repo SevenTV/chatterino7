@@ -347,6 +347,14 @@ void KickApi::privateEmotesInChannel(
     autoSlugify(u"https://kick.com/emotes"_s, std::move(cb), username);
 }
 
+void KickApi::privateChannelHistory(uint64_t channelID,
+                                    Callback<BoostJsonObject> cb)
+{
+    autoSlugify(u"https://web.kick.com/api/v1/chat/" %
+                    QString::number(channelID) % "/history",
+                std::move(cb));
+}
+
 void KickApi::sendMessage(uint64_t broadcasterUserID, const QString &message,
                           const QString &replyToMessageID, Callback<void> cb)
 {

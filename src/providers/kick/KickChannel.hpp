@@ -182,6 +182,8 @@ private:
 
     void initSubBadges(std::span<const KickPrivateChannelSubBadge> infos);
 
+    void loadChannelHistory();
+
     // Kick usually calls this username
     QString displayName_;
     // The name in the URL (replaces non-alphanumeric characters with dashes)
