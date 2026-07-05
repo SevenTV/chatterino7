@@ -373,6 +373,22 @@ void appendKickBadges(KickMessageBuilder &builder, BoostJsonArray badges)
     }
 }
 
+void appendKickV2Badges(KickMessageBuilder &builder, BoostJsonArray badges)
+{
+    // FIXME: respect order
+    for (auto badgeObj : badges)
+    {
+        bool selected = badgeObj["selected"].toBool();
+        if (!selected)
+        {
+            continue;
+        }
+        auto [emote, flag] = KickBadges::getV2Cached(badgeObj.toObject());
+
+        builder.emplace<BadgeElement>(emote, flag);
+    }
+}
+
 void appendSeventvBadge(KickMessageBuilder &builder)
 {
     auto badge = getApp()->getSeventvBadges()->getKickBadge(builder.senderID);
@@ -488,6 +504,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     builder.emplace<TimestampElement>(builder->serverReceivedTime.time());
     builder.emplace<TwitchModerationElement>();
 
+    appendKickV2Badges(builder, identity["badges_v2"].toArray());
     appendKickBadges(builder, identity["badges"].toArray());
     appendSeventvBadge(builder);
 
