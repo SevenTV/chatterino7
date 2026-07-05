@@ -937,9 +937,14 @@ void KickChannel::loadChannelHistory()
             }
             BoostJsonObject obj(*res);
             std::vector<MessagePtr> messages;
-            for (auto msg :
-                 obj["data"]["messages"].toArray() | std::views::reverse)
+            auto arr = obj["data"]["messages"].toArray();
+            if (arr.empty())
             {
+                return;
+            }
+            for (auto i = static_cast<qsizetype>(arr.size() - 1); i >= 0; --i)
+            {
+                auto msg = arr.at(static_cast<size_t>(i));
                 if (msg["type"].toStringView() != "message")
                 {
                     continue;
