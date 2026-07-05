@@ -920,7 +920,9 @@ set(SOURCE_FILES
         widgets/splits/SplitInput.hpp
         widgets/splits/SplitOverlay.cpp
         widgets/splits/SplitOverlay.hpp
-        )
+        util/FormatDate.hpp
+        util/FormatDate.cpp
+)
 
 if (APPLE)
     set(MACOS_BUNDLE_ICON_FILE "${CMAKE_SOURCE_DIR}/resources/chatterino.icns")

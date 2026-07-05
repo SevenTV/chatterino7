@@ -33,6 +33,7 @@
 #include "singletons/WindowManager.hpp"
 #include "util/Clipboard.hpp"
 #include "util/FormatTime.hpp"
+#include "util/FormatDate.hpp"
 #include "util/Helpers.hpp"
 #include "util/LayoutCreator.hpp"
 #include "util/PostToThread.hpp"
@@ -1060,11 +1061,10 @@ void UserInfoPopup::updateUserData()
             this->ui_.nameLabel->setText(user.displayName);
             this->ui_.nameLabel->setProperty("copy-text", user.displayName);
         }
-
         this->setWindowTitle(TEXT_TITLE.arg(
             user.displayName, this->underlyingChannel_->getName()));
-        this->ui_.createdDateLabel->setText(
-            TEXT_CREATED.arg(user.createdAt.section("T", 0, 0)));
+        this->ui_.createdDateLabel->setText(TEXT_CREATED.arg(
+            formatDate(QDateTime::fromString(user.createdAt, Qt::ISODateWithMs))));
         this->ui_.createdDateLabel->setToolTip(
             formatLongFriendlyDuration(
                 QDateTime::fromString(user.createdAt, Qt::ISODateWithMs),
@@ -1167,10 +1167,8 @@ void UserInfoPopup::updateUserData()
                     {
                         QDateTime followedAt = QDateTime::fromString(
                             subageInfo.followingSince, Qt::ISODate);
-                        QString followingSince =
-                            followedAt.toString("yyyy-MM-dd");
                         this->ui_.followageLabel->setText("❤ Following since " +
-                                                          followingSince);
+                                                          formatDate(followedAt));
                         this->ui_.followageLabel->setToolTip(
                             formatLongFriendlyDuration(
                                 followedAt, QDateTime::currentDateTimeUtc()) +
@@ -1502,7 +1500,7 @@ void UserInfoPopup::updateKickUserData()
         self->setWindowTitle(TEXT_TITLE.arg(
             channel.user.username, self->underlyingChannel_->getName()));
         self->ui_.createdDateLabel->setText(TEXT_CREATED.arg(
-            channel.chatroom.createdAt.date().toString(Qt::ISODate)));
+            formatDate(channel.chatroom.createdAt.date())));
         self->ui_.createdDateLabel->setToolTip(
             formatLongFriendlyDuration(channel.chatroom.createdAt,
                                        QDateTime::currentDateTimeUtc()) +

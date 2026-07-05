@@ -97,6 +97,29 @@ enum class TabStyle : std::uint8_t {
     Compact,
 };
 
+enum class DateFormat : std::uint8_t {
+    YearMonthDayHyphen,
+    DayMonthYearDot,
+    DayMonthYearSlash,
+};
+
+constexpr std::optional<std::string_view> qmagicenumDisplayName(
+    DateFormat value) noexcept
+{
+    switch (value)
+    {
+        case DateFormat::YearMonthDayHyphen:
+            return "YYYY-MM-DD";
+        case DateFormat::DayMonthYearDot:
+            return "DD.MM.YYYY";
+        case DateFormat::DayMonthYearSlash:
+            return "DD/MM/YYYY";
+        default:
+            return {};
+    }
+
+}
+
 enum class EmoteTooltipScale : std::uint8_t {
     Small,
     Medium,
@@ -233,6 +256,10 @@ public:
     EnumStringSetting<TabStyle> tabStyle = {
         "/appearance/tabStyle",
         TabStyle::Normal,
+    };
+    EnumStringSetting<DateFormat> dateFormat = {
+        "/appearance/dateFormat",
+        DateFormat::YearMonthDayHyphen,
     };
     BoolSetting hidePreferencesButton = {"/appearance/hidePreferencesButton",
                                          false};

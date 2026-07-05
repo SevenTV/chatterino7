@@ -238,6 +238,8 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     SettingWidget::dropdown("Tab style", s.tabStyle)->addTo(layout);
 
+    SettingWidget::dropdown("Date format", s.dateFormat)->addTo(layout);
+
     layout.addWidget(new FontSettingWidget(s.chatFontFamily, s.chatFontSize,
                                            s.chatFontWeight),
                      {"font", "weight", "size"});
