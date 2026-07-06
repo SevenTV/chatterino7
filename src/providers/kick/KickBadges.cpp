@@ -1,7 +1,9 @@
 #include "providers/kick/KickBadges.hpp"
 
 #include "debug/AssertInGuiThread.hpp"
+#include "util/QStringHash.hpp"
 
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <magic_enum/magic_enum.hpp>
 
 namespace {
@@ -157,6 +159,43 @@ std::pair<EmotePtr, MessageElementFlag> KickBadges::lookup(
     }
 
     return entry;
+}
+
+std::pair<EmotePtr, MessageElementFlag> KickBadges::getV2Cached(
+    BoostJsonObject badgeObj)
+{
+    static boost::unordered_flat_map<QString, EmotePtr> cache;
+
+    auto imageUrl = badgeObj["image_url"].toQString();
+    auto it = cache.find(imageUrl);
+    if (it != cache.end())
+    {
+        return {it->second, MessageElementFlag::BadgeVanity};
+    }
+
+    QString name;
+    auto origName = badgeObj["name"].toStringView();
+    if (origName == "level")
+    {
+        auto level = QString::number(badgeObj["metadata"]["level"].toUint64());
+        name = u"Level " % level;
+    }
+    else
+    {
+        name = QString::fromUtf8(origName.data(),
+                                 static_cast<qsizetype>(origName.size()));
+    }
+
+    auto emote = std::make_shared<const Emote>(Emote{
+        .name = {name},
+        .images =
+            ImageSet{
+                Image::fromAutoscaledUrl({imageUrl}, 18),
+            },
+        .tooltip = Tooltip{name},
+    });
+    cache.emplace(imageUrl, emote);
+    return {emote, MessageElementFlag::BadgeVanity};
 }
 
 }  // namespace chatterino
