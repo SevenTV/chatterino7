@@ -322,8 +322,8 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
         auto *layout = new QVBoxLayout(ui.multiPage);
         {
             auto *descriptionLabel = new QLabel(
-                "Show multiple channels in one split. From the input box, you "
-                "can select an active/context channel to send messages in. "
+                "Show Twitch and Kick channels together in one split. From the "
+                "input box, select the active channel used for sending messages. "
                 "Report issues <a "
                 "href=\"https://github.com/SevenTV/chatterino7/issues\">here</"
                 "a>.");
@@ -375,7 +375,7 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
                                            v(Mode::PlatformBadgeAlways));
             ui.multiIndicatorMode->addItem("Channel name",
                                            v(Mode::ChannelName));
-            ui.multiIndicatorMode->setCurrentIndex(1);
+            ui.multiIndicatorMode->setCurrentIndex(2);
         }
         layout->addWidget(ui.multiIndicatorMode);
 
