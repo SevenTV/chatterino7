@@ -243,7 +243,7 @@ jobs:
       # WINDOWS
       - name: Enable Developer Command Prompt (Windows)
         if: startsWith(matrix.os, 'windows')
-        uses: Chatterino/msvc-dev-cmd@v2.0.5
+        uses: Chatterino/msvc-dev-cmd@v2.0.6
         with:
           arch: ${{env.C2_ARCH == 'arm' && 'arm64' || 'x64' }}
 
