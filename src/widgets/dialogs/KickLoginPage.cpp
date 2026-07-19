@@ -300,7 +300,7 @@ private:
                                     return u"https://id.kick.com/oauth/token"_s;
                                 },
                                 [&](const PublicProxyRef &p) {
-                                    return p.value + u"/oauth/token";
+                                    return QString(p.value % u"/oauth/token");
                                 }},
             this->secretOrProxy);
     }

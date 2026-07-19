@@ -315,7 +315,7 @@ void KickAccount::doRefresh()
     auto url = [&]() -> QUrl {
         if (!this->publicProxy_.isEmpty())
         {
-            return this->publicProxy_ + u"/oauth/token";
+            return QUrl(this->publicProxy_ % u"/oauth/token");
         }
         return u"https://id.kick.com/oauth/token"_s;
     }();
