@@ -25,8 +25,10 @@
 #include <QString>
 #include <QUrlQuery>
 #include <QVBoxLayout>
+#include <util/Variant.hpp>
 
 #include <utility>
+#include <variant>
 
 using namespace Qt::Literals;
 
@@ -36,6 +38,33 @@ using namespace chatterino;
 
 const QString REDIRECT_URL = u"http://localhost:38275"_s;
 constexpr uint16_t SERVER_PORT = 38275;
+
+struct PublicProxy {
+    QString baseURL;
+    QString name;
+    QString clientID;
+};
+
+std::span<const PublicProxy> publicProxies()
+{
+    static const std::array value{
+        PublicProxy{
+            .baseURL = u"https://c7-auth.nerixyz.de"_s,
+            .name = u"c7-auth.nerixyz.de"_s,
+            .clientID = u"01KEBZBHCX3DKEJ0KRQBDNT05B"_s,
+        },
+    };
+    return value;
+}
+
+struct ClientSecret {
+    QString value;
+};
+struct PublicProxyRef {
+    QString value;
+};
+
+using SecretOrProxy = std::variant<ClientSecret, PublicProxyRef>;
 
 QByteArray generateRandomBytes(qsizetype size)
 {
@@ -89,11 +118,11 @@ AuthParams startAuthSession()
 class AuthDialog : public QDialog
 {
 public:
-    AuthDialog(QString clientID, QString clientSecret,
+    AuthDialog(QString clientID, SecretOrProxy secretOrProxy,
                QWidget *parent = nullptr)
         : QDialog(parent)
         , clientID(std::move(clientID))
-        , clientSecret(std::move(clientSecret))
+        , secretOrProxy(std::move(secretOrProxy))
         , authParams(startAuthSession())
         , statusLabel("Waiting...")
     {
@@ -184,12 +213,11 @@ private:
         QUrlQuery payload{
             {"grant_type", "authorization_code"},
             {"client_id", this->clientID},
-            {"client_secret", this->clientSecret},
             {"redirect_uri", REDIRECT_URL},
             {"code_verifier", this->authParams.codeVerifier},
             {"code", code},
         };
-        NetworkRequest("https://id.kick.com/oauth/token",
+        NetworkRequest(this->applySecretAndProxy(payload),
                        NetworkRequestType::Post)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
@@ -240,11 +268,20 @@ private:
                     .userID =
                         static_cast<uint64_t>(obj["user_id"_L1].toInteger()),
                     .clientID = this->clientID,
-                    .clientSecret = this->clientSecret,
                     .authToken = tokenData["access_token"_L1].toString(),
                     .refreshToken = tokenData["refresh_token"_L1].toString(),
                     .expiresAt = expiresAt,
                 };
+                std::visit(variant::Overloaded{
+                               [&](const ClientSecret &s) {
+                                   data.clientSecret = s.value;
+                               },
+                               [&](const PublicProxyRef &p) {
+                                   data.publicProxy = p.value;
+                               },
+                           },
+                           this->secretOrProxy);
+
                 data.save();
                 getApp()->getAccounts()->kick.reloadUsers();
                 getApp()->getAccounts()->kick.currentUsername = data.username;
@@ -254,8 +291,22 @@ private:
             .execute();
     }
 
+    QUrl applySecretAndProxy(QUrlQuery &query)
+    {
+        return std::visit(
+            variant::Overloaded{[&](const ClientSecret &s) {
+                                    query.addQueryItem(u"client_secret"_s,
+                                                       s.value);
+                                    return u"https://id.kick.com/oauth/token"_s;
+                                },
+                                [&](const PublicProxyRef &p) {
+                                    return p.value + u"/oauth/token";
+                                }},
+            this->secretOrProxy);
+    }
+
     QString clientID;
-    QString clientSecret;
+    SecretOrProxy secretOrProxy;
     AuthParams authParams;
     QUrl authURL;
 
@@ -271,24 +322,22 @@ KickLoginPage::KickLoginPage()
     static const QRegularExpression nonEmptyRe{u".+"_s};
 
     auto *root = new QFormLayout(this);
+    this->ui.layout = root;
 
-    auto *topLabel = new QLabel(
-        "The Kick API does not provide an OAuth flow for local chat clients "
-        "like Chatterino "
-        "to authenticate without exposing the client secret or using an "
-        "external server that would need to see <i>all</i> tokens of "
-        "<i>all</i> users.<br>Because of this, the <b>experimental</b> Kick "
-        "login is intended for developers with application credentials until "
-        "Kick adds a suitable OAuth flow."
-        "<br><br>Developer applications can be found at <a "
-        "href=\"https://kick.com/settings/developer\">kick.com/settings/"
-        "developer</a>. The following redirect URL <b>must</b> be added: "
-        "<b><code>" %
-        REDIRECT_URL % "</code></b>");
-    topLabel->setWordWrap(true);
-    topLabel->setOpenExternalLinks(true);
-    topLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
-    root->addRow(topLabel);
+    this->ui.methodCombo = new QComboBox;
+    for (const auto &proxy : publicProxies())
+    {
+        this->ui.methodCombo->addItem(u"Public proxy (" % proxy.name % ')',
+                                      QVariant::fromValue(&proxy));
+    }
+    this->ui.methodCombo->addItem(u"Custom (local)"_s);
+    root->addRow(this->ui.methodCombo);
+
+    this->ui.topLabel = new QLabel();
+    this->ui.topLabel->setWordWrap(true);
+    this->ui.topLabel->setOpenExternalLinks(true);
+    this->ui.topLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    root->addRow(this->ui.topLabel);
     root->addItem(
         new QSpacerItem(0, 10, QSizePolicy::Minimum, QSizePolicy::Fixed));
 
@@ -310,6 +359,26 @@ KickLoginPage::KickLoginPage()
     {
         this->ui.clientID->setText(currentAccount->clientID());
         this->ui.clientSecret->setText(currentAccount->clientSecret());
+        auto proxy = currentAccount->publicProxy();
+        if (!proxy.isEmpty())
+        {
+            int idx = this->ui.methodCombo->findText(proxy);
+            if (idx > 0 && idx != this->ui.methodCombo->count() - 1)
+            {
+                this->ui.methodCombo->setCurrentIndex(idx);
+            }
+        }
+        else
+        {
+            this->ui.methodCombo->setCurrentIndex(
+                this->ui.methodCombo->count() - 1);
+        }
+    }
+    else
+    {
+        this->ui.methodCombo->setCurrentIndex(
+            QRandomGenerator::global()->bounded(this->ui.methodCombo->count() -
+                                                1));
     }
 
     root->addItem(
@@ -318,18 +387,31 @@ KickLoginPage::KickLoginPage()
     auto *startButton = new QPushButton("Start");
     root->addRow(startButton);
     QObject::connect(startButton, &QPushButton::clicked, this, [this] {
-        if (!this->ui.clientID->hasAcceptableInput() ||
-            !this->ui.clientSecret->hasAcceptableInput())
+        const auto *proxy =
+            this->ui.methodCombo->currentData().value<const PublicProxy *>();
+
+        if (!proxy && (!this->ui.clientID->hasAcceptableInput() ||
+                       !this->ui.clientSecret->hasAcceptableInput()))
         {
             return;
         }
-        auto *diag = new AuthDialog(this->ui.clientID->text(),
-                                    this->ui.clientSecret->text(), this);
+        SecretOrProxy sop{ClientSecret{this->ui.clientSecret->text()}};
+        QString clientID = this->ui.clientID->text();
+        if (proxy)
+        {
+            sop = PublicProxyRef{proxy->baseURL};
+            clientID = proxy->clientID;
+        }
+        auto *diag = new AuthDialog(clientID, std::move(sop), this);
         QObject::connect(diag, &QDialog::accepted, this, [this] {
             this->window()->close();
         });
         diag->show();
     });
+    QObject::connect(this->ui.methodCombo, &QComboBox::currentIndexChanged,
+                     this, &KickLoginPage::refreshState);
+
+    this->refreshState();
 }
 
 void KickLoginPage::paintEvent(QPaintEvent * /*event*/)
@@ -340,6 +422,52 @@ void KickLoginPage::paintEvent(QPaintEvent * /*event*/)
     painter.setBrush(getTheme()->window.background);
     painter.setPen({});
     painter.drawRect(this->rect());
+}
+
+void KickLoginPage::refreshState() const
+{
+    constexpr int rowTopSpacer = 2;
+    constexpr int rowClientID = 3;
+    constexpr int rowClientSecret = 4;
+
+    const auto *proxy =
+        this->ui.methodCombo->currentData().value<const PublicProxy *>();
+    if (!proxy)
+    {
+        // Local, client secret
+        this->ui.topLabel->setText(
+            u"The Kick API does not provide an OAuth flow for local chat "
+            u"clients "
+            "like Chatterino "
+            "to authenticate without exposing the client secret or using an "
+            "external server that would need to see <i>all</i> tokens of "
+            "<i>all</i> users.<br>Because of this, the <b>experimental</b> "
+            "Kick "
+            "login is intended for developers with application credentials "
+            "until "
+            "Kick adds a suitable OAuth flow."
+            "<br><br>Developer applications can be found at <a "
+            "href=\"https://kick.com/settings/developer\">kick.com/settings/"
+            "developer</a>. The following redirect URL <b>must</b> be added: "
+            "<b><code>" %
+            REDIRECT_URL % u"</code></b>");
+        this->ui.layout->setRowVisible(rowTopSpacer, true);
+        this->ui.layout->setRowVisible(rowClientID, true);
+        this->ui.layout->setRowVisible(rowClientSecret, true);
+    }
+    else
+    {
+        this->ui.topLabel->setText(
+            u"Authentication will be done through <a href=\"" % proxy->baseURL %
+            u"\">" % proxy->name %
+            u"</a>. "
+            "This proxy will not save your data.<br>"
+            "It is required, because Kick does not provide a suitable OAuth "
+            "flow for local chat clients like Chatterino.");
+        this->ui.layout->setRowVisible(rowTopSpacer, false);
+        this->ui.layout->setRowVisible(rowClientID, false);
+        this->ui.layout->setRowVisible(rowClientSecret, false);
+    }
 }
 
 }  // namespace chatterino

@@ -15,9 +15,14 @@ protected:
 
 private:
     struct {
+        QFormLayout *layout = nullptr;
+        QLabel *topLabel = nullptr;
         QLineEdit *clientID = nullptr;
         QLineEdit *clientSecret = nullptr;
+        QComboBox *methodCombo = nullptr;
     } ui;
+
+    void refreshState() const;
 };
 
 }  // namespace chatterino
