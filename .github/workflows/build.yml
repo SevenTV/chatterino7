@@ -309,6 +309,7 @@ jobs:
               -G Ninja `
               -DCMAKE_CXX_COMPILER=clang-cl `
               -DCMAKE_C_COMPILER=clang-cl `
+              -DCMAKE_RC_COMPILER=llvm-rc `
               -DCMAKE_LINKER_TYPE=LLD `
               -DCMAKE_BUILD_TYPE=RelWithDebInfo `
               -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" `
@@ -361,10 +362,6 @@ jobs:
         with:
           name: chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}-symbols.pdb.7z
           path: build/bin/chatterino-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z
-
-      - name: Setup tmate session
-        if: ${{ failure() && runner.os == 'Windows' }}
-        uses: mxschmitt/action-tmate@v3
 
       # MACOS
       - name: Install dependencies (MacOS)
