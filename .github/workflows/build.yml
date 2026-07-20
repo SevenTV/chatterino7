@@ -362,6 +362,10 @@ jobs:
           name: chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}-symbols.pdb.7z
           path: build/bin/chatterino-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z
 
+      - name: Setup tmate session
+        if: ${{ failure() && runner.os == 'Windows' }}
+        uses: mxschmitt/action-tmate@v3
+
       # MACOS
       - name: Install dependencies (MacOS)
         if: startsWith(matrix.os, 'macos')
