@@ -1272,7 +1272,8 @@ void UserInfoPopup::loadAvatar(const QString &userID, const QString &pictureURL,
     QFile cacheFile(filename);
     if (cacheFile.exists())
     {
-        cacheFile.open(QIODevice::ReadOnly);
+        // In this case, readAll will just return empty data.
+        std::ignore = cacheFile.open(QIODevice::ReadOnly);
         QPixmap avatar{};
 
         avatar.loadFromData(cacheFile.readAll());
