@@ -10,6 +10,7 @@
 #include "controllers/commands/CommandContext.hpp"
 #include "controllers/userdata/UserDataController.hpp"
 #include "providers/kick/KickChannel.hpp"
+#include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -711,8 +712,13 @@ QString openUsercard(const CommandContext &ctx)
         QString channelName = ctx.words[2];
         stripChannelName(channelName);
 
-        ChannelPtr channelTemp =
-            getApp()->getTwitch()->getChannelOrEmpty(channelName);
+        auto channelTemp = [&]() -> ChannelPtr {
+            if (channel->isKickChannel())
+            {
+                return getApp()->getKickChatServer()->findBySlug(channelName);
+            }
+            return getApp()->getTwitch()->getChannelOrEmpty(channelName);
+        }();
 
         if (channelTemp->isEmpty())
         {

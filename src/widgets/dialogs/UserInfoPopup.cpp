@@ -1554,54 +1554,85 @@ void UserInfoPopup::updateKickUserData()
         self->ui_.notesAdd->setEnabled(true);
     };
 
-    // FIXME: this doesn't support opening by user ID
+    auto fetchChannelInfo = [self = QPointer(this), onChannelFetched,
+                             onChannelFetchFailed](const QString &userName) {
+        KickApi::privateChannelInfo(
+            userName,
+            [self, onChannelFetched, onChannelFetchFailed](const auto &res) {
+                if (!self)
+                {
+                    return;
+                }
+                if (res)
+                {
+                    onChannelFetched(self.get(), *res);
+                }
+                else
+                {
+                    qCDebug(chatterinoKick)
+                        << "Channel fetch failed" << res.error();
+                    onChannelFetchFailed(self.get());
+                }
+            });
+    };
+    auto fetchUserInChannelInfo =
+        [self = QPointer(this),
+         channelName =
+             this->underlyingChannel_->getName()](const QString &userName) {
+            KickApi::privateUserInChannelInfo(
+                userName, channelName, [self](const auto &res) {
+                    if (!self || !res)
+                    {
+                        return;
+                    }
 
-    KickApi::privateChannelInfo(
-        this->userName_, [self = QPointer(this), onChannelFetched,
-                          onChannelFetchFailed](const auto &res) {
-            if (!self)
-            {
-                return;
-            }
-            if (res)
-            {
-                onChannelFetched(self.get(), *res);
-            }
-            else
-            {
-                qCDebug(chatterinoKick)
-                    << "Channel fetch failed" << res.error();
-                onChannelFetchFailed(self.get());
-            }
-        });
-    KickApi::privateUserInChannelInfo(
-        this->userName_, this->underlyingChannel_->getName(),
-        [self = QPointer(this)](const auto &res) {
-            if (!self || !res)
-            {
-                return;
-            }
+                    if (res->followingSince)
+                    {
+                        QString followingSince =
+                            res->followingSince->date().toString(Qt::ISODate);
+                        self->ui_.followageLabel->setText("❤ Following since " +
+                                                          followingSince);
+                        self->ui_.followageLabel->setToolTip(
+                            formatLongFriendlyDuration(
+                                *res->followingSince,
+                                QDateTime::currentDateTimeUtc()) +
+                            u" ago"_s);
+                        self->ui_.followageLabel->setMouseTracking(true);
+                    }
 
-            if (res->followingSince)
-            {
-                QString followingSince =
-                    res->followingSince->date().toString(Qt::ISODate);
-                self->ui_.followageLabel->setText("❤ Following since " +
-                                                  followingSince);
-                self->ui_.followageLabel->setToolTip(
-                    formatLongFriendlyDuration(
-                        *res->followingSince, QDateTime::currentDateTimeUtc()) +
-                    u" ago"_s);
-                self->ui_.followageLabel->setMouseTracking(true);
-            }
+                    if (res->subscriptionMonths)
+                    {
+                        self->ui_.subageLabel->setText(
+                            QString("★ Subscribed for %2 months")
+                                .arg(*res->subscriptionMonths));
+                    }
+                });
+        };
 
-            if (res->subscriptionMonths)
-            {
-                self->ui_.subageLabel->setText(
-                    QString("★ Subscribed for %2 months")
-                        .arg(*res->subscriptionMonths));
-            }
-        });
+    if (!this->userId_.isEmpty() && this->userName_.isEmpty())
+    {
+        std::array ids{this->userId_.toULongLong()};
+        getKickApi()->getChannels(
+            ids, [self = QPointer(this), onChannelFetchFailed, fetchChannelInfo,
+                  fetchUserInChannelInfo](const auto &res) {
+                if (!self)
+                {
+                    return;
+                }
+                if (!res || res->size() != 1)
+                {
+                    onChannelFetchFailed(self);
+                    return;
+                }
+                fetchChannelInfo((*res)[0].slug);
+                fetchUserInChannelInfo((*res)[0].slug);
+            });
+    }
+    else
+    {
+        fetchChannelInfo(this->userName_);
+        fetchUserInChannelInfo(this->userName_);
+    }
 
     this->ui_.block->setEnabled(false);
     this->ui_.ignoreHighlights->setEnabled(false);

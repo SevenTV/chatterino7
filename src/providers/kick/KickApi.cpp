@@ -290,6 +290,7 @@ KickChannelInfo::KickChannelInfo(BoostJsonObject obj)
     , category(obj["category"].toObject())
     , stream(obj["stream"].toObject())
     , streamTitle(obj["stream_title"].toQString())
+    , slug(obj["slug"].toQString())
 {
 }
 
