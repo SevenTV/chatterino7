@@ -1611,7 +1611,7 @@ void UserInfoPopup::updateKickUserData()
 
     if (!this->userId_.isEmpty() && this->userName_.isEmpty())
     {
-        std::array ids{this->userId_.toULongLong()};
+        std::array ids{static_cast<uint64_t>(this->userId_.toULongLong())};
         getKickApi()->getChannels(
             ids, [self = QPointer(this), onChannelFetchFailed, fetchChannelInfo,
                   fetchUserInChannelInfo](const auto &res) {
