@@ -64,7 +64,7 @@ struct KickPrediction {
     bool isFinished() const;
     const KickPredictionOutcome *winningOutcome() const;
 
-    auto operator<=>(const KickPredictionOutcome &other) const = default;
+    auto operator<=>(const KickPrediction &other) const = default;
 };
 
 }  // namespace chatterino
