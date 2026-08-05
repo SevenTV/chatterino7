@@ -23,10 +23,8 @@ class PredictionOutcomeBar;
 class DrawnButton;
 struct KickPrediction;
 
-/**
- * Banner shown between the split header and the chat view that displays the
- * channel's running prediction, updating live as votes come in.
- */
+/// Banner shown between the split header and the chat view that displays the
+/// channel's running prediction, updating live as votes come in.
 class KickPredictionWidget final : public BaseWidget
 {
     Q_OBJECT
