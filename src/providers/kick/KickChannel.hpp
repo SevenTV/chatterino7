@@ -3,11 +3,13 @@
 #include "common/Atomic.hpp"
 #include "common/Channel.hpp"
 #include "common/ChannelChatters.hpp"
+#include "providers/kick/KickPrediction.hpp"
 
 #include <pajlada/signals/signal.hpp>
 
 #include <chrono>
 #include <map>
+#include <optional>
 #include <queue>
 #include <unordered_map>
 
@@ -144,6 +146,10 @@ public:
     pajlada::Signals::Signal<const QString &> sendWaitUpdate;
     void setSendWait(std::chrono::seconds waitTime);
 
+    const KickPrediction *currentPrediction() const;
+    void updatePrediction(KickPrediction prediction);
+    pajlada::Signals::NoArgSignal predictionChanged;
+
     EmotePtr getSubBadge(unsigned months);
 
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
@@ -183,6 +189,7 @@ private:
     void initSubBadges(std::span<const KickPrivateChannelSubBadge> infos);
 
     void loadChannelHistory();
+    void loadLatestPrediction();
 
     // Kick usually calls this username
     QString displayName_;
@@ -211,6 +218,8 @@ private:
     std::optional<std::chrono::steady_clock::time_point> sendWaitEnd_;
 
     RoomModes roomModes_;
+
+    std::optional<KickPrediction> prediction_;
 
     bool isMod_ = false;
     bool isVip_ = false;

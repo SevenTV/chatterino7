@@ -38,6 +38,7 @@
 #include "widgets/OverlayWindow.hpp"
 #include "widgets/Scrollbar.hpp"
 #include "widgets/splits/DraggedSplit.hpp"
+#include "widgets/splits/KickPredictionWidget.hpp"
 #include "widgets/splits/PinnedMessageWidget.hpp"
 #include "widgets/splits/SplitContainer.hpp"
 #include "widgets/splits/SplitHeader.hpp"
@@ -96,6 +97,7 @@ Split::Split(QWidget *parent)
     , vbox_(new QVBoxLayout(this))
     , header_(new SplitHeader(this))
     , pinnedBanner_(new PinnedMessageWidget(this))
+    , predictionBanner_(new KickPredictionWidget(this))
     , view_(new ChannelView(this, this, ChannelView::Context::None,
                             getSettings()->scrollbackSplitLimit))
     , input_(new SplitInput(this))
@@ -111,6 +113,7 @@ Split::Split(QWidget *parent)
 
     this->vbox_->addWidget(this->header_);
     this->vbox_->addWidget(this->pinnedBanner_);
+    this->vbox_->addWidget(this->predictionBanner_);
     this->vbox_->addWidget(this->view_, 1);
     this->vbox_->addWidget(this->input_);
 
@@ -1037,6 +1040,7 @@ void Split::updateChannelConnections()
                 this->header_->updateChannelText();
             });
         this->pinnedBanner_->setChannel(tc);
+        this->predictionBanner_->setChannel(nullptr);
     }
     else if (kc != nullptr)
     {
@@ -1054,10 +1058,12 @@ void Split::updateChannelConnections()
                 this->getInput().setSendWaitStatus(text);
             });
         this->pinnedBanner_->setChannel(nullptr);
+        this->predictionBanner_->setChannel(kc);
     }
     else
     {
         this->pinnedBanner_->setChannel(nullptr);
+        this->predictionBanner_->setChannel(nullptr);
     }
 }
 

@@ -451,6 +451,29 @@ void KickChannel::updateRoomModes(const RoomModes &modes)
     }
 }
 
+const KickPrediction *KickChannel::currentPrediction() const
+{
+    if (!this->prediction_)
+    {
+        return nullptr;
+    }
+    return &*this->prediction_;
+}
+
+void KickChannel::updatePrediction(KickPrediction prediction)
+{
+    // Kick re-sends the full snapshot on every vote without always bumping
+    // `updated_at`, so the whole thing has to be compared to tell a repeat
+    // apart from a new vote.
+    if (this->prediction_ == prediction)
+    {
+        return;
+    }
+
+    this->prediction_ = std::move(prediction);
+    this->predictionChanged.invoke();
+}
+
 void KickChannel::setSendWait(std::chrono::seconds waitTime)
 {
     if (waitTime <= 0s)
@@ -562,6 +585,7 @@ void KickChannel::resolveChannelInfo()
                 .followersModeDuration = res->chatroom.followersModeDuration,
             });
             self->loadChannelHistory();
+            self->loadLatestPrediction();
         });
 }
 
@@ -918,6 +942,41 @@ void KickChannel::initSubBadges(
         this->subBadgeImages_.emplace(
             info.months, Image::fromAutoscaledUrl({info.badgeImageUrl}, 18));
     }
+}
+
+void KickChannel::loadLatestPrediction()
+{
+    KickApi::privateLatestPrediction(
+        this->slug_, [weak = this->weakFromThis()](const auto &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            if (!res)
+            {
+                qCWarning(chatterinoKick)
+                    << *self << "Failed to load prediction" << res.error();
+                return;
+            }
+
+            BoostJsonObject obj(*res);
+            auto value = obj["data"]["prediction"];
+            if (!value.isObject())
+            {
+                return;
+            }
+
+            auto prediction = KickPrediction::parse(value.toObject());
+            if (!prediction)
+            {
+                qCWarning(chatterinoKick)
+                    << *self << "Failed to parse the latest prediction";
+                return;
+            }
+
+            self->updatePrediction(std::move(*prediction));
+        });
 }
 
 void KickChannel::loadChannelHistory()

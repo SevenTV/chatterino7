@@ -128,6 +128,11 @@ public:
     static void privateChannelHistory(uint64_t channelID,
                                       Callback<BoostJsonObject> cb);
 
+    /// Returns the channel's most recent prediction, which may long since have
+    /// been resolved or cancelled.
+    static void privateLatestPrediction(const QString &username,
+                                        Callback<BoostJsonObject> cb);
+
     void sendMessage(uint64_t broadcasterUserID, const QString &message,
                      const QString &replyToMessageID, Callback<void> cb);
 
