@@ -60,7 +60,6 @@ public:
     std::string_view toStringView(std::string_view defaultValue = {}) const;
     int64_t toInt64(int64_t defaultValue = 0) const;
     uint64_t toUint64(uint64_t defaultValue = 0) const;
-    /// Accepts any JSON number, integral ones included.
     double toDouble(double defaultValue = 0.0) const;
     bool toBool(bool defaultValue = false) const;
 
