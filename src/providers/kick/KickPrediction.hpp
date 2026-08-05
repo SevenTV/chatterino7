@@ -27,7 +27,7 @@ struct KickPredictionOutcome {
     /// nothing is staked here.
     double returnRate = 0.0;
 
-    bool operator==(const KickPredictionOutcome &other) const = default;
+    auto operator<=>(const KickPredictionOutcome &other) const = default;
 };
 
 /// A prediction as described by Kick's `PredictionCreated`/`PredictionUpdated`
@@ -64,7 +64,7 @@ struct KickPrediction {
     bool isFinished() const;
     const KickPredictionOutcome *winningOutcome() const;
 
-    bool operator==(const KickPrediction &other) const = default;
+    auto operator<=>(const KickPredictionOutcome &other) const = default;
 };
 
 }  // namespace chatterino
