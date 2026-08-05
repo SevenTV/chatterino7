@@ -585,7 +585,6 @@ void KickChannel::resolveChannelInfo()
                 .followersModeDuration = res->chatroom.followersModeDuration,
             });
             self->loadChannelHistory();
-            self->loadLatestPrediction();
         });
 }
 
@@ -942,41 +941,6 @@ void KickChannel::initSubBadges(
         this->subBadgeImages_.emplace(
             info.months, Image::fromAutoscaledUrl({info.badgeImageUrl}, 18));
     }
-}
-
-void KickChannel::loadLatestPrediction()
-{
-    KickApi::privateLatestPrediction(
-        this->slug_, [weak = this->weakFromThis()](const auto &res) {
-            auto self = weak.lock();
-            if (!self)
-            {
-                return;
-            }
-            if (!res)
-            {
-                qCWarning(chatterinoKick)
-                    << *self << "Failed to load prediction" << res.error();
-                return;
-            }
-
-            BoostJsonObject obj(*res);
-            auto value = obj["data"]["prediction"];
-            if (!value.isObject())
-            {
-                return;
-            }
-
-            auto prediction = KickPrediction::parse(value.toObject());
-            if (!prediction)
-            {
-                qCWarning(chatterinoKick)
-                    << *self << "Failed to parse the latest prediction";
-                return;
-            }
-
-            self->updatePrediction(std::move(*prediction));
-        });
 }
 
 void KickChannel::loadChannelHistory()

@@ -189,7 +189,6 @@ private:
     void initSubBadges(std::span<const KickPrivateChannelSubBadge> infos);
 
     void loadChannelHistory();
-    void loadLatestPrediction();
 
     // Kick usually calls this username
     QString displayName_;

@@ -348,13 +348,6 @@ void KickApi::privateEmotesInChannel(
     autoSlugify(u"https://kick.com/emotes"_s, std::move(cb), username);
 }
 
-void KickApi::privateLatestPrediction(const QString &username,
-                                      Callback<BoostJsonObject> cb)
-{
-    autoSlugify(u"https://kick.com/api/v2/channels"_s, std::move(cb), username,
-                "predictions", "latest");
-}
-
 void KickApi::privateChannelHistory(uint64_t channelID,
                                     Callback<BoostJsonObject> cb)
 {
