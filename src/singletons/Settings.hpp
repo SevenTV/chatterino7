@@ -99,6 +99,12 @@ enum class EmoteTooltipScale : std::uint8_t {
     Huge,
 };
 
+enum class TwitchReadConnectionMode : uint8_t {
+    Authenticated,
+    Anonymous,
+    AnonymousParallel,
+};
+
 constexpr std::optional<std::string_view> qmagicenumDisplayName(
     EmoteTooltipScale value) noexcept
 {
@@ -111,6 +117,22 @@ constexpr std::optional<std::string_view> qmagicenumDisplayName(
         case EmoteTooltipScale::Large:
         case EmoteTooltipScale::Huge:
             return {};
+    }
+}
+
+constexpr std::optional<std::string_view> qmagicenumDisplayName(
+    TwitchReadConnectionMode value) noexcept
+{
+    switch (value)
+    {
+        case TwitchReadConnectionMode::Authenticated:
+            return "Authenticated (default)";
+
+        case TwitchReadConnectionMode::Anonymous:
+            return {};
+
+        case TwitchReadConnectionMode::AnonymousParallel:
+            return "Anonymous (parallel)";
     }
 }
 
@@ -775,6 +797,10 @@ public:
     };
     BoolSetting displaySevenTVAnimatedProfile = {
         "/misc/displaySevenTVAnimatedProfile", true};
+
+    EnumStringSetting<TwitchReadConnectionMode> twitchReadConnectionMode = {
+        "/misc/twitchReadConnectionMode",
+        TwitchReadConnectionMode::Authenticated};
 
     EnumStringSetting<ChatSendProtocol> chatSendProtocol = {
         "/misc/chatSendProtocol", ChatSendProtocol::Default};

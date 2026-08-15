@@ -523,6 +523,8 @@ set(SOURCE_FILES
         providers/twitch/TwitchIrc.hpp
         providers/twitch/TwitchIrcServer.cpp
         providers/twitch/TwitchIrcServer.hpp
+        providers/twitch/TwitchReadConnectionPool.cpp
+        providers/twitch/TwitchReadConnectionPool.hpp
         providers/twitch/TwitchUser.cpp
         providers/twitch/TwitchUser.hpp
         providers/twitch/TwitchUsers.cpp

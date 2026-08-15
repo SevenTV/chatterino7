@@ -27,6 +27,7 @@
 #include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
+#include "providers/twitch/TwitchCommon.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/PostToThread.hpp"
@@ -47,10 +48,6 @@
 using namespace std::chrono_literals;
 
 namespace {
-
-// Ratelimits for joinBucket_
-constexpr int JOIN_RATELIMIT_BUDGET = 18;
-constexpr int JOIN_RATELIMIT_COOLDOWN = 12500;
 
 using namespace chatterino;
 
@@ -146,23 +143,17 @@ TwitchIrcServer::TwitchIrcServer()
     , liveChannel(new Channel("/live", Channel::Type::TwitchLive))
     , automodChannel(new Channel("/automod", Channel::Type::TwitchAutomod))
     , watchingChannel(Channel::getEmpty(), Channel::Type::TwitchWatching)
+    , readConnection_(
+          createTwitchConnectionPool(
+              this, getSettings()->twitchReadConnectionMode ==
+                        TwitchReadConnectionMode::AnonymousParallel),
+          {})
 {
     // Initialize the connections
     // XXX: don't create write connection if there is no separate write connection.
     this->writeConnection_.reset(new IrcConnection);
     this->writeConnection_->moveToThread(
         QCoreApplication::instance()->thread());
-
-    // Apply a leaky bucket rate limiting to JOIN messages
-    auto actuallyJoin = [&](QString message) {
-        if (!this->channels.contains(message))
-        {
-            return;
-        }
-        this->readConnection_->sendRaw("JOIN #" + message);
-    };
-    this->joinBucket_.reset(new RatelimitBucket(
-        JOIN_RATELIMIT_BUDGET, JOIN_RATELIMIT_COOLDOWN, actuallyJoin, this));
 
     QObject::connect(this->writeConnection_.get(),
                      &Communi::IrcConnection::messageReceived, this,
@@ -179,45 +170,14 @@ TwitchIrcServer::TwitchIrcServer()
                 << "Write connection reconnect requested. Timeout:" << timeout;
             this->writeConnection_->smartReconnect();
         });
-
-    // Listen to read connection message signals
-    this->readConnection_.reset(new IrcConnection);
-    this->readConnection_->moveToThread(QCoreApplication::instance()->thread());
-
-    QObject::connect(this->readConnection_.get(),
-                     &Communi::IrcConnection::messageReceived, this,
-                     [this](auto msg) {
-                         this->readConnectionMessageReceived(msg);
-                     });
-    QObject::connect(this->readConnection_.get(),
-                     &Communi::IrcConnection::privateMessageReceived, this,
-                     [this](auto msg) {
-                         this->privateMessageReceived(msg);
-                     });
-    QObject::connect(this->readConnection_.get(),
-                     &Communi::IrcConnection::connected, this, [this] {
-                         this->onReadConnected(this->readConnection_.get());
-                     });
-    QObject::connect(this->readConnection_.get(),
-                     &Communi::IrcConnection::disconnected, this, [this] {
-                         this->onDisconnected();
-                     });
     this->signalHolder.managedConnect(
-        this->readConnection_->connectionLost, [this](bool timeout) {
-            qCDebug(chatterinoIrc)
-                << "Read connection reconnect requested. Timeout:" << timeout;
-            if (timeout)
-            {
-                // Show additional message since this is going to interrupt a
-                // connection that is still "connected"
-                this->addGlobalSystemMessage(
-                    "Server connection timed out, reconnecting");
-            }
-            this->readConnection_->smartReconnect();
+        this->readConnection_->messageReceived, [this](auto *msg) {
+            this->readConnectionMessageReceived(msg);
         });
-    this->signalHolder.managedConnect(this->readConnection_->heartbeat, [this] {
-        this->markChannelsConnected();
-    });
+    this->signalHolder.managedConnect(
+        this->readConnection_->privateMessageReceived, [this](auto *msg) {
+            this->privateMessageReceived(msg);
+        });
 }
 
 void TwitchIrcServer::initialize()
@@ -318,8 +278,6 @@ void TwitchIrcServer::initializeConnection(IrcConnection *connection,
     std::shared_ptr<TwitchAccount> account =
         getApp()->getAccounts()->twitch.getCurrent();
 
-    qCDebug(chatterinoTwitch) << "logging in as" << account->getUserName();
-
     // twitch.tv/tags enables IRCv3 tags on messages. See https://dev.twitch.tv/docs/irc/tags
     // twitch.tv/commands enables a bunch of miscellaneous command capabilities. See https://dev.twitch.tv/docs/irc/commands
     // twitch.tv/membership enables the JOIN/PART/NAMES commands. See https://dev.twitch.tv/docs/irc/membership
@@ -341,11 +299,25 @@ void TwitchIrcServer::initializeConnection(IrcConnection *connection,
         oauthToken.prepend("oauth:");
     }
 
+    bool anon = account->isAnon();
+    if (type == ConnectionType::Read &&
+        getSettings()->twitchReadConnectionMode !=
+            TwitchReadConnectionMode::Authenticated)
+    {
+        username = ANONYMOUS_USERNAME;
+        oauthToken = {};
+        anon = true;
+    }
+
+    qCDebug(chatterinoIrc).noquote()
+        << "Initializing a" << qmagicenum::enumName(type) << "connection {"
+        << "username:" << username << "anon:" << anon << "}";
+
     connection->setUserName(username);
     connection->setNickName(username);
     connection->setRealName(username);
 
-    if (!account->isAnon())
+    if (!anon)
     {
         connection->setPassword(oauthToken);
     }
@@ -357,7 +329,7 @@ void TwitchIrcServer::initializeConnection(IrcConnection *connection,
     connection->setPort(Env::get().twitchServerPort);
     connection->setSecure(Env::get().twitchServerSecure);
 
-    this->open(type);
+    connection->open();
 }
 
 std::shared_ptr<Channel> TwitchIrcServer::createChannel(
@@ -402,12 +374,6 @@ void TwitchIrcServer::privateMessageReceived(
 void TwitchIrcServer::readConnectionMessageReceived(
     Communi::IrcMessage *message)
 {
-    if (message->type() == Communi::IrcMessage::Type::Private)
-    {
-        // We already have a handler for private messages
-        return;
-    }
-
     const QString &command = message->command();
 
     auto &handler = IrcMessageHandler::instance();
@@ -448,17 +414,6 @@ void TwitchIrcServer::readConnectionMessageReceived(
         handler.handleNoticeMessage(
             static_cast<Communi::IrcNoticeMessage *>(message));
     }
-    else if (command == "WHISPER")
-    {
-        handler.handleWhisperMessage(message);
-    }
-    else if (command == "RECONNECT")
-    {
-        this->addGlobalSystemMessage(
-            "Twitch Servers requested us to reconnect, reconnecting");
-        this->markChannelsConnected();
-        this->connect();
-    }
 }
 
 void TwitchIrcServer::writeConnectionMessageReceived(
@@ -486,98 +441,15 @@ void TwitchIrcServer::writeConnectionMessageReceived(
             "Twitch Servers requested us to reconnect, reconnecting");
         this->connect();
     }
-}
-
-void TwitchIrcServer::onReadConnected(IrcConnection *connection)
-{
-    (void)connection;
-
-    std::vector<ChannelPtr> activeChannels;
+    else if (command == "WHISPER")
     {
-        std::lock_guard lock(this->channelMutex);
-
-        activeChannels.reserve(this->channels.size());
-        for (const auto &weak : this->channels)
-        {
-            if (auto channel = weak.lock())
-            {
-                activeChannels.push_back(channel);
-            }
-        }
+        handler.handleWhisperMessage(message);
     }
-
-    // put the visible channels first
-    auto visible = getApp()->getWindows()->getVisibleChannelNames();
-
-    std::ranges::stable_partition(activeChannels, [&](const auto &chan) {
-        return visible.contains(chan->getName());
-    });
-
-    // join channels
-    for (const auto &channel : activeChannels)
-    {
-        // HACK(mm2pl): This prevents custom invalid twitch channels used by plugins from being joined
-        if (channel->getName().startsWith("/"))
-        {
-            continue;
-        }
-        this->joinBucket_->send(channel->getName());
-    }
-
-    // connected/disconnected message
-    auto connectedMsg = makeSystemMessage("connected");
-    connectedMsg->flags.set(MessageFlag::ConnectedMessage);
-    auto reconnected = makeSystemMessage("reconnected");
-    reconnected->flags.set(MessageFlag::ConnectedMessage);
-
-    for (const auto &chan : activeChannels)
-    {
-        MessagePtr last = chan->getLastMessage();
-
-        bool replaceMessage =
-            last && last->flags.has(MessageFlag::DisconnectedMessage);
-
-        if (replaceMessage)
-        {
-            chan->replaceMessage(last, reconnected);
-        }
-        else
-        {
-            chan->addMessage(connectedMsg, MessageContext::Original);
-        }
-    }
-
-    this->falloffCounter_ = 1;
 }
 
 void TwitchIrcServer::onWriteConnected(IrcConnection *connection)
 {
     (void)connection;
-}
-
-void TwitchIrcServer::onDisconnected()
-{
-    std::lock_guard<std::mutex> lock(this->channelMutex);
-
-    MessageBuilder b(systemMessage, "disconnected");
-    b->flags.set(MessageFlag::DisconnectedMessage);
-    auto disconnectedMsg = b.release();
-
-    for (std::weak_ptr<Channel> &weak : this->channels.values())
-    {
-        std::shared_ptr<Channel> chan = weak.lock();
-        if (!chan)
-        {
-            continue;
-        }
-
-        chan->addMessage(disconnectedMsg, MessageContext::Original);
-
-        if (auto *channel = dynamic_cast<TwitchChannel *>(chan.get()))
-        {
-            channel->markDisconnected();
-        }
-    }
 }
 
 std::shared_ptr<Channel> TwitchIrcServer::getCustomChannel(
@@ -1154,22 +1026,12 @@ void TwitchIrcServer::dropSeventvChannel(const QString &userID,
     }
 }
 
-void TwitchIrcServer::markChannelsConnected()
-{
-    this->forEachChannel([](const ChannelPtr &chan) {
-        if (auto *channel = dynamic_cast<TwitchChannel *>(chan.get()))
-        {
-            channel->markConnected();
-        }
-    });
-}
-
 void TwitchIrcServer::addFakeMessage(const QString &data)
 {
     assertInGuiThread();
 
     auto *fakeMessage = Communi::IrcMessage::fromData(
-        data.toUtf8(), this->readConnection_.get());
+        data.toUtf8(), this->writeConnection_.get());
 
     if (fakeMessage->command() == "PRIVMSG")
     {
@@ -1223,10 +1085,11 @@ void TwitchIrcServer::connect()
 
     this->disconnect();
 
-    this->initializeConnection(this->writeConnection_.get(),
-                               ConnectionType::Write);
-    this->initializeConnection(this->readConnection_.get(),
-                               ConnectionType::Read);
+    TwitchIrcServer::initializeConnection(this->writeConnection_.get(),
+                                          ConnectionType::Write);
+    this->readConnection_->reconnect();
+
+    this->refreshModeratedChannels();
 }
 
 void TwitchIrcServer::disconnect()
@@ -1279,29 +1142,12 @@ ChannelPtr TwitchIrcServer::getOrAddChannel(const QString &dirtyChannelName)
             qCDebug(chatterinoIrc) << "[TwitchIrcServer::addChannel]"
                                    << channelName << "was destroyed";
             this->channels.remove(channelName);
-
-            if (this->readConnection_)
-            {
-                // HACK(mm2pl): This prevents custom invalid twitch channels used by plugins from being joined
-                if (!channelName.startsWith("/"))
-                {
-                    this->readConnection_->sendRaw("PART #" + channelName);
-                }
-            }
         });
 
-    // join IRC channel
+    // HACK(mm2pl): This prevents custom invalid twitch channels used by plugins from being joined
+    if (!channelName.startsWith("/"))
     {
-        std::lock_guard<std::mutex> lock2(this->connectionMutex_);
-
-        if (this->readConnection_ && this->readConnection_->isConnected())
-        {
-            // HACK(mm2pl): This prevents custom invalid twitch channels used by plugins from being joined
-            if (!channelName.startsWith("/"))
-            {
-                this->joinBucket_->send(channelName);
-            }
-        }
+        this->readConnection_->onChannelCreated(*twitchChannel);
     }
 
     return chan;
@@ -1335,17 +1181,52 @@ ChannelPtr TwitchIrcServer::getChannelOrEmpty(const QString &dirtyChannelName)
     return Channel::getEmpty();
 }
 
-void TwitchIrcServer::open(ConnectionType type)
+bool TwitchIrcServer::isModeratorIn(const QString &broadcasterLogin) const
 {
-    std::lock_guard<std::mutex> lock(this->connectionMutex_);
+    return this->moderatedChannels.contains(broadcasterLogin);
+}
 
-    if (type == ConnectionType::Write)
+void TwitchIrcServer::refreshModeratedChannels()
+{
+    auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
+    if (currentUser->isAnon())
     {
-        this->writeConnection_->open();
+        return;
     }
-    if (type == ConnectionType::Read)
+    CancellationToken token{false};
+    this->moderatedChannelFetchToken = token;
+    getHelix()->getModeratedChannels(
+        currentUser->getUserId(),
+        [this](auto &&set) {
+            this->moderatedChannels = std::forward<decltype(set)>(set);
+            this->applyModeratedChannelInfo();
+        },
+        [](const auto &message) {
+            qCWarning(chatterinoTwitch)
+                << "Failed to fetch moderated channels:" << message;
+        },
+        std::move(token));
+}
+
+void TwitchIrcServer::applyModeratedChannelInfo()
+{
+    if (this->moderatedChannels.empty())
     {
-        this->readConnection_->open();
+        return;
+    }
+
+    auto currentUserName =
+        getApp()->getAccounts()->twitch.getCurrent()->getUserName();
+    std::scoped_lock g(this->channelMutex);
+    for (const auto &weak : std::as_const(this->channels))
+    {
+        if (auto chan = std::dynamic_pointer_cast<TwitchChannel>(weak.lock()))
+        {
+            if (chan->getName() != currentUserName)
+            {
+                chan->setMod(this->moderatedChannels.contains(chan->getName()));
+            }
+        }
     }
 }
 

@@ -1689,6 +1689,19 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             "shared chat badge")
         ->addTo(layout);
 
+    SettingWidget::dropdown("Twitch read connection mode",
+                            s.twitchReadConnectionMode)
+        ->setTooltip("The read connection is the one where Chatterino joins a "
+                     "channel and listens to the messages.\n"
+                     "- Authenticated: Join as your logged in user.\n"
+                     "- Anonymous: Join as an anonymous user. This causes to "
+                     "you not show up in the viewer list.\n"
+                     "- Anonymous (parallel): Join as an anonymous user on "
+                     "multiple connections at once. This speeds up the "
+                     "connection phase when joining many channels. The other "
+                     "modes will join in delayed batches.")
+        ->addTo(layout);
+
     layout.addStretch();
 
     // invisible element for width
