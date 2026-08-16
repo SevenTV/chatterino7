@@ -218,11 +218,6 @@ void TwitchReadConnectionPoolSingle::onConnected()
     // join channels
     for (const auto &channel : activeChannels)
     {
-        // HACK(mm2pl): This prevents custom invalid twitch channels used by plugins from being joined
-        if (channel->getName().startsWith("/"))
-        {
-            continue;
-        }
         this->joinBucket->send(channel->getName());
     }
 
