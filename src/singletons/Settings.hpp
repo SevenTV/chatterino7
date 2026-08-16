@@ -799,7 +799,7 @@ public:
         "/misc/displaySevenTVAnimatedProfile", true};
 
     EnumStringSetting<TwitchReadConnectionMode> twitchReadConnectionMode = {
-        "/misc/twitchReadConnectionMode",
+        "/misc/x-7tv/twitchReadConnectionMode",
         TwitchReadConnectionMode::Authenticated};
 
     EnumStringSetting<ChatSendProtocol> chatSendProtocol = {
