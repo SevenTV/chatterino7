@@ -6,6 +6,7 @@
 
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
+#include "common/network/RetryingGet.hpp"
 #include "common/QLogging.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
@@ -280,14 +281,13 @@ void FfzEmotes::loadChannel(
 {
     qCDebug(LOG) << "Reload FFZ Channel Emotes for channel" << channelID;
 
-    NetworkRequest("https://api.frankerfacez.com/v1/room/id/" + channelID)
-
-        .timeout(20000)
-        .onSuccess([emoteCallback = std::move(emoteCallback),
-                    modBadgeCallback = std::move(modBadgeCallback),
-                    vipBadgeCallback = std::move(vipBadgeCallback),
-                    channelBadgesCallback = std::move(channelBadgesCallback),
-                    channel, channelID, manualRefresh](const auto &result) {
+    network::fetchWithBackoff(
+        "https://api.frankerfacez.com/v1/room/id/" + channelID,
+        [emoteCallback = std::move(emoteCallback),
+         modBadgeCallback = std::move(modBadgeCallback),
+         vipBadgeCallback = std::move(vipBadgeCallback),
+         channelBadgesCallback = std::move(channelBadgesCallback), channel,
+         channelID, manualRefresh](const auto &result) {
             writeProviderEmotesCache(channelID, "frankerfacez",
                                      result.getData());
             const auto json = result.parseJson();
@@ -318,41 +318,40 @@ void FfzEmotes::loadChannel(
                     shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
                 }
             }
-        })
-        .onError(
-            [channelID, channel, manualRefresh, cacheHit](const auto &result) {
-                auto shared = channel.lock();
-                if (!shared)
-                {
-                    return;
-                }
+        },
+        [channelID, channel, manualRefresh, cacheHit](const auto &result) {
+            auto shared = channel.lock();
+            if (!shared)
+            {
+                return;
+            }
 
-                if (result.status() == 404)
+            if (result.status() == 404)
+            {
+                // User does not have any FFZ emotes
+                if (manualRefresh)
                 {
-                    // User does not have any FFZ emotes
-                    if (manualRefresh)
-                    {
-                        shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
-                    }
+                    shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
                 }
-                else
+            }
+            else
+            {
+                // TODO: Auto retry in case of a timeout, with a delay
+                auto errorString = result.formatError();
+                qCWarning(LOG) << "Error fetching FFZ emotes for channel"
+                               << channelID << ", error" << errorString;
+                shared->addSystemMessage(
+                    QStringLiteral("Failed to fetch FrankerFaceZ channel "
+                                   "emotes. (Error: %1)")
+                        .arg(errorString));
+                if (cacheHit)
                 {
-                    // TODO: Auto retry in case of a timeout, with a delay
-                    auto errorString = result.formatError();
-                    qCWarning(LOG) << "Error fetching FFZ emotes for channel"
-                                   << channelID << ", error" << errorString;
                     shared->addSystemMessage(
-                        QStringLiteral("Failed to fetch FrankerFaceZ channel "
-                                       "emotes. (Error: %1)")
-                            .arg(errorString));
-                    if (cacheHit)
-                    {
-                        shared->addSystemMessage(
-                            "Using cached FrankerFaceZ emotes as fallback.");
-                    }
+                        "Using cached FrankerFaceZ emotes as fallback.");
                 }
-            })
-        .execute();
+            }
+        },
+        20000);
 }
 
 }  // namespace chatterino

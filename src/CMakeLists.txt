@@ -56,6 +56,8 @@ set(SOURCE_FILES
         common/network/NetworkResult.hpp
         common/network/NetworkTask.cpp
         common/network/NetworkTask.hpp
+        common/network/RetryingGet.cpp
+        common/network/RetryingGet.hpp
 
         common/websockets/WebSocketPool.cpp
         common/websockets/WebSocketPool.hpp
