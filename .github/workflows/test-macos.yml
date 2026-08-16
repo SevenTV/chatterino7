@@ -47,7 +47,7 @@ jobs:
           modules: ${{ env.QT_MODULES }}
           version: ${{ matrix.qt-version }}
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
