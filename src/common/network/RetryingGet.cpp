@@ -6,6 +6,7 @@
 
 #include <QRandomGenerator>
 #include <QTimer>
+#include <QUrl>
 
 namespace {
 

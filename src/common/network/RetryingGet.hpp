@@ -2,6 +2,8 @@
 
 #include <functional>
 
+class QUrl;
+
 namespace chatterino {
 
 class NetworkResult;
