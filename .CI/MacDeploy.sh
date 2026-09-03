@@ -33,20 +33,20 @@ if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
     _macdeployqt_args+=("-codesign=$MACOS_CODESIGN_CERTIFICATE")
 fi
 
-echo "Extracting kimageformats plugins"
-7z e -okimg kimg.zip
+# echo "Extracting kimageformats plugins"
+# 7z e -okimg kimg.zip
 
-if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
-    echo "Codesigning libKF6Archive"
-    codesign -s "$MACOS_CODESIGN_CERTIFICATE" --force kimg/libKF6Archive.6.dylib
-    echo "Codesigning kimg_avif"
-    codesign -s "$MACOS_CODESIGN_CERTIFICATE" --force kimg/kimg_avif.dylib
-fi
+# if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
+    # echo "Codesigning libKF6Archive"
+    # codesign -s "$MACOS_CODESIGN_CERTIFICATE" --force kimg/libKF6Archive.6.dylib
+    # echo "Codesigning kimg_avif"
+    # codesign -s "$MACOS_CODESIGN_CERTIFICATE" --force kimg/kimg_avif.dylib
+# fi
 
-mkdir -p chatterino.app/Contents/Frameworks
-mkdir -p chatterino.app/Contents/PlugIns/imageformats
-cp kimg/libKF6Archive.6.dylib chatterino.app/Contents/Frameworks/
-cp kimg/kimg_avif.dylib chatterino.app/Contents/PlugIns/imageformats/
+# mkdir -p chatterino.app/Contents/Frameworks
+# mkdir -p chatterino.app/Contents/PlugIns/imageformats
+# cp kimg/libKF6Archive.6.dylib chatterino.app/Contents/Frameworks/
+# cp kimg/kimg_avif.dylib chatterino.app/Contents/PlugIns/imageformats/
 
 macdeployqt chatterino.app "${_macdeployqt_args[@]}" -verbose=1
 

@@ -262,8 +262,8 @@ jobs:
           restore-keys: |
             sccache-build-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.qt-version }}
 
-      - name: Cache conan packages (Windows)
-        if: startsWith(matrix.os, 'windows')
+      - name: Cache conan packages (Windows/macOS)
+        if: runner.os == 'Windows' || runner.os == 'macOS'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           key: ${{ runner.os }}-${{ runner.arch }}-conan-user-${{ hashFiles('**/conanfile.py') }}-QT6
@@ -371,9 +371,28 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           # binary dependencies
-          ./.CI/SetupHomebrewDeps.sh boost openssl hunspell
-          # build and header-only dependencies
-          brew install rapidjson p7zip create-dmg tree
+          brew install rapidjson p7zip create-dmg tree conan ninja
+        shell: bash
+
+      - name: Setup Conan (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          conan --version
+          conan profile detect -f
+        shell: bash
+
+      - name: Install conan dependencies (macOS)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir build && cd build
+          conan install .. \
+              -s build_type=Release \
+              -c tools.cmake.cmaketoolchain:generator=Ninja \
+              s="arch=armv8|x86_64" \
+              -b missing \
+              --output-folder=. \
+              -o with_openssl3=True
+          conan cache clean --source --build --download "*"
         shell: bash
 
       - name: Build (MacOS)
@@ -382,21 +401,22 @@ jobs:
           mkdir -p build
           cd build
           cmake \
+              -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
               -DUSE_PRECOMPILED_HEADERS=ON \
               -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
-              -DCHATTERINO_NO_AVIF_PLUGIN=On \
               -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
               -DFORCE_JSON_GENERATION=Off \
               -DCHATTERINO_NIGHTLY_BUILD=${{ steps.build-type.outputs.NIGHTLY_BUILD }} \
               -DCHATTERINO_SPELLCHECK=On \
+              -G Ninja \
               ..
-          make -j"$(sysctl -n hw.logicalcpu)"
+          ninja
         shell: bash
 
       - name: Package (MacOS)
-        if: startsWith(matrix.os, 'macos')
+        if: runner.os == 'macOS'
         env:
           OUTPUT_DMG_PATH: chatterino-macos-Qt-${{ matrix.qt-version}}-universal.dmg
         run: |
@@ -408,46 +428,16 @@ jobs:
           export MACOS_CODESIGN_CERTIFICATE="-"
           echo "-> $MACOS_CODESIGN_CERTIFICATE"
 
-          echo "Downloading kimageformats plugins"
-          curl -SsfLo kimg.zip "https://github.com/nerixyz/kimageformats-binaries/releases/download/cont/kimageformats-macos-14-${{ matrix.qt-version}}.zip"
-
           ./../.CI/MacDeploy.sh
-
-          # Copy dynamic library dependencies into the Frameworks directory
-          cp /opt/universal-lib/libcrypto.dylib chatterino.app/Contents/Frameworks/libcrypto.3.dylib
-          cp /opt/universal-lib/libssl.dylib chatterino.app/Contents/Frameworks/libssl.3.dylib
-          cp /opt/universal-lib/libhunspell-1.7.0.dylib chatterino.app/Contents/Frameworks/libhunspell-1.7.0.dylib
 
           ls -la chatterino.app/Contents/Frameworks
 
           # Fix the library IDs to match their new location
-          install_name_tool -id @executable_path/../Frameworks/libssl.3.dylib chatterino.app/Contents/Frameworks/libssl.3.dylib
-          install_name_tool -id @executable_path/../Frameworks/libcrypto.3.dylib chatterino.app/Contents/Frameworks/libcrypto.3.dylib
+          # install_name_tool -id @executable_path/../Frameworks/libssl.3.dylib chatterino.app/Contents/Frameworks/libssl.3.dylib
+          # install_name_tool -id @executable_path/../Frameworks/libcrypto.3.dylib chatterino.app/Contents/Frameworks/libcrypto.3.dylib
 
           otool -L chatterino.app/Contents/Frameworks/libssl.3.dylib
           # Fix the search path for libcrypto in libssl
-          otool -L chatterino.app/Contents/Frameworks/libssl.3.dylib \
-            | grep libcrypto.3.dylib \
-            | cut -d" " -f1 \
-            | cut -f2 \
-            | while read input_crypto_dylib; do \
-                install_name_tool -change \
-                  "$input_crypto_dylib" \
-                  @executable_path/../Frameworks/libcrypto.3.dylib \
-                  chatterino.app/Contents/Frameworks/libssl.3.dylib; \
-              done
-          # Fix the search path for lib{crypto,ssl,hunspell} in chatterino
-          otool -L chatterino.app/Contents/MacOS/chatterino \
-            | grep /opt \
-            | cut -d" " -f1 \
-            | cut -f2 \
-            | while read og_entry; do \
-                echo $og_entry; \
-                install_name_tool -change \
-                  "$og_entry" \
-                  @executable_path/../Frameworks/$(echo $og_entry | sed -E 's/.*(libssl|libcrypto|libhunspell)/\1/') \
-                  chatterino.app/Contents/MacOS/chatterino; \
-              done
 
           ./../.CI/CreateDMG.sh
         shell: bash
