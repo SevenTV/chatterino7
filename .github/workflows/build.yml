@@ -32,6 +32,7 @@ env:
   CONAN_VERSION: 2.28.1
 
 jobs:
+  # MARK: Ubuntu
   build-ubuntu-docker:
     # Our Ubuntu builds are built using Docker images that have been pre-published.
     # This speeds up builds for us since we do some pre-building of packages that takes a long time
@@ -156,6 +157,7 @@ jobs:
           name: Chatterino-${{ matrix.os }}.deb
           path: build/Chatterino-${{ matrix.os }}-x86_64.deb
 
+  # MARK: Flatpak
   build-flatpak:
     runs-on: ubuntu-latest
     container:
@@ -173,6 +175,7 @@ jobs:
           manifest-path: .CI/com.chatterino.chatterino.yml
           cache-key: flatpak-builder-${{ github.sha }}
 
+  # MARK: Main build
   build:
     name: "Build ${{ matrix.os }}, Qt ${{ matrix.qt-version }} (LTO:${{ matrix.force-lto }}, crashpad:${{ case(matrix.skip-crashpad, 'off', 'on') }})"
     runs-on: ${{ matrix.os }}
@@ -243,7 +246,7 @@ jobs:
           modules: qtimageformats
           version: ${{ matrix.qt-version }}
 
-      # WINDOWS
+      # MARK: Windows
       - name: Enable Developer Command Prompt (Windows)
         if: startsWith(matrix.os, 'windows')
         uses: Chatterino/msvc-dev-cmd@24444121cb2805a7adbd23d0f4455d0916af896b # v2.0.7
@@ -366,7 +369,7 @@ jobs:
           name: chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}-symbols.pdb.7z
           path: build/bin/chatterino-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z
 
-      # MACOS
+      # MARK: macOS
       - name: Install dependencies (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: |
@@ -388,7 +391,7 @@ jobs:
           conan install .. \
               -s build_type=Release \
               -c tools.cmake.cmaketoolchain:generator=Ninja \
-              s="arch=armv8|x86_64" \
+              -s "arch=armv8|x86_64" \
               -b missing \
               --output-folder=. \
               -o with_openssl3=True
@@ -449,6 +452,7 @@ jobs:
           name: chatterino-macos-Qt-${{ matrix.qt-version }}-universal.dmg
           path: build/chatterino-macos-Qt-${{ matrix.qt-version }}-universal.dmg
 
+  # MARK: Create release
   create-release:
     needs: [build-ubuntu-docker, build-flatpak, build]
     runs-on: ubuntu-latest
@@ -512,6 +516,7 @@ jobs:
           git push -f origin nightly-build
         shell: bash
 
+  # MARK: Collect
   collect:
     needs: [build, build-ubuntu-docker]
     runs-on: ubuntu-latest
