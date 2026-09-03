@@ -409,6 +409,7 @@ jobs:
               -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
               -DUSE_PRECOMPILED_HEADERS=ON \
               -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
+              -DCHATTERINO_NO_AVIF_PLUGIN=On \
               -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
               -DFORCE_JSON_GENERATION=Off \
               -DCHATTERINO_NIGHTLY_BUILD=${{ steps.build-type.outputs.NIGHTLY_BUILD }} \
@@ -430,6 +431,9 @@ jobs:
           cd build
           export MACOS_CODESIGN_CERTIFICATE="-"
           echo "-> $MACOS_CODESIGN_CERTIFICATE"
+
+          echo "Downloading kimageformats plugins"
+          curl -SsfLo kimg.zip "https://github.com/nerixyz/kimageformats-binaries/releases/download/cont/kimageformats-macos-14-${{ matrix.qt-version}}.zip"
 
           ./../.CI/MacDeploy.sh
 

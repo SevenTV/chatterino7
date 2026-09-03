@@ -24,7 +24,8 @@ class Chatterino(ConanFile):
     def requirements(self):
         self.requires("boost/1.90.0")
 
-        self.requires("libavif/1.4.1")
+        if self.settings.os == "Windows":
+            self.requires("libavif/1.4.1")
         if self.options.get_safe("with_benchmark", False):
             self.requires("benchmark/1.9.0")
 
