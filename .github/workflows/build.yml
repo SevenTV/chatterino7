@@ -382,7 +382,7 @@ jobs:
         shell: bash
 
       - name: Install conan dependencies (macOS)
-        if: runner.os == 'Windows'
+        if: runner.os == 'macOS'
         run: |
           mkdir build && cd build
           conan install .. \
