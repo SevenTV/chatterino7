@@ -104,12 +104,14 @@ TEST(AsciiArtLayout, LimitsTheMessageWidth)
 {
     MockApplication mockApplication;
     MessageLayoutContainer container;
+    Message message;
     MessageLayoutContext ctx{
         .messageColors = {},
         .flags = MessageElementFlag::Text,
         .width = 1000,
         .scale = 1.0F,
         .imageScale = 1.0F,
+        .message = message,
     };
     container.beginLayout(ctx.width, ctx.scale, ctx.imageScale, {});
 
@@ -290,8 +292,10 @@ TEST(MessageLayoutContainer, ExhaustiveFlags)
 
     ASSERT_EQ(container.elements_.size(), 0);
 
+    Message message;
     MessageLayoutContext ctx{
         .messageColors = {},
+        .message = message,
     };
 
     // No flags matching, nothing was added

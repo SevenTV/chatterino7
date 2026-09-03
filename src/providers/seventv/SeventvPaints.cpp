@@ -43,7 +43,7 @@ QGradientStops parsePaintStops(const QJsonArray &stops)
     QGradientStops parsedStops;
     double lastStop = -1;
 
-    for (const auto &stop : stops)
+    for (const auto stop : stops)
     {
         const auto stopObject = stop.toObject();
 
@@ -70,7 +70,7 @@ std::vector<PaintDropShadow> parseDropShadows(const QJsonArray &dropShadows)
 {
     std::vector<PaintDropShadow> parsedDropShadows;
 
-    for (const auto &shadow : dropShadows)
+    for (const auto shadow : dropShadows)
     {
         const auto shadowObject = shadow.toObject();
 

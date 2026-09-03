@@ -197,6 +197,7 @@ jobs:
           # macOS (ARM)
           - os: macos-latest
             qt-version: 6.9.3
+            macosx-deployment-target: "13.0"
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
@@ -206,6 +207,7 @@ jobs:
       C2_ENABLE_LTO: ${{ matrix.force-lto }}
       C2_ENABLE_CRASHPAD: ${{ matrix.skip-crashpad == false }}
       C2_ARCH: ${{ case(endsWith(matrix.os, '-arm') || startsWith(matrix.os, 'macos'), 'arm', 'x86-64') }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -406,7 +408,6 @@ jobs:
           cmake \
               -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" \
               -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
               -DUSE_PRECOMPILED_HEADERS=ON \
               -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
               -DCHATTERINO_NO_AVIF_PLUGIN=On \
