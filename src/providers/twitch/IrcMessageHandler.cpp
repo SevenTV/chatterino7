@@ -1069,7 +1069,7 @@ void IrcMessageHandler::handlePartMessage(Communi::IrcMessage *message)
         }
         return message->nick() == ANONYMOUS_USERNAME;
     }();
-    if (ownUser && getSettings()->showParts.getValue())
+    if (!ownUser && getSettings()->showParts.getValue())
     {
         twitchChannel->addPartedUser(message->nick(), twitchChannel->isMod(),
                                      twitchChannel->isBroadcaster());
