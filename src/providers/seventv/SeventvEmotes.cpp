@@ -224,11 +224,11 @@ EmoteMap seventv::detail::parseEmotes(const QJsonArray &emoteSetEmotes,
         auto activeEmote = activeEmoteJson.toObject();
         auto emoteData = activeEmote["data"].toObject();
 
-        if (emoteData.empty() || !checkEmoteVisibility(emoteData, kind))
+                if (emoteData.empty() || !checkEmoteVisibility(emoteData, kind))
         {
             continue;
         }
-
+        
         auto result = createEmote(activeEmote, emoteData, kind);
         if (!result.hasImages)
         {
@@ -621,6 +621,13 @@ ImageSet SeventvEmotes::createImageSet(const QJsonObject &emoteData,
     auto baseUrl = host["url"].toString();
     const auto files = host["files"].toArray();
 
+            if (files.isEmpty())
+        {
+            qCDebug(chatterinoSeventv)
+                << "Emote file without url:";
+            return ImageSet{Image::getEmpty(), Image::getEmpty(), Image::getEmpty()};
+        }
+        
     std::array<ImagePtr, 4> sizes;
     double baseWidth = 0.0;
     size_t nextSize = 0;
