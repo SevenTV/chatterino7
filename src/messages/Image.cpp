@@ -31,7 +31,6 @@
 #include <algorithm>
 #include <atomic>
 
-
 // Duration between each check of every Image instance
 const auto IMAGE_POOL_CLEANUP_INTERVAL = std::chrono::minutes(1);
 // Duration since last usage of Image pixmap before expiration of frames
