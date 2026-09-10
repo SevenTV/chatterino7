@@ -15,6 +15,7 @@
 #include "singletons/helper/GifTimer.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/DebugCount.hpp"
+#include "util/Helpers.hpp"
 #include "util/PostToThread.hpp"
 
 #include <boost/functional/hash.hpp>
@@ -30,10 +31,40 @@
 #include <algorithm>
 #include <atomic>
 
+
 // Duration between each check of every Image instance
 const auto IMAGE_POOL_CLEANUP_INTERVAL = std::chrono::minutes(1);
 // Duration since last usage of Image pixmap before expiration of frames
 const auto IMAGE_POOL_IMAGE_LIFETIME = std::chrono::minutes(10);
+
+namespace {
+
+using namespace chatterino;
+
+std::pair<QSize, bool> limitedAutoScaleSize(
+    QSize original, std::optional<uint16_t> optAutoScale)
+{
+    if (!optAutoScale)
+    {
+        return {original, false};
+    }
+    // 2x ought to be enough for everyone.
+    int maxAutoScale = *optAutoScale * 2;
+    int maxDim = std::max({original.width(), original.height(), 1});
+    if (maxDim <= maxAutoScale)
+    {
+        return {original, false};
+    }
+    return {
+        {
+            (original.width() * maxAutoScale) / maxDim,
+            (original.height() * maxAutoScale) / maxDim,
+        },
+        true,
+    };
+}
+
+}  // namespace
 
 namespace chatterino::detail {
 
@@ -200,7 +231,8 @@ std::optional<QPixmap> Frames::first() const
     return this->items_.front().image;
 }
 
-QList<Frame> readFrames(QImageReader &reader, const Url &url)
+QList<Frame> readFrames(QImageReader &reader, const Url &url,
+                        std::optional<QSize> rescale)
 {
     QList<Frame> frames;
     frames.reserve(reader.imageCount());
@@ -221,6 +253,15 @@ QList<Frame> readFrames(QImageReader &reader, const Url &url)
                 duration = 100;
             }
             duration = std::max(20, duration);
+
+            if (rescale)
+            {
+                assert(!isGuiThread());
+                // We're not on the main thread - put some effort into scaling.
+                pixmap = pixmap.scaled(*rescale, Qt::IgnoreAspectRatio,
+                                       Qt::SmoothTransformation);
+            }
+
             frames.append(Frame{
                 .image = std::move(pixmap),
                 .duration = duration,
@@ -601,8 +642,11 @@ void Image::actuallyLoad()
             return;
         }
 
+        auto [limitedSize, needsLimit] =
+            limitedAutoScaleSize(size, shared->autoScale_);
+
         // use "double" to prevent int overflows
-        if (double(size.width()) * double(size.height()) *
+        if (double(limitedSize.width()) * double(limitedSize.height()) *
                 double(reader.imageCount()) * 4.0 >
             double(Image::maxBytesRam))
         {
@@ -612,7 +656,9 @@ void Image::actuallyLoad()
             return;
         }
 
-        auto parsed = detail::readFrames(reader, shared->url());
+        auto parsed = detail::readFrames(
+            reader, shared->url(),
+            makeConditionedOptional(needsLimit, limitedSize));
 
         assignFrames(shared, parsed);
     };

@@ -63,7 +63,8 @@ private:
     pajlada::Signals::Connection gifTimerConnection_;
 };
 
-QList<Frame> readFrames(QImageReader &reader, const Url &url);
+QList<Frame> readFrames(QImageReader &reader, const Url &url,
+                        std::optional<QSize> rescale = std::nullopt);
 void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed);
 
 }  // namespace chatterino::detail
