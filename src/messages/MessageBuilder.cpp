@@ -392,31 +392,6 @@ std::vector<TwitchBadge> appendSharedChatBadges(
     return appendedBadges;
 }
 
-bool doesWordContainATwitchEmote(
-    int cursor, const QString &word,
-    const std::vector<TwitchEmoteOccurrence> &twitchEmotes,
-    std::vector<TwitchEmoteOccurrence>::const_iterator &currentTwitchEmoteIt)
-{
-    if (currentTwitchEmoteIt == twitchEmotes.end())
-    {
-        // No emote to add!
-        return false;
-    }
-
-    const auto &currentTwitchEmote = *currentTwitchEmoteIt;
-
-    auto wordEnd = cursor + word.length();
-
-    // Check if this emote fits within the word boundaries
-    if (currentTwitchEmote.start < cursor || currentTwitchEmote.end > wordEnd)
-    {
-        // this emote does not fit xd
-        return false;
-    }
-
-    return true;
-}
-
 EmotePtr makeSharedChatBadge(const QString &sourceName,
                              const QString &sourceProfileURL,
                              const QString &sourceLogin)
@@ -547,6 +522,136 @@ std::pair<QString, bool> parseMessageType(Communi::TagsRef tags)
     // TODO: room-id & source-room-id comparison?
 
     return {msgId, mirrored};
+}
+
+struct TokenizedText {
+    QStringView text;
+};
+struct TokenizedEmote {
+    EmotePtr emote;
+    bool trailingSpace = true;
+};
+struct TokenizedGif {
+    QString id;
+    QStringView originalText;
+};
+struct TokenizedEmoji {
+    EmotePtr emote;
+};
+
+/// Tokenizes `text` into words and special Twitch items (emotes).
+///
+/// `visitor` gets called with one of `TokenizedText`, `TokenizedEmote`,
+/// `TokenizedGif`.
+void tokenizeWords(QStringView text,
+                   std::span<const TwitchSpecialOccurrence> specials,
+                   auto &&visitor)
+{
+    const char16_t *const start = text.utf16();
+    const char16_t *const end = text.utf16() + text.size();
+
+    const char16_t *current = start;
+    const char16_t *wordBegin = nullptr;
+    while (current != end)
+    {
+        bool isSpecial =
+            !specials.empty() && (current - start) == specials[0].start;
+        bool isSpace = *current == u' ';
+        // Eat the last word if there was one.
+        if ((isSpecial || isSpace) && wordBegin)
+        {
+            visitor(TokenizedText{
+                .text = QStringView(wordBegin, current),
+            });
+            wordBegin = nullptr;
+        }
+
+        if (isSpecial)
+        {
+            const auto &special = specials[0];
+            if (current + special.length > end)
+            {
+                // We should never get out of bounds here as we compute the end
+                // ourselves.
+                assert(false && "faulty tag parsing");
+                return;
+            }
+            QStringView originalText(current,
+                                     static_cast<qsizetype>(special.length));
+            current += special.length;
+
+            // A special item at the end always has a trailing space.
+            bool trailingSpace = current == end || *current == ' ';
+            std::visit(
+                variant::Overloaded{[&](const TwitchEmoteOccurrence &emote) {
+                                        visitor(TokenizedEmote{
+                                            .emote = emote.ptr,
+                                            .trailingSpace = trailingSpace,
+                                        });
+                                    },
+                                    [&](const TwitchGifOccurrence &gif) {
+                                        visitor(TokenizedGif{
+                                            .id = gif.id,
+                                            .originalText = originalText,
+                                        });
+                                    }},
+                special.data);
+
+            specials = specials.subspan(1);
+            continue;
+        }
+
+        if (!isSpace && !wordBegin)
+        {
+            wordBegin = current;
+        }
+        ++current;
+    }
+
+    if (wordBegin)
+    {
+        visitor(TokenizedText{
+            .text = QStringView(wordBegin, end),
+        });
+    }
+}
+
+/// Tokenizes `text` into words, Twitch emotes, and emojis.
+///
+/// `visitor` gets called with one of `TokenizedText`, `TokenizedEmote`,
+/// `TokenizedGif`, `TokenizedEmoji`.
+void tokenizeWordsWithEmoji(QStringView text,
+                            std::span<const TwitchSpecialOccurrence> emotes,
+                            auto &&visitor)
+{
+    tokenizeWords(
+        text, emotes,
+        variant::Overloaded{
+            [&](TokenizedText tok) {
+                for (const auto &item :
+                     getApp()->getEmotes()->getEmojis()->parse(tok.text))
+                {
+                    std::visit(variant::Overloaded{
+                                   [&](const EmotePtr &emote) {
+                                       visitor(TokenizedEmoji{
+                                           .emote = emote,
+                                       });
+                                   },
+                                   [&](QStringView text) {
+                                       visitor(TokenizedText{
+                                           .text = text,
+                                       });
+                                   },
+                               },
+                               item);
+                }
+            },
+            [&](const TokenizedEmote &emote) {
+                visitor(emote);
+            },
+            [&](const TokenizedGif &gif) {
+                visitor(gif);
+            }});
 }
 
 }  // namespace
@@ -856,13 +961,14 @@ MessageBuilder::MessageBuilder(TimeoutMessageTag, const QString &username,
 
 MessageBuilder::MessageBuilder(LiveUpdatesAddEmoteMessageTag /*unused*/,
                                const QString &platform, const QString &actor,
-                               const std::vector<QString> &emoteNames)
+                               const std::vector<QString> &emoteNames,
+                               const QDateTime &time)
     : MessageBuilder()
 {
     auto text =
         formatUpdatedEmoteList(platform, emoteNames, true, actor.isEmpty());
 
-    this->emplace<TimestampElement>();
+    this->emplace<TimestampElement>(time.time());
     if (!actor.isEmpty())
     {
         this->emplace<TextElement>(actor, MessageElementFlag::Username,
@@ -885,6 +991,7 @@ MessageBuilder::MessageBuilder(LiveUpdatesAddEmoteMessageTag /*unused*/,
     this->message().loginName = actor;
     this->message().messageText = finalText;
     this->message().searchText = finalText;
+    this->message().serverReceivedTime = time;
 
     this->message().flags.set(MessageFlag::System);
     this->message().flags.set(MessageFlag::LiveUpdatesAdd);
@@ -893,13 +1000,14 @@ MessageBuilder::MessageBuilder(LiveUpdatesAddEmoteMessageTag /*unused*/,
 
 MessageBuilder::MessageBuilder(LiveUpdatesRemoveEmoteMessageTag /*unused*/,
                                const QString &platform, const QString &actor,
-                               const std::vector<QString> &emoteNames)
+                               const std::vector<QString> &emoteNames,
+                               const QDateTime &time)
     : MessageBuilder()
 {
     auto text =
         formatUpdatedEmoteList(platform, emoteNames, false, actor.isEmpty());
 
-    this->emplace<TimestampElement>();
+    this->emplace<TimestampElement>(time.time());
     if (!actor.isEmpty())
     {
         this->emplace<TextElement>(actor, MessageElementFlag::Username,
@@ -922,6 +1030,7 @@ MessageBuilder::MessageBuilder(LiveUpdatesRemoveEmoteMessageTag /*unused*/,
     this->message().loginName = actor;
     this->message().messageText = finalText;
     this->message().searchText = finalText;
+    this->message().serverReceivedTime = time;
 
     this->message().flags.set(MessageFlag::System);
     this->message().flags.set(MessageFlag::LiveUpdatesRemove);
@@ -1804,34 +1913,29 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
         }
 
         // Twitch emotes
-        auto twitchEmotes =
-            parseTwitchEmotes(tags, content, static_cast<int>(messageOffset));
+        auto twitchSpecials = parseTwitchOccurrences(
+            tags, content, static_cast<int>(messageOffset));
 
         // This runs through all ignored phrases and runs its replacements on content
         processIgnorePhrases(*getSettings()->ignoredMessages.readOnly(),
-                             content, twitchEmotes);
+                             content, twitchSpecials);
 
-        std::ranges::sort(twitchEmotes, [](const auto &a, const auto &b) {
+        std::ranges::sort(twitchSpecials, [](const auto &a, const auto &b) {
             return a.start < b.start;
         });
         auto uniqueEmotes = std::ranges::unique(
-            twitchEmotes, [](const auto &first, const auto &second) {
+            twitchSpecials, [](const auto &first, const auto &second) {
                 return first.start == second.start;
             });
-        twitchEmotes.erase(uniqueEmotes.begin(), uniqueEmotes.end());
+        twitchSpecials.erase(uniqueEmotes.begin(), uniqueEmotes.end());
 
         if (getSettings()->wrapAsciiArt && isAsciiArt(content))
         {
             builder->flags.set(MessageFlag::AsciiArt);
         }
 
-        // FIXME(c7TV): This is temporary until upstream merges the support.
-        if (!builder.tryAddGif(tags, content))
-        {
-            // words
-            QStringList splits = content.split(' ');
-            builder.addWords(splits, twitchEmotes, textState);
-        }
+        // Add the content.
+        builder.addWords(content, twitchSpecials, textState);
 
         QString stylizedUsername =
             stylizeUsername(builder->loginName, builder.message());
@@ -1910,77 +2014,6 @@ void MessageBuilder::addTextOrEmote(TextState &state, QString string)
         return;
     }
     this->addWordFromUserMessage(string, state.twitchChannel);
-}
-
-// FIXME(c7TV): This is temporary until upstream merges the support.
-bool MessageBuilder::tryAddGif(Communi::TagsRef tags, QStringView content)
-{
-    if (!getSettings()->showTwitchGifs)
-    {
-        return false;
-    }
-
-    auto gifsTag = tags.getOrEmpty("gifs");
-    if (gifsTag.isEmpty())
-    {
-        return false;
-    }
-    auto [gifTag, rest] = splitOnce(gifsTag, ',');
-    if (!rest.empty())
-    {
-        return false;  // More than one gif.
-    }
-    auto [range, idAndLink] = splitOnce(gifTag, '|');
-    auto [id, link] = splitOnce(idAndLink, '|');
-    if (link.empty())
-    {
-        return false;  // Invalid format.
-    }
-
-    auto [startStr, endStr] = splitOnce(range, '-');
-    bool startOk = false;
-    bool endOk = false;
-    auto start = startStr.toULongLong(&startOk);
-    auto end = endStr.toULongLong(&endOk);
-    if (!startOk || !endOk || end <= start || start != 0)
-    {
-        return false;
-    }
-
-    quint64 nUnicodeChars = 0;
-    for (auto c : content)
-    {
-        if (!c.isLowSurrogate())
-        {
-            ++nUnicodeChars;
-        }
-    }
-    if (end + 1 != nUnicodeChars)
-    {
-        return false;  // Doesn't cover the whole range.
-    }
-
-    if (content.startsWith(u'['))
-    {
-        content.slice(1);
-    }
-    if (content.endsWith(u']'))
-    {
-        content.slice(0, content.size() - 1);
-    }
-    QString baseLink = link.toString();
-    QString link100 = baseLink.replace("giphy.gif"_L1, "100.webp"_L1);
-    QString link200 = baseLink.replace("giphy.gif"_L1, "200.webp"_L1);
-    ImageSet set{
-        Image::fromUrl(Url{link100}, 1.0, {100, 100}),
-        Image::fromUrl(Url{link200}, 0.5, {200, 200}),
-    };
-    this->emplace<LinebreakElement>(MessageElementFlag::Emote);
-    this->emplace<ScalingImageElement>(set, MessageElementFlag::Emote)
-        ->setLink(Link{Link::Url, baseLink})
-        ->setTooltip(content.toString().toHtmlEscaped());
-
-    return true;
 }
 
 void MessageBuilder::addWordFromUserMessage(QStringView string,
@@ -2067,6 +2100,37 @@ void MessageBuilder::addWordFromUserMessage(QStringView string,
     }
 
     this->appendOrEmplaceText(string.toString(), textColor);
+}
+
+void MessageBuilder::addTwitchGif(const QString &id, QStringView originalText)
+{
+    QString link = u"https://i.giphy.com/" % id % u".webp";
+    auto original = originalText.toString();
+    if (getSettings()->showTwitchGifs)
+    {
+        QString baseLink = link;
+        QString link100 = baseLink.replace("giphy.gif"_L1, "100.webp"_L1);
+        QString link200 = baseLink.replace("100.webp"_L1, "200.webp"_L1);
+        ImageSet set{
+            Image::fromUrl(Url{link100}, 1.0, {100, 100}),
+            Image::fromUrl(Url{link200}, 0.5, {200, 200}),
+        };
+        this->emplace<LinebreakElement>(MessageElementFlag::Emote);
+        this->emplace<ScalingImageElement>(set, MessageElementFlag::Emote)
+            ->setLink(Link{Link::Url, baseLink})
+            ->setTooltip(originalText.toString().toHtmlEscaped());
+    }
+    else
+    {
+        auto *el = this->emplace<LinkElement>(
+            LinkElement::Parsed{
+                .lowercase = original,
+                .original = original,
+            },
+            link, MessageElementFlag::Text, MessageColor::Link);
+
+        getApp()->getLinkResolver()->resolve(el->linkInfo());
+    }
 }
 
 bool MessageBuilder::isEmpty() const
@@ -2782,97 +2846,28 @@ void MessageBuilder::appendEmote(const EmotePtr &emote)
 }
 
 void MessageBuilder::addWords(
-    const QStringList &words,
-    const std::vector<TwitchEmoteOccurrence> &twitchEmotes, TextState &state)
+    QStringView text,
+    const std::vector<TwitchSpecialOccurrence> &twitchSpecials,
+    TextState &state)
 {
-    // cursor currently indicates what character index we're currently operating in the full list of words
-    int cursor = 0;
-    auto currentTwitchEmoteIt = twitchEmotes.begin();
-
-    for (auto word : words)
-    {
-        if (word.isEmpty())
-        {
-            cursor++;
-            continue;
-        }
-
-        while (doesWordContainATwitchEmote(cursor, word, twitchEmotes,
-                                           currentTwitchEmoteIt))
-        {
-            const auto &currentTwitchEmote = *currentTwitchEmoteIt;
-
-            if (currentTwitchEmote.start == cursor)
-            {
-                // This emote exists right at the start of the word!
-                this->emplace<EmoteElement>(currentTwitchEmote.ptr,
-                                            MessageElementFlag::Emote,
-                                            this->textColor_);
-
-                auto len = currentTwitchEmote.name.string.length();
-                cursor += len;
-                word = word.mid(len);
-
-                ++currentTwitchEmoteIt;
-
-                if (word.isEmpty())
-                {
-                    // space
-                    cursor += 1;
-                    break;
-                }
-                else
-                {
-                    this->message().elements.back()->setTrailingSpace(false);
-                }
-
-                continue;
-            }
-
-            // Emote is not at the start
-
-            // 1. Add text before the emote
-            QString preText = word.left(currentTwitchEmote.start - cursor);
-            for (auto variant :
-                 getApp()->getEmotes()->getEmojis()->parse(preText))
-            {
-                std::visit(variant::Overloaded{
-                               [&](const EmotePtr &emote) {
-                                   this->addEmoji(emote);
-                               },
-                               [&](QStringView text) {
-                                   this->addTextOrEmote(state, text.toString());
-                               },
-                           },
-                           variant);
-            }
-
-            cursor += preText.size();
-
-            word = word.mid(preText.size());
-        }
-
-        if (word.isEmpty())
-        {
-            continue;
-        }
-
-        // split words
-        for (auto variant : getApp()->getEmotes()->getEmojis()->parse(word))
-        {
-            std::visit(variant::Overloaded{
-                           [&](const EmotePtr &emote) {
-                               this->addEmoji(emote);
-                           },
-                           [&](QStringView text) {
-                               this->addTextOrEmote(state, text.toString());
-                           },
-                       },
-                       variant);
-        }
-
-        cursor += word.size() + 1;
-    }
+    tokenizeWordsWithEmoji(
+        text, twitchSpecials,
+        variant::Overloaded{
+            [&](TokenizedText tok) {
+                this->addTextOrEmote(state, tok.text.toString());
+            },
+            [&](const TokenizedEmoji &tok) {
+                this->addEmoji(tok.emote);
+            },
+            [&](const TokenizedEmote &tok) {
+                this->emplace<EmoteElement>(
+                        tok.emote, MessageElementFlag::Emote, this->textColor_)
+                    ->setTrailingSpace(tok.trailingSpace);
+            },
+            [&](const TokenizedGif &gif) {
+                this->addTwitchGif(gif.id, gif.originalText);
+            },
+        });
 }
 
 void MessageBuilder::appendTwitchBadges(Communi::TagsRef tags,

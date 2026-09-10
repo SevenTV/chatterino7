@@ -42,7 +42,7 @@ class IgnorePhrase;
 struct HelixVip;
 using HelixModerator = HelixVip;
 struct ChannelPointReward;
-struct TwitchEmoteOccurrence;
+struct TwitchSpecialOccurrence;
 struct HelixPinnedChatMessage;
 
 namespace linkparser {
@@ -102,11 +102,11 @@ public:
                    const QDateTime &time);
 
     MessageBuilder(LiveUpdatesAddEmoteMessageTag, const QString &platform,
-                   const QString &actor,
-                   const std::vector<QString> &emoteNames);
+                   const QString &actor, const std::vector<QString> &emoteNames,
+                   const QDateTime &time);
     MessageBuilder(LiveUpdatesRemoveEmoteMessageTag, const QString &platform,
-                   const QString &actor,
-                   const std::vector<QString> &emoteNames);
+                   const QString &actor, const std::vector<QString> &emoteNames,
+                   const QDateTime &time);
     MessageBuilder(LiveUpdatesUpdateEmoteMessageTag, const QString &platform,
                    const QString &actor, const QString &emoteName,
                    const QString &oldEmoteName);
@@ -273,7 +273,7 @@ private:
     void addEmoji(const EmotePtr &emote);
     void addTextOrEmote(TextState &state, QString string);
 
-    bool tryAddGif(Communi::TagsRef tags, QStringView content);
+    void addTwitchGif(const QString &id, QStringView originalText);
 
     Outcome tryAppendCheermote(TextState &state, const QString &string);
     Outcome tryAppendEmote(TwitchChannel *twitchChannel, const QString &userID,
@@ -328,8 +328,8 @@ private:
     void appendChannelName(const Channel *channel);
     void appendUsername(Communi::TagsRef tags, const MessageParseArgs &args);
 
-    void addWords(const QStringList &words,
-                  const std::vector<TwitchEmoteOccurrence> &twitchEmotes,
+    void addWords(QStringView text,
+                  const std::vector<TwitchSpecialOccurrence> &twitchSpecials,
                   TextState &state);
 
     void appendTwitchBadges(Communi::TagsRef tags,

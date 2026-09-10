@@ -829,13 +829,15 @@ void KickChannel::addOrReplaceSeventvAddRemove(bool isEmoteAdd,
     if (isEmoteAdd)
     {
         msg = MessageBuilder(liveUpdatesAddEmoteMessage, "7TV", actor,
-                             this->lastSeventvEmoteNames_)
+                             this->lastSeventvEmoteNames_,
+                             QDateTime::currentDateTime())
                   .release();
     }
     else
     {
         msg = MessageBuilder(liveUpdatesRemoveEmoteMessage, "7TV", actor,
-                             this->lastSeventvEmoteNames_)
+                             this->lastSeventvEmoteNames_,
+                             QDateTime::currentDateTime())
                   .release();
     }
     this->lastSeventvMessage_ = msg;
@@ -865,6 +867,7 @@ bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
                 "7TV",
                 last->loginName,
                 this->lastSeventvEmoteNames_,
+                QDateTime::currentDateTime(),
             };
         }
 
@@ -874,6 +877,7 @@ bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
             "7TV",
             last->loginName,
             this->lastSeventvEmoteNames_,
+            QDateTime::currentDateTime(),
         };
     };
 
