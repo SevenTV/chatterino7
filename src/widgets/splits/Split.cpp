@@ -59,7 +59,6 @@
 
 #include <functional>
 
-
 using namespace Qt::Literals;
 
 namespace chatterino {

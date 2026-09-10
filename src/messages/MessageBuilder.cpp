@@ -2108,16 +2108,17 @@ void MessageBuilder::addTwitchGif(const QString &id, QStringView originalText)
     auto original = originalText.toString();
     if (getSettings()->showTwitchGifs)
     {
-        QString baseLink = link;
-        QString link100 = baseLink.replace("giphy.gif"_L1, "100.webp"_L1);
-        QString link200 = baseLink.replace("100.webp"_L1, "200.webp"_L1);
+        QString link100 =
+            u"https://media4.giphy.com/media/" % id % u"/100.webp";
+        QString link200 =
+            u"https://media4.giphy.com/media/" % id % u"/200.webp";
         ImageSet set{
             Image::fromUrl(Url{link100}, 1.0, {100, 100}),
             Image::fromUrl(Url{link200}, 0.5, {200, 200}),
         };
         this->emplace<LinebreakElement>(MessageElementFlag::Emote);
         this->emplace<ScalingImageElement>(set, MessageElementFlag::Emote)
-            ->setLink(Link{Link::Url, baseLink})
+            ->setLink(Link{Link::Url, link})
             ->setTooltip(originalText.toString().toHtmlEscaped());
     }
     else
