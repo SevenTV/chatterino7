@@ -24,6 +24,7 @@ class SplitInput;
 class SplitContainer;
 class SplitOverlay;
 class PinnedMessageWidget;
+class KickPredictionWidget;
 class SelectChannelDialog;
 class OverlayWindow;
 
@@ -175,6 +176,7 @@ private:
     QVBoxLayout *const vbox_;
     SplitHeader *const header_;
     PinnedMessageWidget *const pinnedBanner_;
+    KickPredictionWidget *const predictionBanner_;
     ChannelView *const view_;
     SplitInput *const input_;
     SplitOverlay *const overlay_;

@@ -451,6 +451,29 @@ void KickChannel::updateRoomModes(const RoomModes &modes)
     }
 }
 
+const KickPrediction *KickChannel::currentPrediction() const
+{
+    if (!this->prediction_)
+    {
+        return nullptr;
+    }
+    return &*this->prediction_;
+}
+
+void KickChannel::updatePrediction(KickPrediction prediction)
+{
+    // Kick re-sends the full snapshot on every vote without always bumping
+    // `updated_at`, so the whole thing has to be compared to tell a repeat
+    // apart from a new vote.
+    if (this->prediction_ == prediction)
+    {
+        return;
+    }
+
+    this->prediction_ = std::move(prediction);
+    this->predictionChanged.invoke();
+}
+
 void KickChannel::setSendWait(std::chrono::seconds waitTime)
 {
     if (waitTime <= 0s)

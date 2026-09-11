@@ -81,6 +81,9 @@ private:
     void onRewardRedeemedEvent(KickChannel *channel, BoostJsonObject data);
     void onKicksGiftedEvent(KickChannel *channel, BoostJsonObject data);
     void onChatroomUpdatedEvent(KickChannel *channel, BoostJsonObject data);
+    /// Handles `PredictionCreated` and `PredictionUpdated` alike; the payloads
+    /// are identical.
+    void onPredictionEvent(KickChannel *channel, BoostJsonObject data);
 
     void onKnownIgnoredMessage(KickChannel *channel, BoostJsonObject data);
 
