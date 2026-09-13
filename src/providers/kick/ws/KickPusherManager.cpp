@@ -17,7 +17,6 @@
 
 #include <utility>
 
-
 using namespace Qt::Literals;
 
 namespace {
