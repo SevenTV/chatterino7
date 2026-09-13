@@ -332,12 +332,12 @@ KickPusherManager::KickPusherManager(QStringView appKey, QStringView cluster)
 }
 KickPusherManager::~KickPusherManager() = default;
 
-void KickPusherManager::joinChannel(QString name)
+void KickPusherManager::joinChannel(const QString &name)
 {
     this->private_->subscribe(name);
 }
 
-void KickPusherManager::partChannel(QString name)
+void KickPusherManager::partChannel(const QString &name)
 {
     this->private_->unsubscribe(name);
 }

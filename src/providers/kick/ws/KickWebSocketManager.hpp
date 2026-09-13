@@ -11,10 +11,13 @@ namespace chatterino {
 class KickWebSocketManager
 {
 public:
+    KickWebSocketManager() = default;
     virtual ~KickWebSocketManager() = default;
 
-    virtual void joinChannel(QString channelName) = 0;
-    virtual void partChannel(QString channelName) = 0;
+    Q_DISABLE_COPY_MOVE(KickWebSocketManager);
+
+    virtual void joinChannel(const QString &channelName) = 0;
+    virtual void partChannel(const QString &channelName) = 0;
 };
 
 }  // namespace chatterino

@@ -16,8 +16,8 @@ public:
     KickPusherManager(QStringView appKey, QStringView cluster);
     ~KickPusherManager() override;
 
-    void joinChannel(QString channelName) override;
-    void partChannel(QString channelName) override;
+    void joinChannel(const QString &channelName) override;
+    void partChannel(const QString &channelName) override;
 
 private:
     std::unique_ptr<KickPusherManagerPrivate> private_;
