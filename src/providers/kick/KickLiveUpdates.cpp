@@ -16,6 +16,35 @@ using namespace Qt::Literals;
 
 namespace chatterino {
 
+namespace {
+
+FlagsEnum<KickConnectionPreference> currentPrefs()
+{
+    FlagsEnum<KickConnectionPreference> pref =
+        getSettings()->kickConnectionPreference;
+    if (pref == KickConnectionPreference::Default)
+    {
+        pref = KickConnectionPreference::Pusher;
+    }
+    return pref;
+}
+
+std::unique_ptr<KickWebSocketManager> makeDefaultManager(
+    const QString &clientID)
+{
+    auto prefs = currentPrefs();
+    if (prefs.has(KickConnectionPreference::Centrifugo))
+    {
+        return std::make_unique<KickCentrifugoManager>(
+            u"wss://realtime.us-east-1.platform.kick.com/connection/websocket"_s,
+            clientID);
+    }
+
+    return std::make_unique<KickPusherManager>(u"", u"");
+}
+
+}  // namespace
+
 class KickLiveUpdatesPrivate
     : public std::enable_shared_from_this<KickLiveUpdatesPrivate>
 {
@@ -56,13 +85,7 @@ bool KickLiveUpdatesPrivate::hasManagerOrFetch()
     {
         this->requestInProgress = true;
 
-        FlagsEnum<KickConnectionPreference> pref =
-            getSettings()->kickConnectionPreference;
-        if (pref == KickConnectionPreference::Default)
-        {
-            pref = KickConnectionPreference::Pusher;
-        }
-
+        auto pref = currentPrefs();
         QJsonArray accepted;
         if (pref.has(KickConnectionPreference::Pusher))
         {
@@ -128,8 +151,7 @@ bool KickLiveUpdatesPrivate::hasManagerOrFetch()
                     qCWarning(chatterinoKick)
                         << "Unknown Kick provider, using Pusher"
                         << res.getData();
-                    self->manager =
-                        std::make_unique<KickPusherManager>(u"", u"");
+                    self->manager = makeDefaultManager(self->clientID);
                 }
 
                 self->flushBacklog();

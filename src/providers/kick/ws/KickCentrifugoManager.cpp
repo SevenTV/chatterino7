@@ -105,6 +105,7 @@ KickCentrifugoClient::KickCentrifugoClient(QString clientID,
     , chatServer_(std::move(chatServer))
 {
     this->refreshTimer.setSingleShot(true);
+    // NOLINTNEXTLINE(clazy-connect-3arg-lambda)
     QObject::connect(&this->refreshTimer, &QTimer::timeout, [this] {
         this->doRefresh();
     });
@@ -385,7 +386,7 @@ void KickCentrifugoClient::onResponseOrUnk(BoostJsonObject root,
                 }
             }
         },
-        [&](const Connect &) {
+        [&](Connect) {
             auto o = root["connect"].toObject();
             auto hb = o["ping"].toInt64();
             this->heartbeatInterval_ = std::chrono::seconds(hb);
@@ -397,7 +398,7 @@ void KickCentrifugoClient::onResponseOrUnk(BoostJsonObject root,
                 this->refreshTimer.start(ttl);
             }
         },
-        [&](const Refresh &) {
+        [&](Refresh) {
             auto o = root["refresh"].toObject();
             if (o["expires"].toBool())
             {
