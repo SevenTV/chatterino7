@@ -7,6 +7,7 @@
 #include "Application.hpp"
 #include "common/QLogging.hpp"
 #include "providers/kick/KickChatServer.hpp"
+#include "providers/kick/ws/KickWebSocketCommon.hpp"
 #include "providers/liveupdates/BasicPubSubClient.hpp"
 #include "providers/liveupdates/BasicPubSubManager.hpp"
 #include "util/BoostJsonWrap.hpp"
@@ -14,8 +15,8 @@
 #include <boost/json.hpp>
 #include <QPointer>
 
-#include <charconv>
 #include <utility>
+
 
 using namespace Qt::Literals;
 
@@ -26,55 +27,6 @@ using namespace chatterino;
 constexpr std::chrono::seconds MAX_HEARTBEAT_INTERVAL{20};
 const QString WS_URL =
     u"wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false"_s;
-
-bool stripPrefix(std::string_view &str, std::string_view prefix)
-{
-    if (str.starts_with(prefix))
-    {
-        str = str.substr(prefix.size());
-        return true;
-    }
-    return false;
-}
-
-bool stripSuffix(std::string_view &str, std::string_view suffix)
-{
-    if (str.ends_with(suffix))
-    {
-        str = str.substr(0, str.size() - suffix.size());
-        return true;
-    }
-    return false;
-}
-
-struct IDs {
-    uint64_t roomID = 0;
-    uint64_t channelID = 0;
-};
-
-IDs parseIDs(std::string_view channel)
-{
-    bool isChannel = false;
-    if (stripPrefix(channel, "chatrooms.") || stripPrefix(channel, "chatroom_"))
-    {
-        stripSuffix(channel, ".v2");
-    }
-    else if (stripPrefix(channel, "channel_") ||
-             stripPrefix(channel, "channel.") ||
-             stripPrefix(channel, "predictions-channel-"))
-    {
-        isChannel = true;
-    }
-
-    uint64_t v = 0;
-    std::from_chars(channel.data(), channel.data() + channel.size(), v);
-
-    if (isChannel)
-    {
-        return IDs{.channelID = v};
-    }
-    return IDs{.roomID = v};
-}
 
 class KickPusherClient : public BasicPubSubClient<QString, KickPusherClient>,
                          public std::enable_shared_from_this<KickPusherClient>
@@ -163,7 +115,7 @@ void KickPusherClient::onMessageUi(const QByteArray &msg)
         // that's the main chat subscription
         if (channel.starts_with("chatrooms.") && channel.ends_with(".v2"))
         {
-            auto ids = parseIDs(channel);
+            auto ids = kick::ws::parseIDs(channel);
             if (this->chatServer_ && ids.roomID > 0)
             {
                 this->chatServer_->onJoin(ids.roomID);
@@ -186,10 +138,10 @@ void KickPusherClient::onMessageUi(const QByteArray &msg)
     }
     else
     {
-        bool isApp = stripPrefix(event, "App\\Events\\");
+        bool isApp = kick::ws::stripPrefix(event, "App\\Events\\");
 
         auto channel = rootObj["channel"].toStringView();
-        auto ids = parseIDs(channel);
+        auto ids = kick::ws::parseIDs(channel);
         if (this->chatServer_ && (ids.roomID > 0 || ids.channelID > 0))
         {
             bool handled = this->chatServer_->onAppEvent(

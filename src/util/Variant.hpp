@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <variant>
+
 namespace chatterino::variant {
 
 /// Compile-time safe visitor for std and boost variants.
@@ -20,8 +22,28 @@ namespace chatterino::variant {
 /// }, v);
 /// ```
 template <class... Ts>
-struct Overloaded : Ts... {
+struct [[nodiscard]] Overloaded : Ts... {
     using Ts::operator()...;
+
+    constexpr decltype(auto) visit(auto &&v) &
+    {
+        return std::visit(*this, std::forward<decltype(v)>(v));
+    }
+
+    constexpr decltype(auto) visit(auto &&v) const &
+    {
+        return std::visit(*this, std::forward<decltype(v)>(v));
+    }
+
+    constexpr decltype(auto) visit(auto &&v) &&
+    {
+        return std::visit(std::move(*this), std::forward<decltype(v)>(v));
+    }
+
+    constexpr decltype(auto) visit(auto &&v) const &&
+    {
+        return std::visit(std::move(*this), std::forward<decltype(v)>(v));
+    }
 };
 
 // Technically, we shouldn't need this, as we're on C++ 20,

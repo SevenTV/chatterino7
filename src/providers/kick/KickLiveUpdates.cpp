@@ -1,11 +1,14 @@
 #include "providers/kick/KickLiveUpdates.hpp"
 
+#include "common/FlagsEnum.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
 #include "debug/AssertInGuiThread.hpp"
+#include "providers/kick/ws/KickCentrifugoManager.hpp"
 #include "providers/kick/ws/KickPusherManager.hpp"
 #include "providers/kick/ws/KickWebSocketManager.hpp"
+#include "singletons/Settings.hpp"
 
 #include <boost/unordered/unordered_flat_set.hpp>
 
@@ -52,7 +55,24 @@ bool KickLiveUpdatesPrivate::hasManagerOrFetch()
     if (!this->requestInProgress)
     {
         this->requestInProgress = true;
-        QJsonArray accepted{QJsonObject{{"provider"_L1, "pusher"_L1}}};
+
+        FlagsEnum<KickConnectionPreference> pref =
+            getSettings()->kickConnectionPreference;
+        if (pref == KickConnectionPreference::Default)
+        {
+            pref = KickConnectionPreference::Pusher;
+        }
+
+        QJsonArray accepted;
+        if (pref.has(KickConnectionPreference::Pusher))
+        {
+            accepted.append(QJsonObject{{"provider"_L1, "pusher"_L1}});
+        }
+        if (pref.has(KickConnectionPreference::Centrifugo))
+        {
+            accepted.append(QJsonObject{{"provider"_L1, "centrifugo"_L1}});
+        }
+
         // FIXME: Is it okay to just pass `1` here? It doesn't really depend on
         // the channel, but maybe Kick does some load balancing based on it.
         NetworkRequest(
@@ -93,6 +113,15 @@ bool KickLiveUpdatesPrivate::hasManagerOrFetch()
                         << "cluster:" << cluster;
                     self->manager =
                         std::make_unique<KickPusherManager>(appKey, cluster);
+                }
+                else if (provider == u"centrifugo")
+                {
+                    const auto creds = connection["credentials"_L1].toObject();
+                    auto url = creds["url"_L1].toString();
+                    qCDebug(chatterinoKick)
+                        << "Using Centrifugo with url:" << url;
+                    self->manager = std::make_unique<KickCentrifugoManager>(
+                        url, self->clientID);
                 }
                 else
                 {

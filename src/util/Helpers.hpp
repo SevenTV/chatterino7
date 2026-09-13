@@ -243,4 +243,14 @@ std::pair<QStringView, QStringView> splitOnce(QStringView haystack,
 std::pair<QStringView, QStringView> splitOnce(QStringView haystack,
                                               QChar needle) noexcept;
 
+/// Splits `haystack` by `needle`. If `needle` doesn't occur in `haystack`,
+/// `{haystack, {}}` is returned.
+std::pair<QByteArrayView, QByteArrayView> splitOnce(
+    QByteArrayView haystack, QByteArrayView needle) noexcept;
+
+/// Splits `haystack` by `needle`. If `needle` doesn't occur in `haystack`,
+/// `{haystack, {}}` is returned.
+std::pair<QByteArrayView, QByteArrayView> splitOnce(QByteArrayView haystack,
+                                                    char needle) noexcept;
+
 }  // namespace chatterino
