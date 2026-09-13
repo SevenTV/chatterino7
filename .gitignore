@@ -125,3 +125,4 @@ aqtinstall.log
 
 # sccache (CI)
 .sccache
+.ccache
