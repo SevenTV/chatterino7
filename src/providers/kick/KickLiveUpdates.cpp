@@ -1,334 +1,195 @@
 #include "providers/kick/KickLiveUpdates.hpp"
 
-#include "Application.hpp"
+#include "common/network/NetworkRequest.hpp"
+#include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
-#include "providers/kick/KickChatServer.hpp"
-#include "providers/liveupdates/BasicPubSubClient.hpp"
-#include "providers/liveupdates/BasicPubSubManager.hpp"
-#include "util/BoostJsonWrap.hpp"
+#include "debug/AssertInGuiThread.hpp"
+#include "providers/kick/ws/KickPusherManager.hpp"
+#include "providers/kick/ws/KickWebSocketManager.hpp"
 
-#include <boost/json.hpp>
-#include <QPointer>
-
-#include <charconv>
-#include <utility>
+#include <boost/unordered/unordered_flat_set.hpp>
 
 using namespace Qt::Literals;
 
-namespace {
-
-constexpr std::chrono::seconds MAX_HEARTBEAT_INTERVAL{20};
-const QString WS_URL =
-    u"wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false"_s;
-
-bool stripPrefix(std::string_view &str, std::string_view prefix)
-{
-    if (str.starts_with(prefix))
-    {
-        str = str.substr(prefix.size());
-        return true;
-    }
-    return false;
-}
-
-bool stripSuffix(std::string_view &str, std::string_view suffix)
-{
-    if (str.ends_with(suffix))
-    {
-        str = str.substr(0, str.size() - suffix.size());
-        return true;
-    }
-    return false;
-}
-
-struct IDs {
-    uint64_t roomID = 0;
-    uint64_t channelID = 0;
-};
-
-IDs parseIDs(std::string_view channel)
-{
-    bool isChannel = false;
-    if (stripPrefix(channel, "chatrooms.") || stripPrefix(channel, "chatroom_"))
-    {
-        stripSuffix(channel, ".v2");
-    }
-    else if (stripPrefix(channel, "channel_") ||
-             stripPrefix(channel, "channel.") ||
-             stripPrefix(channel, "predictions-channel-"))
-    {
-        isChannel = true;
-    }
-
-    uint64_t v = 0;
-    std::from_chars(channel.data(), channel.data() + channel.size(), v);
-
-    if (isChannel)
-    {
-        return IDs{.channelID = v};
-    }
-    return IDs{.roomID = v};
-}
-
-}  // namespace
-
 namespace chatterino {
 
-class KickLiveUpdatesClient
-    : public BasicPubSubClient<QString, KickLiveUpdatesClient>,
-      public std::enable_shared_from_this<KickLiveUpdatesClient>
-{
-public:
-    KickLiveUpdatesClient(QPointer<KickChatServer> chatServer)
-        : BasicPubSubClient(100)
-        , lastHeartbeat_(std::chrono::steady_clock::now())
-        , heartbeatInterval_(MAX_HEARTBEAT_INTERVAL)
-        , chatServer_(std::move(chatServer))
-    {
-    }
-
-    void onOpen() /* override */
-    {
-        BasicPubSubClient::onOpen();
-        this->lastHeartbeat_ = std::chrono::steady_clock::now();
-    }
-
-    void onMessage(const QByteArray &msg);
-
-    std::chrono::steady_clock::time_point lastHeartbeat() const
-    {
-        return this->lastHeartbeat_;
-    }
-
-    std::chrono::milliseconds heartbeatInterval() const
-    {
-        return this->heartbeatInterval_;
-    }
-
-    void checkHeartbeat();
-
-    QByteArray encodeSubscription(const Subscription &subscription);
-    QByteArray encodeUnsubscription(const Subscription &subscription);
-
-private:
-    void onMessageUi(const QByteArray &msg);
-
-    std::chrono::steady_clock::time_point lastHeartbeat_;
-    std::chrono::milliseconds heartbeatInterval_;
-    QPointer<KickChatServer> chatServer_;
-};
-
-void KickLiveUpdatesClient::onMessage(const QByteArray &msg)
-{
-    runInGuiThread([weak = this->weak_from_this(), msg] {
-        auto self = weak.lock();
-        if (self)
-        {
-            self->onMessageUi(msg);
-        }
-    });
-}
-
-void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
-{
-    boost::system::error_code ec;
-    auto rootJv =
-        boost::json::parse(std::string_view(msg.data(), msg.size()), ec);
-    if (ec)
-    {
-        qCWarning(chatterinoKick) << "Failed to parse message:" << ec.message();
-        return;
-    }
-    BoostJsonValue rootRef(rootJv);
-    auto rootObj = rootRef.toObject();
-    auto event = rootObj["event"].toStringView();
-
-    auto dataStr = rootObj["data"].toStringView();
-    BoostJsonValue data;
-    boost::json::value dataJv;
-    if (!dataStr.empty() && dataStr != "{}")
-    {
-        dataJv = boost::json::parse(dataStr, ec);
-        data = BoostJsonValue(dataJv);
-    }
-
-    if (event == "pusher:pong")
-    {
-        this->lastHeartbeat_ = std::chrono::steady_clock::now();
-    }
-    else if (event == "pusher_internal:subscription_succeeded")
-    {
-        auto channel = rootObj["channel"].toStdString();
-        // that's the main chat subscription
-        if (channel.starts_with("chatrooms.") && channel.ends_with(".v2"))
-        {
-            auto ids = parseIDs(channel);
-            if (this->chatServer_ && ids.roomID > 0)
-            {
-                this->chatServer_->onJoin(ids.roomID);
-            }
-        }
-    }
-    else if (event == "pusher:subscription_error")
-    {
-        qCWarning(chatterinoKick) << "Failed to subscribe" << msg;
-    }
-    else if (event == "pusher:connection_established")
-    {
-        std::chrono::seconds activityTimeout{
-            data["activity_timeout"].toInt64()};
-        if (activityTimeout.count() > 2 &&
-            activityTimeout < this->heartbeatInterval_)
-        {
-            this->heartbeatInterval_ = activityTimeout;
-        }
-    }
-    else
-    {
-        bool isApp = stripPrefix(event, "App\\Events\\");
-
-        auto channel = rootObj["channel"].toStringView();
-        auto ids = parseIDs(channel);
-        if (this->chatServer_ && (ids.roomID > 0 || ids.channelID > 0))
-        {
-            bool handled = this->chatServer_->onAppEvent(
-                ids.roomID, ids.channelID, event, data.toObject());
-            if (!handled)
-            {
-                qCWarning(chatterinoKick).noquote()
-                    << "Unknown event" << event << "isApp:" << isApp
-                    << "channel:" << rootObj["channel"].toStringView()
-                    << "data:" << dataStr;
-            }
-        }
-    }
-}
-
-void KickLiveUpdatesClient::checkHeartbeat()
-{
-    if (!this->isOpen())
-    {
-        return;
-    }
-
-    if ((std::chrono::steady_clock::now() - this->lastHeartbeat_) >
-        this->heartbeatInterval_ * 1.5)
-    {
-        qCDebug(chatterinoKick) << "Heartbeat timed out";
-        this->close();
-    }
-
-    this->sendText(R"({"event":"pusher:ping","data":0})"_ba);
-}
-
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
-QByteArray KickLiveUpdatesClient::encodeSubscription(const Subscription &sub)
-{
-    return QByteArray::fromStdString(boost::json::serialize(boost::json::object{
-        {"event", "pusher:subscribe"},
-        {"data",
-         boost::json::object{
-             {"auth", ""},
-             {"channel", sub.toStdString()},
-         }},
-    }));
-}
-
-QByteArray KickLiveUpdatesClient::encodeUnsubscription(const Subscription &sub)
-{
-    return QByteArray::fromStdString(boost::json::serialize(boost::json::object{
-        {"event", "pusher:unsubscribe"},
-        {"data",
-         boost::json::object{
-             {"channel", sub.toStdString()},
-         }},
-    }));
-}
-// NOLINTEND(readability-convert-member-functions-to-static)
-
 class KickLiveUpdatesPrivate
-    : public BasicPubSubManager<KickLiveUpdatesPrivate, KickLiveUpdatesClient>
+    : public std::enable_shared_from_this<KickLiveUpdatesPrivate>
 {
 public:
     KickLiveUpdatesPrivate();
-    ~KickLiveUpdatesPrivate() override;
 
-    Q_DISABLE_COPY_MOVE(KickLiveUpdatesPrivate);
+    std::unique_ptr<KickWebSocketManager> manager;
+    boost::unordered_flat_set<std::pair<uint64_t, uint64_t>> backlog;
+    bool requestInProgress = false;
 
-    std::shared_ptr<KickLiveUpdatesClient> makeClient();
-    void checkHeartbeats();
+    QString clientID;
 
-    std::chrono::milliseconds heartbeatInterval = MAX_HEARTBEAT_INTERVAL;
-    QTimer heartbeatTimer;
+    bool hasManagerOrFetch();
+
+    void flushBacklog();
+
+    void joinImpl(uint64_t roomID, uint64_t channelID);
+    void partImpl(uint64_t roomID, uint64_t channelID);
 
 private:
     friend KickLiveUpdates;
 };
 
 KickLiveUpdatesPrivate::KickLiveUpdatesPrivate()
-    : BasicPubSubManager(WS_URL, "kick")
+    : clientID(QUuid::createUuid().toString(QUuid::WithoutBraces))
 {
-    QObject::connect(&this->heartbeatTimer, &QTimer::timeout, this,
-                     &KickLiveUpdatesPrivate::checkHeartbeats);
-    this->heartbeatTimer.setInterval(this->heartbeatInterval);
-    this->heartbeatTimer.setSingleShot(false);
-    this->heartbeatTimer.start();
 }
 
-KickLiveUpdatesPrivate::~KickLiveUpdatesPrivate()
+bool KickLiveUpdatesPrivate::hasManagerOrFetch()
 {
-    this->stop();
-}
+    assertInGuiThread();
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-std::shared_ptr<KickLiveUpdatesClient> KickLiveUpdatesPrivate::makeClient()
-{
-    return std::make_shared<KickLiveUpdatesClient>(
-        getApp()->getKickChatServer());
-}
-
-void KickLiveUpdatesPrivate::checkHeartbeats()
-{
-    auto minInterval = std::chrono::milliseconds::max();
-    for (const auto &[id, client] : this->clients())
+    if (this->manager)
     {
-        client->checkHeartbeat();
-        minInterval = std::min(minInterval, client->heartbeatInterval());
+        return true;
     }
-    if (minInterval != std::chrono::milliseconds::max())
+    if (!this->requestInProgress)
     {
-        this->heartbeatInterval = minInterval;
-        this->heartbeatTimer.setInterval(this->heartbeatInterval);
+        this->requestInProgress = true;
+        QJsonArray accepted{QJsonObject{{"provider"_L1, "pusher"_L1}}};
+        // FIXME: Is it okay to just pass `1` here? It doesn't really depend on
+        // the channel, but maybe Kick does some load balancing based on it.
+        NetworkRequest(
+            u"https://web.kick.com/api/v1/realtime/channels/1/chat/connection"_s,
+            NetworkRequestType::Post)
+            .json(QJsonObject{
+                {
+                    "client"_L1,
+                    QJsonObject{
+                        {"id"_L1, this->clientID},
+                        {"type"_L1, "web"_L1},
+                    },
+                },
+                {
+                    "capabilities"_L1,
+                    QJsonObject{{"accepted_providers"_L1, accepted}},
+                },
+            })
+            .onSuccess([weak =
+                            this->weak_from_this()](const NetworkResult &res) {
+                auto self = weak.lock();
+                if (!self)
+                {
+                    return;
+                }
+
+                const auto json = res.parseJson();
+                const auto connection =
+                    json["data"_L1]["connections"_L1][0].toObject();
+                auto provider = connection["provider"_L1].toString();
+                if (provider == u"pusher")
+                {
+                    const auto creds = connection["credentials"_L1].toObject();
+                    auto appKey = creds["app_key"_L1].toString();
+                    auto cluster = creds["cluster"_L1].toString();
+                    qCDebug(chatterinoKick)
+                        << "Using Pusher with app_key:" << appKey
+                        << "cluster:" << cluster;
+                    self->manager =
+                        std::make_unique<KickPusherManager>(appKey, cluster);
+                }
+                else
+                {
+                    qCWarning(chatterinoKick)
+                        << "Unknown Kick provider, using Pusher"
+                        << res.getData();
+                    self->manager =
+                        std::make_unique<KickPusherManager>(u"", u"");
+                }
+
+                self->flushBacklog();
+            })
+            .onError([weak = this->weak_from_this()](const NetworkResult &res) {
+                auto self = weak.lock();
+                if (!self)
+                {
+                    return;
+                }
+                qCWarning(chatterinoKick)
+                    << "Failed to request Kick connection, using Pusher"
+                    << res.formatError();
+                // Just use pusher. This may be wrong, but the best we can do.
+                // FIXME: Definitely wrong if the user isn't connected.
+                self->manager = std::make_unique<KickPusherManager>(u"", u"");
+                self->flushBacklog();
+            })
+            .execute();
     }
+
+    return false;
+}
+
+void KickLiveUpdatesPrivate::flushBacklog()
+{
+    assertInGuiThread();
+    this->requestInProgress = false;
+    if (!this->manager)
+    {
+        assert(false);
+        return;
+    }
+    auto backlog = std::exchange(this->backlog, {});
+    for (const auto [roomID, channelID] : backlog)
+    {
+        this->joinImpl(roomID, channelID);
+    }
+    assert(this->backlog.empty());
+}
+
+void KickLiveUpdatesPrivate::joinImpl(uint64_t roomID, uint64_t channelID)
+{
+    if (!this->hasManagerOrFetch())
+    {
+        this->backlog.insert({roomID, channelID});
+        return;
+    }
+    this->manager->joinChannel(u"chatroom_" % QString::number(roomID));
+    this->manager->joinChannel(u"chatrooms." % QString::number(roomID));
+    this->manager->joinChannel(u"chatrooms." % QString::number(roomID) %
+                               u".v2");
+    this->manager->joinChannel(u"channel." % QString::number(channelID));
+    this->manager->joinChannel(u"channel_" % QString::number(channelID));
+    this->manager->joinChannel(u"predictions-channel-" %
+                               QString::number(channelID));
+}
+
+void KickLiveUpdatesPrivate::partImpl(uint64_t roomID, uint64_t channelID)
+{
+    if (!this->hasManagerOrFetch())
+    {
+        this->backlog.erase({roomID, channelID});
+        return;
+    }
+    this->manager->partChannel(u"chatroom_" % QString::number(roomID));
+    this->manager->partChannel(u"chatrooms." % QString::number(roomID));
+    this->manager->partChannel(u"chatrooms." % QString::number(roomID) %
+                               u".v2");
+    this->manager->partChannel(u"channel." % QString::number(channelID));
+    this->manager->partChannel(u"channel_" % QString::number(channelID));
+    this->manager->partChannel(u"predictions-channel-" %
+                               QString::number(channelID));
 }
 
 KickLiveUpdates::KickLiveUpdates()
-    : private_(new KickLiveUpdatesPrivate)
+    : private_(std::make_shared<KickLiveUpdatesPrivate>())
 {
 }
 KickLiveUpdates::~KickLiveUpdates() = default;
 
 void KickLiveUpdates::joinRoom(uint64_t roomID, uint64_t channelID)
 {
-    this->private_->subscribe(u"chatroom_" % QString::number(roomID));
-    this->private_->subscribe(u"chatrooms." % QString::number(roomID));
-    this->private_->subscribe(u"chatrooms." % QString::number(roomID) % u".v2");
-    this->private_->subscribe(u"channel." % QString::number(channelID));
-    this->private_->subscribe(u"channel_" % QString::number(channelID));
-    this->private_->subscribe(u"predictions-channel-" %
-                              QString::number(channelID));
+    this->private_->joinImpl(roomID, channelID);
 }
 
 void KickLiveUpdates::leaveRoom(uint64_t roomID, uint64_t channelID)
 {
-    this->private_->unsubscribe(u"chatroom_" % QString::number(roomID));
-    this->private_->unsubscribe(u"chatrooms." % QString::number(roomID));
-    this->private_->unsubscribe(u"chatrooms." % QString::number(roomID) %
-                                u".v2");
-    this->private_->unsubscribe(u"channel." % QString::number(channelID));
-    this->private_->unsubscribe(u"channel_" % QString::number(channelID));
-    this->private_->unsubscribe(u"predictions-channel-" %
-                                QString::number(channelID));
+    this->private_->partImpl(roomID, channelID);
 }
 
 }  // namespace chatterino
