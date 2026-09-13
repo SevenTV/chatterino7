@@ -112,7 +112,7 @@
                     ]
                 },
                 {
-                    "flags": "EmoteImage|EmoteText",
+                    "flags": "TwitchGif",
                     "link": {
                         "type": "None",
                         "value": ""
@@ -122,7 +122,7 @@
                     "type": "LinebreakElement"
                 },
                 {
-                    "flags": "EmoteImage|EmoteText",
+                    "flags": "TwitchGif",
                     "image": "https://media4.giphy.com/media/joSNxeswxuc74Juo8X/100.webp",
                     "link": {
                         "type": "Url",
@@ -171,7 +171,7 @@
     "settings": {
         "appearance": {
             "messages": {
-                "showTwitchGifs": false
+                "showTwitchGifs": true
             }
         }
     }

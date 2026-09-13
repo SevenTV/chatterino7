@@ -82,6 +82,8 @@ using SplitNode = SplitContainer::Node;
 void WindowManager::showSettingsDialog(QWidget *parent,
                                        SettingsDialogPreference preference)
 {
+    using namespace std::chrono_literals;
+
     if (this->appArgs.dontSaveSettings)
     {
         QMessageBox::critical(parent, "Chatterino - Editing Settings Forbidden",
@@ -90,8 +92,9 @@ void WindowManager::showSettingsDialog(QWidget *parent,
     }
     else
     {
-        QTimer::singleShot(80, [parent, preference] {
-            SettingsDialog::showDialog(parent, preference);
+        auto *mainWindow = &this->getMainWindow();
+        QTimer::singleShot(80ms, mainWindow, [mainWindow, preference] {
+            SettingsDialog::showDialog(mainWindow, preference);
         });
     }
 }
@@ -283,6 +286,7 @@ void WindowManager::updateWordTypeMask()
     flags.set(MEF::Collapsed);
     flags.set(MEF::LowercaseLinks, settings->lowercaseDomains);
     flags.set(MEF::ChannelPointReward);
+    flags.set(MEF::TwitchGif);
 
     // update flags
     MessageElementFlags newFlags = static_cast<MessageElementFlags>(flags);

@@ -39,6 +39,7 @@ class TwitchChannel;
 class ChannelChatters;
 class MessageThread;
 class IgnorePhrase;
+struct HelixMinimalUser;
 struct HelixVip;
 using HelixModerator = HelixVip;
 struct ChannelPointReward;
@@ -179,14 +180,12 @@ public:
         const ChannelPointReward &reward, bool isMod, bool isBroadcaster);
 
     /// Make a "CHANNEL_NAME has gone live!" message
-    static MessagePtr makeLiveMessage(const QString &channelName,
-                                      const QString &channelID,
+    static MessagePtr makeLiveMessage(const HelixMinimalUser &channel,
                                       const QString &title,
                                       MessageFlags extraFlags = {});
 
     // Messages in normal chat for channel stuff
-    static MessagePtr makeOfflineSystemMessage(const QString &channelName,
-                                               const QString &channelID);
+    static MessagePtr makeOfflineSystemMessage(const HelixMinimalUser &channel);
     static MessagePtr makeHostingSystemMessage(const QString &channelName,
                                                bool hostOn);
     static MessagePtr makeDeletionMessageFromIRC(

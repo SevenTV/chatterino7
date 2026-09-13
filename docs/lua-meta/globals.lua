@@ -848,6 +848,7 @@ c2.MessageElementFlag = {
     EmoteImage = 0,
     EmoteText = 0,
     Emote = 0,
+    TwitchGif = 0,
     ChannelPointReward = 0,
     ChannelPointRewardImage = 0,
     BitsStatic = 0,
