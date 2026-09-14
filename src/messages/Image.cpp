@@ -58,10 +58,8 @@ std::pair<QSize, bool> limitedAutoScaleSize(
         return {original, false};
     }
     return {
-        {
-            (original.width() * maxAutoScale) / maxDim,
-            (original.height() * maxAutoScale) / maxDim,
-        },
+        original.scaled({maxAutoScale, maxAutoScale},
+                        Qt::KeepAspectRatioByExpanding),
         true,
     };
 }
@@ -360,7 +358,8 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
             {
                 shared->scale_ =
                     static_cast<qreal>(*shared->autoScale_) /
-                    std::max({frameSize->width(), frameSize->height(), 1});
+                    std::max(std::min(frameSize->width(), frameSize->height()),
+                             1);
             }
         }
 
