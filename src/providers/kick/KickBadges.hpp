@@ -14,6 +14,8 @@ public:
     static std::pair<EmotePtr, MessageElementFlag> lookup(
         std::string_view name);
 
+    static EmotePtr lookupSubGifter(unsigned amount);
+
     static std::pair<EmotePtr, MessageElementFlag> getV2Cached(
         BoostJsonObject badgeObj);
 };

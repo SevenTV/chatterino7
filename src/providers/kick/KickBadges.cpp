@@ -114,6 +114,53 @@ using CacheData = std::pair<EmotePtr, MessageElementFlag>;
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 std::array<CacheData, magic_enum::enum_count<BadgeID>()> CACHE{};
 
+std::vector<std::pair<unsigned, ImageSet>> makeGiftFixpoints()
+{
+    std::vector<std::pair<unsigned, ImageSet>> vec;
+    const auto add = [&](unsigned count) {
+        QString numStr = QString::number(count);
+        vec.emplace_back(
+            count,
+            ImageSet{
+                Image::fromUrl({u":/kick/badges/gift-" % numStr % u"-18.webp"},
+                               1.0, {18, 18}),
+                Image::fromUrl({u":/kick/badges/gift-" % numStr % u"-36.webp"},
+                               .5, {36, 36}),
+            });
+    };
+
+    add(1);
+    add(5);
+    add(10);
+    add(25);
+    add(50);
+    add(100);
+    add(150);
+    add(200);
+    add(250);
+    add(300);
+    add(350);
+    add(400);
+    add(450);
+    add(500);
+    add(550);
+    add(600);
+    add(650);
+    add(700);
+    add(750);
+    add(800);
+    add(850);
+    add(900);
+    add(950);
+    add(1000);
+    add(2000);
+    add(3000);
+    add(4000);
+    add(5000);
+
+    return vec;
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -136,6 +183,7 @@ std::pair<EmotePtr, MessageElementFlag> KickBadges::lookup(
         return {nullptr, {}};
     }
 
+    assertInGuiThread();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index) -- see above
     auto &entry = CACHE[idx];
     if (!entry.first)
@@ -165,6 +213,7 @@ std::pair<EmotePtr, MessageElementFlag> KickBadges::getV2Cached(
     BoostJsonObject badgeObj)
 {
     static boost::unordered_flat_map<QString, EmotePtr> cache;
+    assertInGuiThread();
 
     auto imageUrl = badgeObj["image_url"].toQString();
     auto it = cache.find(imageUrl);
@@ -196,6 +245,48 @@ std::pair<EmotePtr, MessageElementFlag> KickBadges::getV2Cached(
     });
     cache.emplace(imageUrl, emote);
     return {emote, MessageElementFlag::BadgeVanity};
+}
+
+EmotePtr KickBadges::lookupSubGifter(unsigned amount)
+{
+    static std::map<unsigned, EmotePtr> fullCache;
+    static auto fixpoints = makeGiftFixpoints();
+
+    assertInGuiThread();
+
+    auto fullIt = fullCache.find(amount);
+    if (fullIt != fullCache.end())
+    {
+        return fullIt->second;
+    }
+
+    auto fixpointsIt = std::ranges::lower_bound(
+        fixpoints, amount, std::less<>{}, [](const auto &it) {
+            return it.first;
+        });
+    if (fixpointsIt != fixpoints.begin() &&
+        (fixpointsIt == fixpoints.end() || fixpointsIt->first != amount))
+    {
+        --fixpointsIt;
+    }
+    assert(fixpointsIt != fixpoints.end());
+    if (fixpointsIt->first > amount)
+    {
+        return nullptr;
+    }
+    QString name = u"Gifted " % QString::number(amount) % u" sub";
+    if (amount != 1)
+    {
+        name += 's';
+    }
+    fullIt = fullCache
+                 .emplace(amount, std::make_shared<const Emote>(Emote{
+                                      .name = {name},
+                                      .images = fixpointsIt->second,
+                                      .tooltip = Tooltip{name},
+                                  }))
+                 .first;
+    return fullIt->second;
 }
 
 }  // namespace chatterino
