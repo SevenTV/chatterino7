@@ -255,6 +255,10 @@ KickPrivateChannelInfo::KickPrivateChannelInfo(BoostJsonObject obj)
             QLatin1StringView(followers.toStringView()).toULongLong();
     }
 }
+
+KickPrivateChannelInfoSmall::KickPrivateChannelInfoSmall(BoostJsonObject obj)
+    : user(obj["user"].toObject())
+{
 }
 
 KickPrivateUserInChannelInfo::KickPrivateUserInChannelInfo(BoostJsonObject obj)
@@ -341,6 +345,13 @@ void KickApi::privateChannelInfo(const QString &username,
 {
     autoSlugify<KickPrivateChannelInfo>(u"https://kick.com/api/v2/channels"_s,
                                         std::move(cb), username);
+}
+
+void KickApi::privateChannelInfoSmall(const QString &slug,
+                                      Callback<KickPrivateChannelInfoSmall> cb)
+{
+    autoSlugify<KickPrivateChannelInfoSmall>(
+        u"https://kick.com/api/v2/channels"_s, std::move(cb), slug, "info");
 }
 
 void KickApi::privateUserInChannelInfo(

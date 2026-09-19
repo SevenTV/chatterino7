@@ -60,6 +60,7 @@ private:
 
     void loadAvatar(const QString &userID, const QString &pictureURL,
                     bool isKick);
+    void loadCurrentAvatar();
 
     void loadSevenTVAvatar(const QString &userID, bool isKick);
     void setSevenTVAvatar(const QString &filename, const QByteArray &format);
