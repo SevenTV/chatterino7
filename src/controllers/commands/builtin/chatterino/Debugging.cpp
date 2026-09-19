@@ -514,15 +514,14 @@ QString seventvPresence(const CommandContext &ctx)
         }
         else if (ctx.kickChannel)
         {
-            getKickApi()->getChannelByName(userArg, [run,
-                                                     reply](const auto &res) {
+            KickApi::privateChannelInfo(userArg, [run, reply](const auto &res) {
                 if (!res)
                 {
                     reply(u"Failed to find user: " % res.error());
                     return;
                 }
                 getApp()->getSeventvAPI()->getUserByKickID(
-                    res->userID,
+                    res->user.userID,
                     [run](const auto &obj, const auto & /*raw*/) {
                         run(u"KICK"_s, obj["user"_L1]["id"_L1].toString());
                     },
