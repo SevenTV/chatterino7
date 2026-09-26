@@ -268,7 +268,8 @@ Settings::Settings(const Modes &modes, const Args &args,
     {
         this->showUnlistedSevenTVEmotes.setValue(true);
         // reset to default, so it doesn't appear in the config
-        this->showUnlistedEmotesDontUse.remove();
+        settingsInstance->removeSetting(
+            this->showUnlistedEmotesDontUse.getPath());
     }
 }
 
