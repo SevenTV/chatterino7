@@ -8,6 +8,7 @@
 #include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickEmotes.hpp"
 #include "providers/kick/KickMessageBuilder.hpp"
+#include "providers/kick/KickPrediction.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
@@ -204,11 +205,12 @@ bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
         "KicksGifted", &KickChatServer::onKicksGiftedEvent,               //
         "StreamHostEvent", &KickChatServer::onStreamHostEvent,            //
         "ChatroomUpdatedEvent", &KickChatServer::onChatroomUpdatedEvent,  //
+        "PredictionCreated", &KickChatServer::onPredictionEvent,          //
+        "PredictionUpdated", &KickChatServer::onPredictionEvent,          //
 
         // ignored
         "KicksLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
         "GiftsLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
-        "PredictionUpdated", &KickChatServer::onKnownIgnoredMessage,        //
         // old sub events
         "ChannelSubscriptionEvent", &KickChatServer::onKnownIgnoredMessage,  //
         "LuckyUsersWhoGotGiftSubscriptionsEvent",
@@ -357,6 +359,19 @@ void KickChatServer::onStreamHostEvent(KickChannel *channel,
 {
     channel->addMessage(KickMessageBuilder::makeHostMessage(channel, data),
                         MessageContext::Original);
+}
+
+void KickChatServer::onPredictionEvent(KickChannel *channel,
+                                       BoostJsonObject data)
+{
+    auto prediction = KickPrediction::parse(data["prediction"].toObject());
+    if (!prediction)
+    {
+        qCWarning(chatterinoKick) << "Failed to parse prediction event";
+        return;
+    }
+
+    channel->updatePrediction(std::move(*prediction));
 }
 
 void KickChatServer::onSubscriptionEvent(KickChannel *channel,
