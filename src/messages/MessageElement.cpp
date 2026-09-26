@@ -1573,9 +1573,11 @@ std::unique_ptr<MessageElement> LinebreakElement::clone() const
 }
 
 ScalingImageElement::ScalingImageElement(ImageSet images,
-                                         MessageElementFlags flags)
+                                         MessageElementFlags flags,
+                                         QString copyText)
     : MessageElement(flags)
     , images_(std::move(images))
+    , copyText_(std::move(copyText))
 {
 }
 
@@ -1601,6 +1603,11 @@ const ImageSet &ScalingImageElement::images() const
     return this->images_;
 }
 
+const QString &ScalingImageElement::copyText() const
+{
+    return this->copyText_;
+}
+
 QJsonObject ScalingImageElement::toJson() const
 {
     auto base = MessageElement::toJson();
@@ -1616,8 +1623,8 @@ std::string_view ScalingImageElement::type() const
 }
 std::unique_ptr<MessageElement> ScalingImageElement::clone() const
 {
-    auto elem =
-        std::make_unique<ScalingImageElement>(this->images_, this->getFlags());
+    auto elem = std::make_unique<ScalingImageElement>(
+        this->images_, this->getFlags(), this->copyText_);
     elem->cloneFrom(*this);
     return elem;
 }

@@ -713,6 +713,12 @@ void Image::actuallyLoad()
             qCDebug(chatterinoImage) << "image too large in RAM";
 
             shared->empty_ = true;
+            postToGuiThread([] {
+                if (auto *app = tryGetApp())
+                {
+                    app->getWindows()->forceLayoutChannelViews();
+                }
+            });
             return;
         }
 
