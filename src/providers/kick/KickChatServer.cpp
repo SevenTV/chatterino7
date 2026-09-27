@@ -334,7 +334,8 @@ void KickChatServer::onChatroomClear(KickChannel *channel,
                                      BoostJsonObject /* data */)
 {
     auto now = QDateTime::currentDateTime();
-    auto clear = KickMessageBuilder::makeClearChatMessage(now, {});
+    auto clear =
+        KickMessageBuilder::makeClearChatMessage(now, {}, channel->getName());
     channel->disableAllMessages();
     channel->addOrReplaceClearChat(clear, now);
 }
