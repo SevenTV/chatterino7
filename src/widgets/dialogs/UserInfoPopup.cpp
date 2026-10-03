@@ -1405,6 +1405,7 @@ void UserInfoPopup::loadSevenTVAvatar(const QString &userID, bool isKick)
                                          << "Error fetching Profile Picture:"
                                          << reply->error();
                                  }
+                                 reply->deleteLater();
                              });
 
             return;

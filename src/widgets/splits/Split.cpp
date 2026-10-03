@@ -878,6 +878,9 @@ ChannelPtr Split::getSelectedChannel() const
 
 void Split::setChannel(IndirectChannel newChannel)
 {
+    this->channelSignalHolder_.clear();
+    this->input_->setSendWaitStatus("");
+
     this->channel_ = newChannel;
 
     this->view_->setChannel(newChannel.get());
