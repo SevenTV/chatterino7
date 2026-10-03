@@ -24,7 +24,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
-        qt-version: ["6.9.3"]
+        qt-version: ["6.12.0"]
         os: [windows-latest, windows-11-arm]
     env:
       # same as in build.yml

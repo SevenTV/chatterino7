@@ -184,19 +184,19 @@ jobs:
         include:
           # Windows
           - os: windows-latest
-            qt-version: 6.9.3
+            qt-version: 6.12.0
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
           # Windows on ARM
           - os: windows-11-arm
-            qt-version: 6.9.3
+            qt-version: 6.12.0
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
           # macOS (ARM)
           - os: macos-latest
-            qt-version: 6.9.3
+            qt-version: 6.12.0
             macosx-deployment-target: "13.0"
             force-lto: true
             skip-artifact: false
@@ -247,6 +247,8 @@ jobs:
           cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-v2
           modules: qtimageformats
           version: ${{ matrix.qt-version }}
+          # https://github.com/miurahr/aqtinstall/pull/1052
+          aqtsource: git+https://github.com/pzhlkj6612/forked-aqtinstall@7b60b0f64e2fdd28552d7603e9831b027172afb0
 
       # MARK: Windows
       - name: Enable Developer Command Prompt (Windows)
@@ -481,9 +483,9 @@ jobs:
         run: |
           ls -l
           # Rename the macos build to indicate that it's for macOS 13.0 users
-          mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino-macOS-13.0-universal.dmg
+          mv chatterino-macos-Qt-6.12.0-universal.dmg Chatterino-macOS-13.0-universal.dmg
           # Rename Windows ARM64 to indicate that it's not well tested
-          mv chatterino-windows-arm-Qt-6.9.3.zip Experimental-ARM64-chatterino-windows-Qt-6.9.3.zip
+          mv chatterino-windows-arm-Qt-6.12.0.zip Experimental-ARM64-chatterino-windows-Qt-6.12.0.zip
         working-directory: release-artifacts
         shell: bash
 
