@@ -25,7 +25,7 @@ using namespace chatterino;
 
 constexpr std::chrono::seconds MAX_HEARTBEAT_INTERVAL{20};
 const QString WS_URL =
-    u"wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false"_s;
+    u"wss://ws-us2.pusher.com/app/34bf7a0ff419a2a775b9?protocol=7&client=js&version=8.4.0&flash=false"_s;
 
 class KickPusherClient : public BasicPubSubClient<QString, KickPusherClient>,
                          public std::enable_shared_from_this<KickPusherClient>
