@@ -24,7 +24,7 @@ FlagsEnum<KickConnectionPreference> currentPrefs()
         getSettings()->kickConnectionPreference;
     if (pref == KickConnectionPreference::Default)
     {
-        pref = KickConnectionPreference::Pusher;
+        pref = KickConnectionPreference::Any;
     }
     return pref;
 }
