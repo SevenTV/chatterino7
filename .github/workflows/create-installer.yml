@@ -71,7 +71,7 @@ jobs:
             return String(run.id);
 
       - name: Download artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.zip
           github-token: ${{ github.token }}
@@ -162,7 +162,7 @@ jobs:
           fetch-depth: 0 # allows for tags access
           persist-credentials: true # release action
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: build/
           merge-multiple: true
@@ -200,7 +200,7 @@ jobs:
             return String(run.id);
 
       - name: Download artifact (non-Windows)
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: "[Cc]hatterino-[^wW]*"
           github-token: ${{ github.token }}
@@ -210,7 +210,7 @@ jobs:
           merge-multiple: true
 
       - name: Download artifact (Windows PDBs)
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: "*.pdb*"
           github-token: ${{ github.token }}
