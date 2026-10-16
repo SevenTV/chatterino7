@@ -443,6 +443,8 @@ set(SOURCE_FILES
         providers/kick/KickLiveUpdates.hpp
         providers/kick/KickMessageBuilder.cpp
         providers/kick/KickMessageBuilder.hpp
+        providers/kick/KickPrediction.cpp
+        providers/kick/KickPrediction.hpp
 
         providers/kick/ws/KickCentrifugoManager.cpp
         providers/kick/ws/KickPusherManager.cpp
@@ -943,6 +945,8 @@ set(SOURCE_FILES
         widgets/splits/SplitOverlay.hpp
         widgets/splits/PinnedMessageWidget.cpp
         widgets/splits/PinnedMessageWidget.hpp
+        widgets/splits/KickPredictionWidget.cpp
+        widgets/splits/KickPredictionWidget.hpp
         )
 
 if (APPLE)
