@@ -863,8 +863,8 @@ bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
 {
     auto now = QDateTime::currentDateTime();
     auto last = this->lastSeventvMessage_.lock();
-    if (!last || !last->flags.has(op) ||
-        last->serverReceivedTime < now.addSecs(-5) || last->loginName != actor)
+    if (!last || !last->flags.has(op) || last->timestamp < now.addSecs(-5) ||
+        last->loginName != actor)
     {
         return false;
     }

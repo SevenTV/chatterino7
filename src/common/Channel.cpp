@@ -437,7 +437,7 @@ void Channel::mergeFrom(const std::span<std::span<const MessagePtr>> sources)
             auto src = sources[i];
             if (!src.empty())
             {
-                QDateTime cur = src.back()->serverReceivedTime;
+                QDateTime cur = src.back()->timestamp;
                 if (!dt.isValid() || cur > dt)
                 {
                     max = src.back();
