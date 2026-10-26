@@ -69,7 +69,7 @@ def run_git_command(args: list[str]) -> str:
 
 def get_last_version_tag() -> str | None:
     try:
-        return run_git_command(["describe", "--tags", "--abbrev=0", "--match", "v7*"])
+        return run_git_command(["describe", "--tags", "--abbrev=0", "--match", "v*"])
     except subprocess.CalledProcessError:
         return None
 
@@ -110,7 +110,7 @@ def get_unreleased_commits():
 
 def get_current_stable():
     p = subprocess.run(
-        ["git", "describe", "--tags", "--abbrev=0", "--match", "v7.*.[0-9]"],
+        ["git", "describe", "--tags", "--abbrev=0", "--match", "v.*.[0-9]"],
         cwd=os.path.dirname(os.path.realpath(__file__)),
         text=True,
         check=True,
