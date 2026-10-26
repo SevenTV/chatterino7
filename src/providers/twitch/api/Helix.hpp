@@ -1244,6 +1244,11 @@ public:
         FailureCallback<QString> failureCallback,
         CancellationToken &&token) = 0;
 
+    /// Technically not a helix request >:-)
+    /// https://dev.twitch.tv/docs/authentication/validate-tokens#validating-tokens
+    virtual void validateToken(NetworkSuccessCallback successCallback,
+                               NetworkErrorCallback errorCallback) = 0;
+
     virtual void update(QString clientId, QString oauthToken) = 0;
 
 protected:
@@ -1688,6 +1693,11 @@ public:
         ResultCallback<QSet</* logins */ QString>> successCallback,
         FailureCallback<QString> failureCallback,
         CancellationToken &&token) final;
+
+    /// Technically not a helix request >:-)
+    /// https://dev.twitch.tv/docs/authentication/validate-tokens#validating-tokens
+    void validateToken(NetworkSuccessCallback successCallback,
+                       NetworkErrorCallback errorCallback) final;
 
     void update(QString clientId, QString oauthToken) final;
 

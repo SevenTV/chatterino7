@@ -3885,6 +3885,21 @@ void Helix::getModeratedChannels(QString userID,
         std::move(token));
 }
 
+void Helix::validateToken(NetworkSuccessCallback successCallback,
+                          NetworkErrorCallback errorCallback)
+{
+    static constexpr QStringView baseUrl = u"https://id.twitch.tv/oauth2/";
+
+    QUrl fullUrl(baseUrl % u"validate");
+
+    NetworkRequest(fullUrl, NetworkRequestType::Get)
+        .timeout(20 * 1000)
+        .header("Authorization", u"OAuth " % this->oauthToken)
+        .onSuccess(std::move(successCallback))
+        .onError(std::move(errorCallback))
+        .execute();
+}
+
 QDebug &operator<<(QDebug &dbg,
                    const HelixCreateEventSubSubscriptionResponse &data)
 {
