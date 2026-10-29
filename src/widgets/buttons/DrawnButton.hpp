@@ -28,6 +28,13 @@ public:
 
         /// kebab menu (3 dots underneath eachother)
         Kebab,
+
+        /// ×
+        ///
+        /// Default values:
+        ///  Padding: 4px
+        ///  Thickness: 1px
+        Cross,
     };
 
     struct Options {
