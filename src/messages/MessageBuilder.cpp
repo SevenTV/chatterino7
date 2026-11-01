@@ -1355,6 +1355,7 @@ std::pair<MessagePtr, HighlightAlert>
         Channel *channel)
 {
     MessageBuilder builder;
+    builder->channelName = channel->getName();
 
     builder.appendChannelPointRewardMessage(reward, isMod, isBroadcaster);
 
@@ -1362,7 +1363,7 @@ std::pair<MessagePtr, HighlightAlert>
     Communi::TagsRef tags(tagsMap);
     auto highlights = builder.parseHighlights(tags, "", {}, channel);
 
-    return {builder.release(), HighlightAlert{}};
+    return {builder.release(), highlights};
 }
 
 MessagePtr MessageBuilder::makeLiveMessage(const HelixMinimalUser &channel,
