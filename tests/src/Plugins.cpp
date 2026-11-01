@@ -956,7 +956,9 @@ TEST_F(PluginTest, ChannelType)
     )lua");
 
     const char *VALUES = "Direct,"
+                         "Kick,"
                          "Misc,"
+                         "Multi,"
                          "None,"
                          "Twitch,"
                          "TwitchAutomod,"
