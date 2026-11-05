@@ -56,9 +56,10 @@ enum class CopyMode {
 struct DeleteLater {
     void operator()(QObject *obj)
     {
-        obj->deleteLater();
+            obj->deleteLater();
     }
 };
+
 
 template <typename T>
 using QObjectPtr = std::unique_ptr<T, DeleteLater>;
