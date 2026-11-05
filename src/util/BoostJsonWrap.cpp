@@ -94,6 +94,28 @@ uint64_t BoostJsonValue::toUint64(uint64_t defaultValue) const
     return static_cast<uint64_t>(*i);
 }
 
+double BoostJsonValue::toDouble(double defaultValue) const
+{
+    if (!this->v)
+    {
+        return defaultValue;
+    }
+    if (const auto *d = this->v->if_double())
+    {
+        return *d;
+    }
+    // Whole numbers arrive as integers, so accept those too.
+    if (const auto *i = this->v->if_int64())
+    {
+        return static_cast<double>(*i);
+    }
+    if (const auto *u = this->v->if_uint64())
+    {
+        return static_cast<double>(*u);
+    }
+    return defaultValue;
+}
+
 bool BoostJsonValue::toBool(bool defaultValue) const
 {
     if (!this->v)

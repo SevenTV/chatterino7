@@ -38,7 +38,8 @@ void DrawnButton::themeChangedEvent()
 
     switch (this->symbol)
     {
-        case Symbol::Plus: {
+        case Symbol::Plus:
+        case Symbol::Cross: {
             o.padding = 4;
             o.thickness = 1;
 
@@ -137,6 +138,26 @@ void DrawnButton::paintContent(QPainter &painter)
             painter.drawLine(vertical);
             QLine horizontal(left, center.y(), right, center.y());
             painter.drawLine(horizontal);
+        }
+        break;
+
+        case Symbol::Cross: {
+            QPen pen;
+            pen.setColor(fg);
+            pen.setWidth(thickness);
+            painter.setPen(pen);
+            // Unlike the axis-aligned symbols, diagonals need smoothing.
+            painter.setRenderHint(QPainter::Antialiasing);
+
+            auto innerSize = this->rect().size();
+            innerSize.setHeight(innerSize.width());
+            QRect inner;
+            inner.setSize(innerSize);
+            inner.moveCenter(this->rect().center());
+            inner = inner.marginsRemoved({padding, padding, padding, padding});
+
+            painter.drawLine(inner.topLeft(), inner.bottomRight());
+            painter.drawLine(inner.topRight(), inner.bottomLeft());
         }
         break;
 
